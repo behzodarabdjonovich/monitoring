@@ -340,51 +340,78 @@ return function (): void {
         $t->unique(['indicator_id', 'document_id']);
     });
 
-    // 21) internal_audits
+    // 21) internal_audits — item 13: "Ichki akkreditatsiya auditi" hisoboti.
+    //     Audit yakunida avtomatik shakllanadigan bo'limlar (kuchli tomonlar,
+    //     kamchiliklar, bajarilmagan indikatorlar, yetishmayotgan dalillar,
+    //     xavf darajasi, tavsiyalar, tayyorlik foizi) alohida ustunlarda
+    //     saqlanadi (JSON matn ko'rinishida).
     Schema::create('internal_audits', function ($t) {
         $t->id();
         $t->integer('accreditation_id');
+        $t->integer('specialty_id');              // per-ixtisoslik audit (item 13)
         $t->string('title', 191, false);
         $t->date('audit_date');
         $t->integer('auditor_id');
         $t->text('scope');
         $t->string('status', 32, false, 'planned');
         $t->text('summary');
+        // Item 13 avtomatik shakllanadigan hisobot bo'limlari.
+        $t->real('readiness_index');              // akkreditatsiyaga tayyorlik foizi
+        $t->string('risk_level', 16);             // xavf darajasi (readiness bandidan)
+        $t->text('strengths');                    // kuchli tomonlar (green indikatorlar) — JSON
+        $t->text('weaknesses');                   // kamchiliklar (red/yellow) — JSON
+        $t->text('unmet_indicators');             // bajarilmagan indikatorlar — JSON
+        $t->text('missing_evidence');             // yetishmayotgan dalillar (grey/dalilsiz) — JSON
+        $t->text('recommendations');              // tavsiyalar — JSON
         $t->timestamp('created_at');
         $t->foreign('accreditation_id', 'accreditations');
+        $t->foreign('specialty_id', 'specialties');
         $t->foreign('auditor_id', 'users');
     });
 
-    // 22) deficiencies
+    // 22) deficiencies — item 12 kamchilik zanjiri:
+    //     Muammo (title) -> Sabab (cause) -> ... -> Natija (result).
+    //     Kamchilik indikatordan (red/yellow) YOKI ichki auditdan kelib chiqadi.
     Schema::create('deficiencies', function ($t) {
         $t->id();
         $t->integer('indicator_id');
         $t->integer('internal_audit_id');
-        $t->string('title', 191, false);
+        $t->string('title', 191, false);          // Muammo
         $t->text('description');
+        $t->text('cause');                        // Sabab
+        $t->text('result');                       // Natija (yakuniy)
         $t->string('severity', 16, false, 'medium');
-        $t->string('status', 16, false, 'open');
+        $t->string('status', 16, false, 'open');  // open / in_progress / resolved
         $t->integer('identified_by');
         $t->date('identified_at');
         $t->timestamp('created_at');
+        $t->timestamp('updated_at');
         $t->foreign('indicator_id', 'accreditation_indicators');
         $t->foreign('internal_audit_id', 'internal_audits');
         $t->foreign('identified_by', 'users');
     });
 
-    // 23) action_plans
+    // 23) action_plans — item 12 chora-tadbir zanjiri:
+    //     Chora-tadbir (title) -> Mas'ul (responsible_user_id) -> Boshlanish
+    //     sanasi (start_date) -> Yakuniy muddat (due_date) -> Dalil
+    //     (document_id) -> Natija (result) + holat (status).
     Schema::create('action_plans', function ($t) {
         $t->id();
         $t->integer('deficiency_id', false);
-        $t->string('title', 191, false);
+        $t->string('title', 191, false);          // Chora-tadbir
         $t->text('description');
-        $t->integer('responsible_user_id');
-        $t->date('due_date');
-        $t->string('status', 32, false, 'planned');
+        $t->integer('responsible_user_id');       // Mas'ul
+        $t->date('start_date');                   // Boshlanish sanasi
+        $t->date('due_date');                     // Yakuniy muddat
+        $t->integer('document_id');               // Dalil (bog'langan hujjat)
+        $t->text('result');                       // Natija
+        $t->string('status', 32, false, 'planned'); // planned / in_progress / done
         $t->timestamp('completed_at');
         $t->timestamp('created_at');
+        $t->timestamp('updated_at');
         $t->foreign('deficiency_id', 'deficiencies');
         $t->foreign('responsible_user_id', 'users');
+        $t->foreign('document_id', 'documents');
     });
 
     // 24) notifications

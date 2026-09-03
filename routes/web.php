@@ -11,7 +11,9 @@ use App\Controllers\AccreditationController;
 use App\Controllers\AttestationController;
 use App\Controllers\AuthController;
 use App\Controllers\DashboardController;
+use App\Controllers\DeficiencyController;
 use App\Controllers\DocumentController;
+use App\Controllers\InternalAuditController;
 use App\Controllers\PlanController;
 use App\Controllers\PlanTaskController;
 use App\Controllers\ProgramController;
@@ -126,6 +128,23 @@ $router->post('/criteria/{id}/indicators', [AccreditationController::class, 'sto
 $router->get('/indicators/{id}', [AccreditationController::class, 'indicator'], [$auth(), $rbac('accreditation.view')]);
 $router->post('/indicators/{id}', [AccreditationController::class, 'updateIndicator'], [$auth(), $rbac('accreditation.edit')]);
 $router->post('/indicators/{id}/assess', [AccreditationController::class, 'assess'], [$auth(), $rbac('accreditation.approve')]);
+
+// --- Kamchiliklar (Deficiencies) va chora-tadbirlar (Action Plan) (item 12) ---
+// Zanjir: Muammo -> Sabab -> Chora-tadbir -> Mas'ul -> Boshlanish -> Muddat -> Dalil -> Natija.
+$router->get('/deficiencies', [DeficiencyController::class, 'index'], [$auth(), $rbac('deficiencies.view')]);
+$router->post('/deficiencies', [DeficiencyController::class, 'store'], [$auth(), $rbac('deficiencies.create')]);
+$router->get('/deficiencies/{id}', [DeficiencyController::class, 'show'], [$auth(), $rbac('deficiencies.view')]);
+$router->post('/deficiencies/{id}', [DeficiencyController::class, 'update'], [$auth(), $rbac('deficiencies.edit')]);
+$router->post('/deficiencies/{id}/close', [DeficiencyController::class, 'close'], [$auth(), $rbac('deficiencies.edit')]);
+$router->post('/deficiencies/{id}/plans', [DeficiencyController::class, 'storePlan'], [$auth(), $rbac('action_plans.view')]);
+// Action Plan bo'limi (muddat holatlari bilan barcha chora-tadbirlar).
+$router->get('/action-plans', [DeficiencyController::class, 'plans'], [$auth(), $rbac('action_plans.view')]);
+$router->post('/action-plans/{id}', [DeficiencyController::class, 'updatePlan'], [$auth(), $rbac('action_plans.edit')]);
+
+// --- Ichki akkreditatsiya auditi (item 13) — per-ixtisoslik report ---
+$router->get('/audits', [InternalAuditController::class, 'index'], [$auth(), $rbac('internal_audits.view')]);
+$router->post('/audits/run', [InternalAuditController::class, 'run'], [$auth(), $rbac('internal_audits.audit')]);
+$router->get('/audits/{id}', [InternalAuditController::class, 'show'], [$auth(), $rbac('internal_audits.view')]);
 
 // --- Sozlamalar (Sozlamalar) — baholash metodikasi (Super Admin) ---
 $router->get('/settings', [SettingsController::class, 'index'], [$auth(), $rbac('settings.view')]);

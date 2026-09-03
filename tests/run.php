@@ -1040,6 +1040,208 @@ test('AccreditationController show va indikator sahifasi 200 + placeholder banne
 });
 
 // ---------------------------------------------------------------
+// FEAT-007: kamchiliklar + chora-tadbirlar (item 12) va ichki audit (item 13).
+// ---------------------------------------------------------------
+
+test('Deficiency: chora-tadbir muddat holati (due-soon sariq vs overdue qizil)', function () {
+    $D = \App\Models\Deficiency::class;
+    $now = strtotime('2024-06-15');
+
+    // Muddati o'tgan va bajarilmagan => overdue (qizil).
+    $overdue = ['status' => 'in_progress', 'due_date' => '2024-06-10'];
+    assertEquals('overdue', $D::dueState($overdue, $now), 'O\'tgan muddat => overdue');
+    assertEquals('red', $D::dueRag($D::dueState($overdue, $now)), 'overdue => qizil (red)');
+
+    // Muddati 7 kun ichida yaqinlashadi => due_soon (sariq).
+    $soon = ['status' => 'planned', 'due_date' => '2024-06-20']; // +5 kun
+    assertEquals('due_soon', $D::dueState($soon, $now), '5 kun ichidagi muddat => due_soon');
+    assertEquals('yellow', $D::dueRag($D::dueState($soon, $now)), 'due_soon => sariq (yellow)');
+
+    // Aynan 7 kun => hali due_soon (chegara ichida).
+    assertEquals('due_soon', $D::dueState(['status' => 'planned', 'due_date' => '2024-06-22'], $now), '7 kun chegarasi due_soon');
+
+    // 8 kun => normal (uzoq).
+    assertEquals('normal', $D::dueState(['status' => 'planned', 'due_date' => '2024-06-23'], $now), '8 kun => normal');
+
+    // Bajarilgan (done) => muddatidan qat'i nazar done (yashil).
+    assertEquals('done', $D::dueState(['status' => 'done', 'due_date' => '2024-06-01'], $now), 'done => o\'tgan bo\'lsa ham done');
+    assertEquals('green', $D::dueRag('done'), 'done => yashil (green)');
+
+    // Muddat belgilanmagan => normal.
+    assertEquals('normal', $D::dueState(['status' => 'planned', 'due_date' => null], $now), 'muddatsiz => normal');
+
+    // Bugungi kun (0 kun) => due_soon (chegara ichida).
+    assertEquals('due_soon', $D::dueState(['status' => 'planned', 'due_date' => '2024-06-15'], $now), 'bugun => due_soon');
+});
+
+test('DeficiencyController kamchilik + chora-tadbir yozadi va audit qiladi', function () {
+    bootTestDatabase();
+    Auth::attempt('sifat', 'Parol123!'); // quality_control: deficiencies/action_plans ruxsatlari
+    Auth::flushCache();
+
+    $ctrl = new \App\Controllers\DeficiencyController();
+
+    // Kamchilik yaratamiz (muammo + sabab).
+    $reqDef = new Request('POST', '/deficiencies', [], [
+        'title' => 'Test muammo', 'cause' => 'Test sabab', 'severity' => 'high',
+    ], ['REQUEST_METHOD' => 'POST']);
+    $ctrl->store($reqDef);
+    $def = DB::selectOne('SELECT * FROM deficiencies ORDER BY id DESC LIMIT 1');
+    assertEquals('Test muammo', $def['title'], 'Muammo saqlanadi');
+    assertEquals('Test sabab', $def['cause'], 'Sabab saqlanadi');
+    assertEquals('open', $def['status'], 'Yangi kamchilik ochiq');
+    assertTrue((int) DB::scalar("SELECT COUNT(*) FROM audit_logs WHERE entity_type = 'deficiencies' AND action = 'create'") >= 1, 'Kamchilik create audit yozadi');
+
+    // Chora-tadbir qo'shamiz — muddati yaqin (yellow).
+    $defId = (int) $def['id'];
+    $near = date('Y-m-d', strtotime('+3 days'));
+    $reqPlan = new Request('POST', "/deficiencies/$defId/plans", [], [
+        'title' => 'Test chora-tadbir', 'due_date' => $near, 'start_date' => date('Y-m-d'),
+    ], ['REQUEST_METHOD' => 'POST']);
+    $reqPlan->setParams(['id' => (string) $defId]);
+    $ctrl->storePlan($reqPlan);
+    $plans = \App\Models\Deficiency::actionPlans($defId);
+    assertEquals(1, count($plans), 'Bitta chora-tadbir bog\'landi');
+    assertEquals('due_soon', $plans[0]['due_state'], 'Yaqin muddat => sariq (due_soon)');
+    assertTrue((int) DB::scalar("SELECT COUNT(*) FROM audit_logs WHERE entity_type = 'action_plans' AND action = 'create'") >= 1, 'Chora-tadbir create audit yozadi');
+
+    // Kamchilikni yopamiz (close audit).
+    $reqClose = new Request('POST', "/deficiencies/$defId/close", [], ['result' => 'Bartaraf etildi'], ['REQUEST_METHOD' => 'POST']);
+    $reqClose->setParams(['id' => (string) $defId]);
+    $ctrl->close($reqClose);
+    assertEquals('resolved', DB::scalar('SELECT status FROM deficiencies WHERE id = :id', ['id' => $defId]), 'Yopilgach resolved');
+    assertTrue((int) DB::scalar("SELECT COUNT(*) FROM audit_logs WHERE entity_type = 'deficiencies' AND action = 'close'") >= 1, 'Yopish close audit yozadi');
+    Auth::logout();
+});
+
+test('InternalAudit: xavf darajasi tayyorlik bandidan keladi', function () {
+    bootTestDatabase();
+    $IA = \App\Models\InternalAudit::class;
+    // Standart chegaralar: green>=80, yellow>=50.
+    assertEquals('low', $IA::riskLevel(91.0), '91% => past xavf');
+    assertEquals('medium', $IA::riskLevel(73.0), '73% => o\'rta xavf');
+    assertEquals('high', $IA::riskLevel(48.0), '48% => yuqori xavf');
+    assertEquals('unknown', $IA::riskLevel(null), 'null => aniqlanmagan');
+    // Chegara aynan qiymatida.
+    assertEquals('low', $IA::riskLevel(80.0), '80% chegarada => past');
+    assertEquals('medium', $IA::riskLevel(50.0), '50% chegarada => o\'rta');
+    assertEquals('high', $IA::riskLevel(49.99), '49.99% => yuqori');
+});
+
+test('InternalAudit: indikatorlar to\'g\'ri buketlarga ajraladi (green/red-yellow/grey)', function () {
+    bootTestDatabase();
+    Auth::attempt('admin', 'Parol123!');
+    Auth::flushCache();
+
+    // Izolyatsiyalangan akkreditatsiya + 4 xil holatdagi indikator.
+    $accId = DB::insert('accreditations', [
+        'title' => 'Bucket akkr', 'cycle_year' => '2099', 'status' => 'planning',
+        'is_placeholder' => 0, 'created_at' => date('Y-m-d H:i:s'), 'updated_at' => date('Y-m-d H:i:s'),
+    ]);
+    $critId = DB::insert('accreditation_criteria', [
+        'accreditation_id' => $accId, 'code' => 'B', 'name' => 'B', 'weight' => 1.0,
+        'display_order' => 1, 'is_placeholder' => 0, 'created_at' => date('Y-m-d H:i:s'),
+    ]);
+    $mk = static function (string $code, string $rag, ?float $score) use ($critId): int {
+        return DB::insert('accreditation_indicators', [
+            'criteria_id' => $critId, 'code' => $code, 'name' => 'Ind ' . $code,
+            'weight' => 1.0, 'rag_status' => $rag, 'score' => $score, 'is_placeholder' => 0,
+            'created_at' => date('Y-m-d H:i:s'), 'updated_at' => date('Y-m-d H:i:s'),
+        ]);
+    };
+    $addEvidence = static function (int $indId): void {
+        $docId = DB::insert('documents', [
+            'title' => 'D', 'category' => 'boshqa', 'file_path' => 'storage/uploads/b.pdf',
+            'original_name' => 'b.pdf', 'mime_type' => 'application/pdf', 'file_size' => 10,
+            'doc_type' => 'dalil', 'uploaded_by' => Auth::id(), 'created_at' => date('Y-m-d H:i:s'),
+        ]);
+        \App\Models\Document::linkToIndicator($docId, $indId, Auth::id());
+    };
+
+    $green = $mk('B.1', 'green', 100.0); $addEvidence($green);
+    $yellow = $mk('B.2', 'yellow', 60.0); $addEvidence($yellow);
+    $red = $mk('B.3', 'red', 20.0); $addEvidence($red);
+    // Dalilsiz indikator => grey (yetishmayotgan dalil), rag_status green bo'lsa ham.
+    $grey = $mk('B.4', 'green', 100.0); // dalil biriktirilmaydi
+
+    $buckets = \App\Models\InternalAudit::bucketIndicators($accId);
+
+    // Kuchli tomonlar: faqat green (dalilli).
+    $strengthIds = array_column($buckets['strengths'], 'id');
+    assertEquals([$green], $strengthIds, 'Kuchli tomonlar faqat yashil (dalilli) indikator');
+
+    // Kamchiliklar: red + yellow.
+    $weakIds = array_column($buckets['weaknesses'], 'id');
+    assertTrue(in_array($red, $weakIds, true) && in_array($yellow, $weakIds, true), 'Kamchiliklarda red va yellow');
+    assertEquals(2, count($weakIds), 'Aynan 2 ta kamchilik (red+yellow)');
+
+    // Bajarilmagan: faqat red.
+    assertEquals([$red], array_column($buckets['unmet'], 'id'), 'Bajarilmagan faqat red');
+
+    // Yetishmayotgan dalillar: dalilsiz indikator (grey).
+    assertEquals([$grey], array_column($buckets['missing_evidence'], 'id'), 'Yetishmayotgan dalillar dalilsiz indikator');
+    Auth::logout();
+});
+
+test('InternalAuditController audit o\'tkazadi va kamchiliklar Deficiencies moduliga oqadi', function () {
+    bootTestDatabase();
+    Auth::attempt('sifat', 'Parol123!'); // quality_control: internal_audits.audit
+    Auth::flushCache();
+
+    // Placeholder ixtisoslik (seed'da akkreditatsiyaga bog'langan).
+    $specId = (int) DB::scalar('SELECT id FROM specialties WHERE accreditation_id IS NOT NULL ORDER BY id LIMIT 1');
+    $ctrl = new \App\Controllers\InternalAuditController();
+
+    $before = (int) DB::scalar('SELECT COUNT(*) FROM internal_audits');
+    $req = new Request('POST', '/audits/run', [], ['specialty_id' => (string) $specId], ['REQUEST_METHOD' => 'POST']);
+    $resp = $ctrl->run($req);
+    assertEquals(302, $resp->status(), 'Audit o\'tkazilgach redirect');
+    $after = (int) DB::scalar('SELECT COUNT(*) FROM internal_audits');
+    assertEquals($before + 1, $after, 'Yangi audit yozuvi saqlanadi');
+
+    $audit = DB::selectOne('SELECT * FROM internal_audits WHERE specialty_id = :s ORDER BY id DESC LIMIT 1', ['s' => $specId]);
+    // Bo'limlar to'ldirilgan (JSON) + xavf + tayyorlik.
+    assertTrue($audit['risk_level'] !== null && $audit['risk_level'] !== '', 'Xavf darajasi shakllanadi');
+    assertTrue($audit['strengths'] !== null, 'Kuchli tomonlar bo\'limi shakllanadi');
+    assertTrue($audit['missing_evidence'] !== null, 'Yetishmayotgan dalillar bo\'limi shakllanadi');
+    assertTrue(count(\App\Models\InternalAudit::decode($audit['recommendations'])) > 0, 'Tavsiyalar shakllanadi');
+
+    // Xavf darajasi hisoblangan tayyorlik bilan mos.
+    $expectedRisk = \App\Models\InternalAudit::riskLevel($audit['readiness_index'] === null ? null : (float) $audit['readiness_index']);
+    assertEquals($expectedRisk, $audit['risk_level'], 'Xavf darajasi tayyorlik bandiga mos');
+
+    // Audit natijasidagi kamchiliklar Deficiencies moduliga oqadi.
+    $auditDefs = (int) DB::scalar('SELECT COUNT(*) FROM deficiencies WHERE internal_audit_id = :aid', ['aid' => (int) $audit['id']]);
+    assertTrue($auditDefs > 0, 'Audit kamchiliklar shakllantiradi (Deficiencies moduliga oqadi)');
+
+    // create audit log yozilgan.
+    assertTrue((int) DB::scalar("SELECT COUNT(*) FROM audit_logs WHERE entity_type = 'internal_audits' AND action = 'create'") >= 1, 'Audit create log yozadi');
+
+    // show sahifasi 200 va bo'limlar ko'rinadi.
+    $reqShow = new Request('GET', '/audits/' . (int) $audit['id'], [], [], ['REQUEST_METHOD' => 'GET']);
+    $reqShow->setParams(['id' => (string) $audit['id']]);
+    $respShow = $ctrl->show($reqShow);
+    assertEquals(200, $respShow->status(), 'Audit hisoboti sahifasi 200');
+    $html = $respShow->body();
+    foreach (['Kuchli tomonlar', 'Kamchiliklar', 'Bajarilmagan indikatorlar', 'Yetishmayotgan dalillar', 'Xavf darajasi', 'Tavsiyalar', 'tayyorlik foizi'] as $needle) {
+        assertTrue(str_contains($html, $needle), "Audit hisobotida topilishi kerak: $needle");
+    }
+    Auth::logout();
+});
+
+test('DeficiencyController ruxsatsiz rolni rad etadi (403)', function () {
+    bootTestDatabase();
+    // Doktorant: deficiencies.create ruxsatiga ega emas.
+    Auth::attempt('doktorant', 'Parol123!');
+    Auth::flushCache();
+    $ctrl = new \App\Controllers\DeficiencyController();
+    $req = new Request('POST', '/deficiencies', [], ['title' => 'X'], ['REQUEST_METHOD' => 'POST']);
+    $resp = $ctrl->store($req);
+    assertEquals(403, $resp->status(), 'Ruxsatsiz rol 403 olishi kerak');
+    Auth::logout();
+});
+
+// ---------------------------------------------------------------
 // Runner.
 // ---------------------------------------------------------------
 echo "ADPI Monitoring — test runner\n";

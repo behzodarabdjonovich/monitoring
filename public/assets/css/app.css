@@ -239,6 +239,13 @@ h3 { font-size: 1.05rem; }
 .table th { color: var(--color-text-muted); font-weight: 600; background: var(--color-bg); }
 .table-wrap { overflow-x: auto; }
 
+/* Chora-tadbir (action plan) muddat holatiga qarab qator rangi (item 12):
+   muddati yaqin => sariq, muddati o'tgan => qizil (RAG ranglari). */
+.table tr.due-due_soon td { background: rgba(224, 168, 0, 0.12); }
+.table tr.due-overdue td { background: rgba(214, 69, 69, 0.12); }
+.table tr.due-overdue td:first-child { box-shadow: inset 3px 0 0 var(--rag-red); }
+.table tr.due-due_soon td:first-child { box-shadow: inset 3px 0 0 var(--rag-yellow); }
+
 /* ---------------- Progress ---------------- */
 .progress { background: var(--color-border); border-radius: 999px; height: 10px; overflow: hidden; }
 .progress-bar { height: 100%; background: var(--color-secondary); transition: width 0.3s ease; }

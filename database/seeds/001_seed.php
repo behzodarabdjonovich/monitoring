@@ -647,12 +647,20 @@ return function (): void {
     // ---------------------------------------------------------------
     $auditId = DB::insert('internal_audits', [
         'accreditation_id' => $accId,
+        'specialty_id' => $spec1,
         'title' => '[NAMUNA] Ichki audit — tayyorgarlik bahosi',
         'audit_date' => date('Y-m-d', strtotime('-20 days')),
         'auditor_id' => $userIds['quality_control'],
         'scope' => $placeholderNote,
         'status' => 'completed',
         'summary' => 'Namuna audit xulosasi.',
+        'readiness_index' => null,
+        'risk_level' => null,
+        'strengths' => null,
+        'weaknesses' => null,
+        'unmet_indicators' => null,
+        'missing_evidence' => null,
+        'recommendations' => null,
         'created_at' => $now,
     ]);
 
@@ -664,19 +672,68 @@ return function (): void {
         ['[NAMUNA] Nashr bazasi tasdiqlanmagan', 'low', 'resolved'],
         ['[NAMUNA] O\'quv dasturi hujjati eskirgan', 'high', 'open'],
     ];
+    $seededDefIds = [];
     foreach ($defs as $di => [$dtitle, $severity, $dstatus]) {
-        DB::insert('deficiencies', [
+        $seededDefIds[] = DB::insert('deficiencies', [
             'indicator_id' => null,
             'internal_audit_id' => $auditId,
             'title' => $dtitle,
             'description' => $placeholderNote,
+            'cause' => 'Namuna: sabab tavsifi.',
+            'result' => $dstatus === 'resolved' ? 'Namuna: kamchilik bartaraf etildi.' : null,
             'severity' => $severity,
             'status' => $dstatus,
             'identified_by' => $userIds['quality_control'],
             'identified_at' => date('Y-m-d', strtotime('-' . (($di + 1) * 5) . ' days')),
             'created_at' => $now,
+            'updated_at' => $now,
         ]);
     }
+
+    // Namuna chora-tadbirlar (action plans) — biri muddati yaqin (sariq),
+    // biri muddati o'tgan (qizil), biri bajarilgan. Item 12 to'liq zanjir.
+    DB::insert('action_plans', [
+        'deficiency_id' => $seededDefIds[0],
+        'title' => '[NAMUNA] Yetishmayotgan dalil hujjatini yuklash',
+        'description' => 'Namuna chora-tadbir tavsifi.',
+        'responsible_user_id' => $userIds['doctorate_office'],
+        'start_date' => date('Y-m-d', strtotime('-10 days')),
+        'due_date' => date('Y-m-d', strtotime('+3 days')),  // muddati yaqin => sariq
+        'document_id' => null,
+        'result' => null,
+        'status' => 'in_progress',
+        'completed_at' => null,
+        'created_at' => $now,
+        'updated_at' => $now,
+    ]);
+    DB::insert('action_plans', [
+        'deficiency_id' => $seededDefIds[4],
+        'title' => '[NAMUNA] O\'quv dasturi hujjatini yangilash',
+        'description' => 'Namuna chora-tadbir tavsifi.',
+        'responsible_user_id' => $userIds['doctorate_office'],
+        'start_date' => date('Y-m-d', strtotime('-30 days')),
+        'due_date' => date('Y-m-d', strtotime('-5 days')),  // muddati o'tgan => qizil
+        'document_id' => null,
+        'result' => null,
+        'status' => 'in_progress',
+        'completed_at' => null,
+        'created_at' => $now,
+        'updated_at' => $now,
+    ]);
+    DB::insert('action_plans', [
+        'deficiency_id' => $seededDefIds[3],
+        'title' => '[NAMUNA] Nashr bazasini tasdiqlash',
+        'description' => 'Namuna chora-tadbir tavsifi.',
+        'responsible_user_id' => $userIds['research_vice_head'],
+        'start_date' => date('Y-m-d', strtotime('-40 days')),
+        'due_date' => date('Y-m-d', strtotime('-20 days')),
+        'document_id' => null,
+        'result' => 'Namuna: nashr bazasi tasdiqlandi.',
+        'status' => 'done',
+        'completed_at' => $now,
+        'created_at' => $now,
+        'updated_at' => $now,
+    ]);
 
     // ---------------------------------------------------------------
     // 6b) Hujjatlar (documents) — dalil sifatida. KPI: yetishmayotgan
