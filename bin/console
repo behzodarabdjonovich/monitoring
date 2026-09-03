@@ -1,0 +1,123 @@
+#!/usr/bin/env php
+<?php
+/**
+ * bin/console — CLI vositasi.
+ *
+ * Buyruqlar:
+ *   migrate         Barcha database/migrations fayllarini tartib bilan bajaradi.
+ *   migrate:fresh   SQLite DB faylini o'chirib, migratsiyalarni qayta yuritadi.
+ *   seed            database/seeds fayllarini bajaradi.
+ *   backup          SQLite DB faylining nusxasini oladi (pgsql/mysql uchun
+ *                   pg_dump/mysqldump buyrug'ini ko'rsatadi).
+ */
+
+$root = dirname(__DIR__);
+
+require $root . '/vendor/autoload.php';
+
+use App\Core\Config;
+use App\Core\DB;
+
+Config::setPath($root . '/config');
+date_default_timezone_set(Config::get('app.timezone', 'UTC'));
+
+$command = $argv[1] ?? 'help';
+
+/**
+ * Migratsiya/seed fayllarini nom bo'yicha tartiblab yuklaydi va callable'ni
+ * bajaradi.
+ */
+function runDirectory(string $dir): int
+{
+    if (!is_dir($dir)) {
+        fwrite(STDERR, "Katalog topilmadi: $dir\n");
+        return 1;
+    }
+    $files = glob($dir . '/*.php') ?: [];
+    sort($files, SORT_STRING);
+    $count = 0;
+    foreach ($files as $file) {
+        $callable = require $file;
+        if (is_callable($callable)) {
+            $callable();
+            echo '  - ' . basename($file) . " bajarildi\n";
+            $count++;
+        }
+    }
+    return $count;
+}
+
+function sqlitePath(): ?string
+{
+    if (DB::driver() !== 'sqlite') {
+        return null;
+    }
+    return Config::get('database.connections.sqlite.database');
+}
+
+switch ($command) {
+    case 'migrate':
+        echo "Migratsiyalar bajarilmoqda...\n";
+        $n = runDirectory($root . '/database/migrations');
+        echo "Tayyor. $n ta migratsiya fayli bajarildi.\n";
+        break;
+
+    case 'migrate:fresh':
+        echo "Ma'lumotlar bazasi qayta yaratilmoqda (fresh)...\n";
+        $path = sqlitePath();
+        if ($path !== null && $path !== ':memory:' && is_file($path)) {
+            DB::reset();
+            unlink($path);
+            echo "  - eski SQLite fayli o'chirildi\n";
+        } elseif (DB::driver() !== 'sqlite') {
+            // pgsql/mysql uchun jadvallarni tashlash kerak — bu yerda
+            // faqat migratsiyalar qayta yuritiladi (CREATE ... IF NOT EXISTS).
+            echo "  - non-sqlite drayver: jadvallarni qo'lda tozalang yoki DROP qiling\n";
+        }
+        DB::reset();
+        $n = runDirectory($root . '/database/migrations');
+        echo "Tayyor. $n ta migratsiya fayli bajarildi.\n";
+        break;
+
+    case 'seed':
+        echo "Seed ma'lumotlari kiritilmoqda...\n";
+        $n = runDirectory($root . '/database/seeds');
+        echo "Tayyor. $n ta seed fayli bajarildi.\n";
+        echo "Demo kirish: login 'admin' / parol 'Parol123!' (batafsil README).\n";
+        break;
+
+    case 'backup':
+        $path = sqlitePath();
+        if ($path !== null && is_file($path)) {
+            $backupDir = $root . '/storage/backups';
+            if (!is_dir($backupDir)) {
+                mkdir($backupDir, 0775, true);
+            }
+            $dest = $backupDir . '/database-' . date('Ymd-His') . '.sqlite';
+            if (copy($path, $dest)) {
+                echo "Zaxira nusxa yaratildi: $dest\n";
+            } else {
+                fwrite(STDERR, "Zaxira nusxa yaratilmadi.\n");
+                exit(1);
+            }
+        } else {
+            $driver = DB::driver();
+            echo "Non-sqlite drayver ($driver) uchun zaxira buyrug'i:\n";
+            if ($driver === 'pgsql') {
+                echo "  pg_dump -h HOST -U USER DBNAME > backup.sql\n";
+            } elseif ($driver === 'mysql') {
+                echo "  mysqldump -h HOST -u USER -p DBNAME > backup.sql\n";
+            }
+        }
+        break;
+
+    case 'help':
+    default:
+        echo "Foydalanish: php bin/console <buyruq>\n\n";
+        echo "Buyruqlar:\n";
+        echo "  migrate        Migratsiyalarni bajaradi\n";
+        echo "  migrate:fresh  DB'ni qayta yaratadi va migratsiyalarni bajaradi\n";
+        echo "  seed           Seed ma'lumotlarini kiritadi\n";
+        echo "  backup         DB zaxira nusxasini oladi\n";
+        break;
+}

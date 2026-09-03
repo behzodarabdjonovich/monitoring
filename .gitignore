@@ -1,0 +1,19 @@
+# Composer autoloader (dump-autoload bilan qayta yaratiladi)
+/vendor/
+
+# Dev SQLite ma'lumotlar bazasi
+/database/*.sqlite
+/database/*.sqlite-journal
+
+# Yuklangan dalil fayllari (webroot'dan tashqarida)
+/storage/uploads/*
+!/storage/uploads/.gitkeep
+/storage/backups/*
+!/storage/backups/.gitkeep
+
+# Muhit fayllari
+.env
+
+# OS/Editor
+.DS_Store
+*.log

@@ -1,0 +1,388 @@
+<?php
+/**
+ * 001 — To'liq sxema: barcha 24 obyekt + 2 M:N pivot + settings + password_resets.
+ *
+ * Portativ ustun turlari Schema/Blueprint yordamchisi orqali beriladi,
+ * shunda bir xil migratsiya sqlite (dev) / pgsql / mysql'ga mos keladi.
+ *
+ * Bu fayl bin/console tomonidan yuklanadi va massiv (jadval => callable)
+ * qaytaradi. Kalitlar yaratilish tartibini (FK bog'liqliklarini) belgilaydi.
+ */
+
+use App\Database\Schema;
+
+return function (): void {
+    // 1) roles
+    Schema::create('roles', function ($t) {
+        $t->id();
+        $t->string('name', 64, false);
+        $t->string('title_uz', 191, false);
+        $t->text('description');
+        $t->timestamp('created_at');
+        $t->unique(['name']);
+    });
+
+    // 2) permissions
+    Schema::create('permissions', function ($t) {
+        $t->id();
+        $t->string('code', 128, false);
+        $t->string('module', 64, false);
+        $t->string('action', 32, false);
+        $t->text('description');
+        $t->unique(['code']);
+    });
+
+    // 3) role_permission (M:N pivot: roles <-> permissions)
+    Schema::create('role_permission', function ($t) {
+        $t->id();
+        $t->integer('role_id', false);
+        $t->integer('permission_id', false);
+        $t->foreign('role_id', 'roles');
+        $t->foreign('permission_id', 'permissions');
+        $t->unique(['role_id', 'permission_id']);
+    });
+
+    // 4) users
+    Schema::create('users', function ($t) {
+        $t->id();
+        $t->integer('role_id');
+        $t->string('full_name', 191, false);
+        $t->string('username', 64, false);
+        $t->string('email', 191);
+        $t->text('password_hash', false);
+        $t->boolean('is_active', false, true);
+        $t->boolean('is_blocked', false, false);
+        $t->boolean('must_reset', false, false);
+        $t->text('twofa_secret');
+        $t->timestamps();
+        $t->foreign('role_id', 'roles');
+        $t->unique(['username']);
+        $t->unique(['email']);
+    });
+
+    // 5) departments (head_supervisor_id FK'si supervisors yaratilgach ORM darajasida ishlatiladi)
+    Schema::create('departments', function ($t) {
+        $t->id();
+        $t->string('name', 191, false);
+        $t->string('code', 64);
+        $t->integer('head_supervisor_id');
+        $t->timestamp('created_at');
+    });
+
+    // 6) specialties
+    Schema::create('specialties', function ($t) {
+        $t->id();
+        $t->string('code', 64);
+        $t->string('name', 191, false);
+        $t->string('branch', 128);
+        $t->timestamp('created_at');
+    });
+
+    // 7) doctoral_programs
+    Schema::create('doctoral_programs', function ($t) {
+        $t->id();
+        $t->integer('specialty_id');
+        $t->string('name', 191, false);
+        $t->string('program_type', 16);
+        $t->integer('duration_years');
+        $t->timestamp('created_at');
+        $t->foreign('specialty_id', 'specialties');
+    });
+
+    // 8) supervisors
+    Schema::create('supervisors', function ($t) {
+        $t->id();
+        $t->integer('user_id');
+        $t->string('full_name', 191, false);
+        $t->string('academic_degree', 64);
+        $t->string('academic_title', 64);
+        $t->integer('department_id');
+        $t->timestamp('created_at');
+        $t->foreign('user_id', 'users');
+        $t->foreign('department_id', 'departments');
+    });
+
+    // 9) doctoral_students
+    Schema::create('doctoral_students', function ($t) {
+        $t->id();
+        $t->integer('user_id');
+        $t->string('full_name', 191, false);
+        $t->string('student_type', 32);
+        $t->integer('department_id');
+        $t->integer('specialty_id');
+        $t->integer('program_id');
+        $t->integer('supervisor_id');
+        $t->integer('enrollment_year');
+        $t->integer('course_stage');
+        $t->string('status', 32);
+        $t->timestamps();
+        $t->foreign('user_id', 'users');
+        $t->foreign('department_id', 'departments');
+        $t->foreign('specialty_id', 'specialties');
+        $t->foreign('program_id', 'doctoral_programs');
+        $t->foreign('supervisor_id', 'supervisors');
+    });
+
+    // 10) individual_plans
+    Schema::create('individual_plans', function ($t) {
+        $t->id();
+        $t->integer('student_id', false);
+        $t->integer('supervisor_id');
+        $t->string('academic_year', 32);
+        $t->date('start_date');
+        $t->date('end_date');
+        $t->string('status', 32, false, 'draft');
+        $t->integer('approved_by');
+        $t->timestamps();
+        $t->foreign('student_id', 'doctoral_students');
+        $t->foreign('supervisor_id', 'supervisors');
+        $t->foreign('approved_by', 'users');
+    });
+
+    // 11) plan_tasks
+    Schema::create('plan_tasks', function ($t) {
+        $t->id();
+        $t->integer('plan_id', false);
+        $t->string('title', 191, false);
+        $t->text('description');
+        $t->string('task_type', 64);
+        $t->date('due_date');
+        $t->string('status', 32, false, 'planned');
+        $t->timestamp('completed_at');
+        $t->timestamp('created_at');
+        $t->foreign('plan_id', 'individual_plans');
+    });
+
+    // 12) publications
+    Schema::create('publications', function ($t) {
+        $t->id();
+        $t->integer('student_id', false);
+        $t->string('title', 255, false);
+        $t->string('journal', 191);
+        $t->string('publication_type', 32);
+        $t->date('published_at');
+        $t->string('doi', 128);
+        $t->timestamp('created_at');
+        $t->foreign('student_id', 'doctoral_students');
+    });
+
+    // 13) conferences
+    Schema::create('conferences', function ($t) {
+        $t->id();
+        $t->integer('student_id', false);
+        $t->string('title', 255, false);
+        $t->string('conference_name', 191);
+        $t->string('level', 32);
+        $t->string('location', 191);
+        $t->date('event_date');
+        $t->timestamp('created_at');
+        $t->foreign('student_id', 'doctoral_students');
+    });
+
+    // 14) scientific_results
+    Schema::create('scientific_results', function ($t) {
+        $t->id();
+        $t->integer('student_id', false);
+        $t->integer('plan_task_id');
+        $t->string('result_type', 32);
+        $t->integer('publication_id');
+        $t->integer('conference_id');
+        $t->string('title', 255);
+        $t->date('achieved_at');
+        $t->boolean('verified', false, false);
+        $t->timestamp('created_at');
+        $t->foreign('student_id', 'doctoral_students');
+        $t->foreign('plan_task_id', 'plan_tasks');
+        $t->foreign('publication_id', 'publications');
+        $t->foreign('conference_id', 'conferences');
+    });
+
+    // 15) attestations
+    Schema::create('attestations', function ($t) {
+        $t->id();
+        $t->integer('student_id', false);
+        $t->string('period', 64);
+        $t->date('attestation_date');
+        $t->string('result', 32);
+        $t->text('commission_notes');
+        $t->integer('created_by');
+        $t->timestamp('created_at');
+        $t->foreign('student_id', 'doctoral_students');
+        $t->foreign('created_by', 'users');
+    });
+
+    // 16) accreditations
+    Schema::create('accreditations', function ($t) {
+        $t->id();
+        $t->string('title', 191, false);
+        $t->string('cycle_year', 32);
+        $t->text('scope');
+        $t->string('status', 32, false, 'planning');
+        $t->real('readiness_index');
+        $t->boolean('is_placeholder', false, false);
+        $t->timestamps();
+    });
+
+    // 17) accreditation_criteria
+    Schema::create('accreditation_criteria', function ($t) {
+        $t->id();
+        $t->integer('accreditation_id', false);
+        $t->string('code', 64);
+        $t->string('name', 255, false);
+        $t->real('weight', false, 1.0);
+        $t->integer('display_order');
+        $t->boolean('is_placeholder', false, false);
+        $t->timestamp('created_at');
+        $t->foreign('accreditation_id', 'accreditations');
+    });
+
+    // 18) accreditation_indicators
+    Schema::create('accreditation_indicators', function ($t) {
+        $t->id();
+        $t->integer('criteria_id', false);
+        $t->string('code', 64);
+        $t->string('name', 255);
+        $t->text('requirement');
+        $t->text('description');
+        $t->text('self_assessment');
+        $t->real('weight', false, 1.0);
+        $t->string('rag_status', 16, false, 'grey');
+        $t->real('score');
+        $t->string('target_value', 191);
+        $t->string('actual_value', 191);
+        $t->integer('responsible_role_id');
+        $t->string('responsible_dept', 191);
+        $t->string('responsible_person', 191);
+        $t->boolean('is_placeholder', false, false);
+        $t->timestamps();
+        $t->foreign('criteria_id', 'accreditation_criteria');
+        $t->foreign('responsible_role_id', 'roles');
+    });
+
+    // 20) documents (indicator_evidence'dan oldin yaratiladi, chunki FK)
+    Schema::create('documents', function ($t) {
+        $t->id();
+        $t->string('title', 255, false);
+        $t->text('file_path', false);
+        $t->string('mime_type', 128);
+        $t->integer('file_size');
+        $t->string('doc_type', 64);
+        $t->integer('uploaded_by');
+        $t->integer('student_id');
+        $t->integer('scientific_result_id');
+        $t->timestamp('created_at');
+        $t->foreign('uploaded_by', 'users');
+        $t->foreign('student_id', 'doctoral_students');
+        $t->foreign('scientific_result_id', 'scientific_results');
+    });
+
+    // 19) indicator_evidence (M:N pivot: indicators <-> documents)
+    Schema::create('indicator_evidence', function ($t) {
+        $t->id();
+        $t->integer('indicator_id', false);
+        $t->integer('document_id', false);
+        $t->text('note');
+        $t->integer('linked_by');
+        $t->timestamp('linked_at');
+        $t->foreign('indicator_id', 'accreditation_indicators');
+        $t->foreign('document_id', 'documents');
+        $t->foreign('linked_by', 'users');
+        $t->unique(['indicator_id', 'document_id']);
+    });
+
+    // 21) internal_audits
+    Schema::create('internal_audits', function ($t) {
+        $t->id();
+        $t->integer('accreditation_id');
+        $t->string('title', 191, false);
+        $t->date('audit_date');
+        $t->integer('auditor_id');
+        $t->text('scope');
+        $t->string('status', 32, false, 'planned');
+        $t->text('summary');
+        $t->timestamp('created_at');
+        $t->foreign('accreditation_id', 'accreditations');
+        $t->foreign('auditor_id', 'users');
+    });
+
+    // 22) deficiencies
+    Schema::create('deficiencies', function ($t) {
+        $t->id();
+        $t->integer('indicator_id');
+        $t->integer('internal_audit_id');
+        $t->string('title', 191, false);
+        $t->text('description');
+        $t->string('severity', 16, false, 'medium');
+        $t->string('status', 16, false, 'open');
+        $t->integer('identified_by');
+        $t->date('identified_at');
+        $t->timestamp('created_at');
+        $t->foreign('indicator_id', 'accreditation_indicators');
+        $t->foreign('internal_audit_id', 'internal_audits');
+        $t->foreign('identified_by', 'users');
+    });
+
+    // 23) action_plans
+    Schema::create('action_plans', function ($t) {
+        $t->id();
+        $t->integer('deficiency_id', false);
+        $t->string('title', 191, false);
+        $t->text('description');
+        $t->integer('responsible_user_id');
+        $t->date('due_date');
+        $t->string('status', 32, false, 'planned');
+        $t->timestamp('completed_at');
+        $t->timestamp('created_at');
+        $t->foreign('deficiency_id', 'deficiencies');
+        $t->foreign('responsible_user_id', 'users');
+    });
+
+    // 24) notifications
+    Schema::create('notifications', function ($t) {
+        $t->id();
+        $t->integer('user_id', false);
+        $t->string('type', 64);
+        $t->string('title', 191, false);
+        $t->text('body');
+        $t->string('link', 255);
+        $t->boolean('is_read', false, false);
+        $t->timestamp('created_at');
+        $t->foreign('user_id', 'users');
+    });
+
+    // 25) audit_logs (o'zgarmas)
+    Schema::create('audit_logs', function ($t) {
+        $t->id();
+        $t->integer('user_id');
+        $t->string('action', 32, false);
+        $t->string('entity_type', 64);
+        $t->integer('entity_id');
+        $t->text('old_values');
+        $t->text('new_values');
+        $t->string('ip_address', 64);
+        $t->timestamp('created_at');
+        $t->foreign('user_id', 'users');
+    });
+
+    // Qo'shimcha: settings (admin sozlanadigan og'irliklar/chegaralar)
+    Schema::create('settings', function ($t) {
+        $t->id();
+        $t->string('key', 128, false);
+        $t->text('value');
+        $t->string('type', 32, false, 'string');
+        $t->text('description');
+        $t->timestamp('updated_at');
+        $t->unique(['key']);
+    });
+
+    // Qo'shimcha: password_resets (parolni tiklash tokenlari)
+    Schema::create('password_resets', function ($t) {
+        $t->id();
+        $t->integer('user_id', false);
+        $t->text('token', false);
+        $t->timestamp('expires_at');
+        $t->boolean('used', false, false);
+        $t->timestamp('created_at');
+        $t->foreign('user_id', 'users');
+    });
+};
