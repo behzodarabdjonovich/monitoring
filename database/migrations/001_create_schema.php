@@ -69,13 +69,24 @@ return function (): void {
         $t->timestamp('created_at');
     });
 
-    // 6) specialties
+    // 6) specialties — item 8 ixtisoslik profili.
     Schema::create('specialties', function ($t) {
         $t->id();
-        $t->string('code', 64);
-        $t->string('name', 191, false);
+        $t->string('code', 64);                   // ixtisoslik shifri
+        $t->string('name', 191, false);           // nomi
         $t->string('branch', 128);
+        $t->integer('responsible_department_id'); // mas'ul kafedra
+        $t->integer('program_lead_supervisor_id'); // dastur rahbari
+        $t->text('scientific_potential');         // ilmiy salohiyat
+        $t->text('normative_docs');               // normativ hujjatlar
+        $t->text('material_base');                // moddiy-texnik baza
+        $t->text('research_infrastructure');      // ilmiy infratuzilma
+        $t->text('international_cooperation');     // xalqaro hamkorlik
+        $t->text('scientific_results');           // ilmiy natijalar
+        $t->integer('accreditation_id');          // akkreditatsiya indikatorlari linki
         $t->timestamp('created_at');
+        $t->timestamp('updated_at');
+        $t->foreign('responsible_department_id', 'departments');
     });
 
     // 7) doctoral_programs
@@ -83,26 +94,33 @@ return function (): void {
         $t->id();
         $t->integer('specialty_id');
         $t->string('name', 191, false);
-        $t->string('program_type', 16);
+        $t->string('program_type', 16);           // PhD / DSc
         $t->integer('duration_years');
         $t->timestamp('created_at');
         $t->foreign('specialty_id', 'specialties');
     });
 
-    // 8) supervisors
+    // 8) supervisors — item 7 ilmiy rahbar profili.
     Schema::create('supervisors', function ($t) {
         $t->id();
         $t->integer('user_id');
-        $t->string('full_name', 191, false);
-        $t->string('academic_degree', 64);
-        $t->string('academic_title', 64);
-        $t->integer('department_id');
+        $t->string('full_name', 191, false);      // F.I.Sh.
+        $t->string('academic_degree', 64);        // ilmiy daraja
+        $t->string('academic_title', 64);         // unvon
+        $t->integer('department_id');             // kafedra
+        $t->integer('specialty_id');              // ixtisoslik
+        $t->string('research_field', 191);        // ilmiy yo'nalish
+        $t->text('meetings_note');                // uchrashuvlar (matn)
+        $t->text('assignments_note');             // berilgan topshiriqlar (matn)
+        $t->text('approvals_note');               // tasdiqlashlar (matn)
         $t->timestamp('created_at');
+        $t->timestamp('updated_at');
         $t->foreign('user_id', 'users');
         $t->foreign('department_id', 'departments');
+        $t->foreign('specialty_id', 'specialties');
     });
 
-    // 9) doctoral_students
+    // 9) doctoral_students — item 4 to'liq elektron profil.
     Schema::create('doctoral_students', function ($t) {
         $t->id();
         $t->integer('user_id');
@@ -115,6 +133,17 @@ return function (): void {
         $t->integer('enrollment_year');
         $t->integer('course_stage');
         $t->string('status', 32);
+        // Item 4: qo'shimcha profil maydonlari.
+        $t->string('national_id', 32);           // JSHSHIR yoki ichki identifikator
+        $t->text('photo_path');                  // fotosurat (FileStorage yo'li)
+        $t->text('dissertation_topic');          // dissertatsiya mavzusi
+        $t->string('advisor_name', 191);         // ilmiy maslahatchi (rahbardan tashqari)
+        $t->string('admission_order', 128);      // qabul buyrug'i (raqam/sana)
+        $t->date('study_start_date');            // ta'lim muddati boshi
+        $t->date('study_end_date');              // ta'lim muddati oxiri
+        $t->integer('dissertation_percent');     // dissertatsiya bajarilish foizi
+        $t->text('scientific_results_summary');  // ilmiy natijalar (matn)
+        $t->string('defense_readiness', 32);     // himoyaga tayyorgarlik holati
         $t->timestamps();
         $t->foreign('user_id', 'users');
         $t->foreign('department_id', 'departments');
@@ -139,17 +168,24 @@ return function (): void {
         $t->foreign('approved_by', 'users');
     });
 
-    // 11) plan_tasks
+    // 11) plan_tasks — item 5 individual reja vazifasi monitoringi.
     Schema::create('plan_tasks', function ($t) {
         $t->id();
         $t->integer('plan_id', false);
-        $t->string('title', 191, false);
+        $t->string('title', 191, false);           // vazifa nomi
         $t->text('description');
         $t->string('task_type', 64);
-        $t->date('due_date');
+        $t->date('due_date');                       // rejalashtirilgan muddat
+        $t->date('completed_date');                 // amaldagi bajarilgan sana
+        $t->integer('progress_percent');            // bajarilish foizi (0..100)
+        $t->text('evidence_path');                  // tasdiqlovchi hujjat (FileStorage yo'li)
+        $t->text('student_comment');                // doktorant izohi
+        $t->text('supervisor_conclusion');          // ilmiy rahbar xulosasi
+        $t->text('office_note');                    // doktorantura bo'limi tasdig'i izohi
         $t->string('status', 32, false, 'planned');
         $t->timestamp('completed_at');
         $t->timestamp('created_at');
+        $t->timestamp('updated_at');
         $t->foreign('plan_id', 'individual_plans');
     });
 

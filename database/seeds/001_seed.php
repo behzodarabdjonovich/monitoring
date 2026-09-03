@@ -183,7 +183,9 @@ return function (): void {
 
         'doctoral_student' => [
             'dashboard.view',
-            'doctoral_students.view',
+            // Doktorant o'z kabinetini ko'radi va tahrirlaydi (o'zi bilan
+            // cheklash kontrollerda amalga oshiriladi — item 4 RBAC).
+            'doctoral_students.view', 'doctoral_students.edit',
             'specialties.view',
             'individual_plans.view', 'individual_plans.create', 'individual_plans.edit',
             'scientific_results.view', 'scientific_results.create', 'scientific_results.edit', 'scientific_results.upload',
@@ -265,11 +267,26 @@ return function (): void {
     $dep4 = DB::insert('departments', ['name' => 'Demo Tarix kafedrasi', 'code' => 'DEMO-TAR', 'head_supervisor_id' => null, 'created_at' => $now]);
     $deps = [$dep1, $dep2, $dep3, $dep4];
 
-    // Ixtisosliklar (demo) — 4 ta.
-    $spec1 = DB::insert('specialties', ['code' => '13.00.01', 'name' => 'Demo: Pedagogika nazariyasi va tarixi', 'branch' => 'Pedagogika fanlari', 'created_at' => $now]);
-    $spec2 = DB::insert('specialties', ['code' => '01.01.02', 'name' => 'Demo: Differensial tenglamalar', 'branch' => 'Fizika-matematika fanlari', 'created_at' => $now]);
-    $spec3 = DB::insert('specialties', ['code' => '10.00.02', 'name' => 'Demo: O\'zbek tili va adabiyoti', 'branch' => 'Filologiya fanlari', 'created_at' => $now]);
-    $spec4 = DB::insert('specialties', ['code' => '07.00.01', 'name' => 'Demo: O\'zbekiston tarixi', 'branch' => 'Tarix fanlari', 'created_at' => $now]);
+    // Ixtisosliklar (demo) — 4 ta. Item 8 profil maydonlari namunaviy
+    // to'ldiriladi (akkreditatsiya linki keyin, akkreditatsiya yaratilgach yoziladi).
+    $specProfile = function (int $depId) use ($now): array {
+        return [
+            'responsible_department_id' => $depId,
+            'program_lead_supervisor_id' => null,
+            'scientific_potential' => 'Namuna: professor-o\'qituvchilar salohiyati va ilmiy darajalar.',
+            'normative_docs' => 'Namuna: davlat ta\'lim standarti, o\'quv reja, nizomlar.',
+            'material_base' => 'Namuna: laboratoriyalar, kutubxona, jihozlar.',
+            'research_infrastructure' => 'Namuna: ilmiy markazlar va tadqiqot guruhlari.',
+            'international_cooperation' => 'Namuna: xorijiy universitetlar bilan hamkorlik.',
+            'scientific_results' => 'Namuna: nashrlar, patentlar, grantlar.',
+            'created_at' => $now,
+            'updated_at' => $now,
+        ];
+    };
+    $spec1 = DB::insert('specialties', array_merge(['code' => '13.00.01', 'name' => 'Demo: Pedagogika nazariyasi va tarixi', 'branch' => 'Pedagogika fanlari'], $specProfile($dep1)));
+    $spec2 = DB::insert('specialties', array_merge(['code' => '01.01.02', 'name' => 'Demo: Differensial tenglamalar', 'branch' => 'Fizika-matematika fanlari'], $specProfile($dep2)));
+    $spec3 = DB::insert('specialties', array_merge(['code' => '10.00.02', 'name' => 'Demo: O\'zbek tili va adabiyoti', 'branch' => 'Filologiya fanlari'], $specProfile($dep3)));
+    $spec4 = DB::insert('specialties', array_merge(['code' => '07.00.01', 'name' => 'Demo: O\'zbekiston tarixi', 'branch' => 'Tarix fanlari'], $specProfile($dep4)));
 
     // Dasturlar (demo) — har ixtisoslik uchun PhD va DSc.
     $prog = [];
@@ -288,22 +305,28 @@ return function (): void {
     // 5a) Ilmiy rahbarlar (demo) — 6 ta. Birinchisi seed user'ga bog'langan.
     // ---------------------------------------------------------------
     $supNames = [
-        ['Demo Ilmiy Rahbar', 'DSc', 'professor', $dep1, $userIds['supervisor']],
-        ['Demo Rahbar Ikki', 'PhD', 'dotsent', $dep2, null],
-        ['Demo Rahbar Uch', 'DSc', 'professor', $dep3, null],
-        ['Demo Rahbar Tort', 'PhD', 'dotsent', $dep4, null],
-        ['Demo Rahbar Besh', 'PhD', 'katta o\'qituvchi', $dep1, null],
-        ['Demo Rahbar Olti', 'DSc', 'professor', $dep2, null],
+        ['Demo Ilmiy Rahbar', 'DSc', 'professor', $dep1, $spec1, $userIds['supervisor']],
+        ['Demo Rahbar Ikki', 'PhD', 'dotsent', $dep2, $spec2, null],
+        ['Demo Rahbar Uch', 'DSc', 'professor', $dep3, $spec3, null],
+        ['Demo Rahbar Tort', 'PhD', 'dotsent', $dep4, $spec4, null],
+        ['Demo Rahbar Besh', 'PhD', 'katta o\'qituvchi', $dep1, $spec1, null],
+        ['Demo Rahbar Olti', 'DSc', 'professor', $dep2, $spec2, null],
     ];
     $supIds = [];
-    foreach ($supNames as [$fname, $degree, $title, $depId, $uid]) {
+    foreach ($supNames as [$fname, $degree, $title, $depId, $specId, $uid]) {
         $supIds[] = DB::insert('supervisors', [
             'user_id' => $uid,
             'full_name' => $fname,
             'academic_degree' => $degree,
             'academic_title' => $title,
             'department_id' => $depId,
+            'specialty_id' => $specId,
+            'research_field' => 'Namuna ilmiy yo\'nalish',
+            'meetings_note' => 'Namuna: oylik uchrashuvlar o\'tkazildi.',
+            'assignments_note' => 'Namuna: reja vazifalari topshirildi.',
+            'approvals_note' => 'Namuna: bajarilgan vazifalar tasdiqlandi.',
             'created_at' => $now,
+            'updated_at' => $now,
         ]);
     }
 
@@ -336,6 +359,8 @@ return function (): void {
         } elseif ($i % 11 === 10) {
             $status = 'expelled';
         }
+        $dissPct = ($i % 5) * 20; // 0,20,40,60,80
+        $readiness = $dissPct >= 80 ? 'tayyor' : ($dissPct >= 40 ? 'jarayonda' : 'boshlangan');
         $studentIds[$i] = DB::insert('doctoral_students', [
             'user_id' => $uid,
             'full_name' => 'Demo Doktorant ' . ($i + 1),
@@ -347,6 +372,16 @@ return function (): void {
             'enrollment_year' => $enroll,
             'course_stage' => $course,
             'status' => $status,
+            'national_id' => 'DEMO-' . str_pad((string) ($i + 1), 5, '0', STR_PAD_LEFT),
+            'photo_path' => null,
+            'dissertation_topic' => 'Namuna dissertatsiya mavzusi ' . ($i + 1),
+            'advisor_name' => null,
+            'admission_order' => 'NAMUNA-BUYRUQ ' . $enroll . '/' . ($i + 1),
+            'study_start_date' => $enroll . '-09-01',
+            'study_end_date' => ($enroll + 3) . '-08-31',
+            'dissertation_percent' => $dissPct,
+            'scientific_results_summary' => 'Namuna: maqolalar va konferensiya materiallari.',
+            'defense_readiness' => $readiness,
             'created_at' => $now,
             'updated_at' => $now,
         ]);
@@ -385,6 +420,7 @@ return function (): void {
             $done = $t < $completedCount;
             // Muddati o'tgan, bajarilmagan vazifa => ortda qolish signali.
             $due = date('Y-m-d', strtotime(($t < 2 ? '-40 days' : '+40 days')));
+            // completed => 'completed' status ('Bajarilgan' 5-holat mashinasida).
             $tstatus = $done ? 'completed' : (strtotime($due) < time() ? 'overdue' : 'planned');
             DB::insert('plan_tasks', [
                 'plan_id' => $planId,
@@ -392,9 +428,16 @@ return function (): void {
                 'description' => 'Namuna reja vazifasi.',
                 'task_type' => ['maqola', 'konferensiya', 'bob', 'tajriba'][$t],
                 'due_date' => $due,
+                'completed_date' => $done ? date('Y-m-d') : null,
+                'progress_percent' => $done ? 100 : ($tstatus === 'overdue' ? 30 : 0),
+                'evidence_path' => null,
+                'student_comment' => $done ? 'Namuna: vazifa bajarildi.' : null,
+                'supervisor_conclusion' => null,
+                'office_note' => null,
                 'status' => $tstatus,
                 'completed_at' => $done ? $now : null,
                 'created_at' => $now,
+                'updated_at' => $now,
             ]);
         }
     }
@@ -523,6 +566,9 @@ return function (): void {
         'created_at' => $now,
         'updated_at' => $now,
     ]);
+
+    // Ixtisosliklarni akkreditatsiya sikliga bog'laymiz (item 8: indikatorlar linki).
+    DB::run('UPDATE specialties SET accreditation_id = :aid', ['aid' => $accId]);
 
     // Namuna mezonlar (tarkib namunaviy, rasmiy emas).
     $criteria = [

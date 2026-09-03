@@ -290,6 +290,167 @@ test('DashboardController /dashboard 200 va grafiklarni render qiladi', function
 });
 
 // ---------------------------------------------------------------
+// FEAT-004: holat mashinasi, overdue, faoliyat/samaradorlik hisoblari.
+// ---------------------------------------------------------------
+
+test('PlanTask holat mashinasi yaroqli o\'tishlarni qabul qiladi', function () {
+    $PT = \App\Models\PlanTask::class;
+    assertTrue($PT::canTransition($PT::PLANNED, $PT::IN_PROGRESS), 'planned->in_progress yaroqli');
+    assertTrue($PT::canTransition($PT::IN_PROGRESS, $PT::COMPLETED), 'in_progress->completed yaroqli');
+    assertTrue($PT::canTransition($PT::COMPLETED, $PT::SUPERVISOR_APPROVED), 'completed->supervisor_approved yaroqli');
+    assertTrue($PT::canTransition($PT::SUPERVISOR_APPROVED, $PT::FINALIZED), 'supervisor_approved->finalized yaroqli');
+    // Overdue (legacy) planned bilan teng boshlang'ich holat.
+    assertTrue($PT::canTransition($PT::OVERDUE, $PT::IN_PROGRESS), 'overdue->in_progress yaroqli');
+});
+
+test('PlanTask holat mashinasi yaroqsiz (sakrash/orqaga) o\'tishlarni rad etadi', function () {
+    $PT = \App\Models\PlanTask::class;
+    // Bosqichni sakrab o'tish taqiqlanadi.
+    assertFalse($PT::canTransition($PT::PLANNED, $PT::COMPLETED), 'planned->completed sakrash taqiq');
+    assertFalse($PT::canTransition($PT::PLANNED, $PT::FINALIZED), 'planned->finalized sakrash taqiq');
+    assertFalse($PT::canTransition($PT::IN_PROGRESS, $PT::SUPERVISOR_APPROVED), 'in_progress->supervisor_approved sakrash taqiq');
+    // Orqaga qaytish taqiqlanadi.
+    assertFalse($PT::canTransition($PT::COMPLETED, $PT::IN_PROGRESS), 'orqaga qaytish taqiq');
+    assertFalse($PT::canTransition($PT::FINALIZED, $PT::SUPERVISOR_APPROVED), 'yakuniydan orqaga taqiq');
+    // Yakuniy holatdan chiqish yo'q.
+    assertFalse($PT::canTransition($PT::FINALIZED, $PT::FINALIZED), 'finalized->finalized o\'zgarishsiz');
+});
+
+test('PlanTask rol gating: doktorant faqat Bajarilgancha', function () {
+    $PT = \App\Models\PlanTask::class;
+    // Doktorant: planned->in_progress va in_progress->completed OK.
+    assertTrue($PT::roleCanTransition('doctoral_student', $PT::PLANNED, $PT::IN_PROGRESS));
+    assertTrue($PT::roleCanTransition('doctoral_student', $PT::IN_PROGRESS, $PT::COMPLETED));
+    // Doktorant Bajarilgandan keyingi tasdiqni bajara olmaydi.
+    assertFalse($PT::roleCanTransition('doctoral_student', $PT::COMPLETED, $PT::SUPERVISOR_APPROVED), 'doktorant rahbar tasdig\'ini bera olmaydi');
+});
+
+test('PlanTask rol gating: rahbar va bo\'lim faqat o\'z bosqichida', function () {
+    $PT = \App\Models\PlanTask::class;
+    // Ilmiy rahbar: completed->supervisor_approved OK, boshqasi yo'q.
+    assertTrue($PT::roleCanTransition('supervisor', $PT::COMPLETED, $PT::SUPERVISOR_APPROVED));
+    assertFalse($PT::roleCanTransition('supervisor', $PT::IN_PROGRESS, $PT::COMPLETED), 'rahbar doktorant bosqichini bajara olmaydi');
+    assertFalse($PT::roleCanTransition('supervisor', $PT::SUPERVISOR_APPROVED, $PT::FINALIZED), 'rahbar yakuniy tasdiqni bera olmaydi');
+    // Doktorantura bo'limi: supervisor_approved->finalized OK.
+    assertTrue($PT::roleCanTransition('doctorate_office', $PT::SUPERVISOR_APPROVED, $PT::FINALIZED));
+    assertFalse($PT::roleCanTransition('doctorate_office', $PT::COMPLETED, $PT::SUPERVISOR_APPROVED), 'bo\'lim rahbar bosqichini bajara olmaydi');
+    // Nazorat rollari (super_admin) barcha yaroqli o'tishni bajaradi.
+    assertTrue($PT::roleCanTransition('super_admin', $PT::COMPLETED, $PT::SUPERVISOR_APPROVED));
+    assertTrue($PT::roleCanTransition('super_admin', $PT::SUPERVISOR_APPROVED, $PT::FINALIZED));
+    // Ammo yaroqsiz o'tish nazorat roli uchun ham taqiq.
+    assertFalse($PT::roleCanTransition('super_admin', $PT::PLANNED, $PT::FINALIZED), 'nazorat roli ham sakrab o\'tolmaydi');
+});
+
+test('PlanTask muddati o\'tgan (overdue) vazifani aniqlaydi (qizil)', function () {
+    $PT = \App\Models\PlanTask::class;
+    $past = date('Y-m-d', strtotime('-10 days'));
+    $future = date('Y-m-d', strtotime('+10 days'));
+
+    // Muddati o'tgan va bajarilmagan => overdue (qizil).
+    assertTrue($PT::isOverdue(['due_date' => $past, 'status' => $PT::PLANNED]), 'muddati o\'tgan planned = overdue');
+    assertTrue($PT::isOverdue(['due_date' => $past, 'status' => $PT::IN_PROGRESS]), 'muddati o\'tgan in_progress = overdue');
+    // Bajarilgan/tasdiqlangan => overdue emas.
+    assertFalse($PT::isOverdue(['due_date' => $past, 'status' => $PT::COMPLETED]), 'bajarilgan overdue emas');
+    assertFalse($PT::isOverdue(['due_date' => $past, 'status' => $PT::FINALIZED]), 'yakuniy overdue emas');
+    // Kelajakdagi muddat => overdue emas.
+    assertFalse($PT::isOverdue(['due_date' => $future, 'status' => $PT::PLANNED]), 'kelajak muddat overdue emas');
+});
+
+test('PlanTaskController yaroqsiz o\'tishni rad etadi, yaroqlisini yozadi + audit', function () {
+    bootTestDatabase();
+    // Doktorant sifatida kiramiz.
+    Auth::attempt('doktorant', 'Parol123!');
+    Auth::flushCache();
+
+    // Planned holatdagi vazifa yaratamiz.
+    $planId = (int) DB::scalar('SELECT id FROM individual_plans ORDER BY id LIMIT 1');
+    $taskId = DB::insert('plan_tasks', [
+        'plan_id' => $planId,
+        'title' => 'Test vazifa',
+        'status' => 'planned',
+        'progress_percent' => 0,
+        'due_date' => date('Y-m-d', strtotime('+30 days')),
+        'created_at' => date('Y-m-d H:i:s'),
+        'updated_at' => date('Y-m-d H:i:s'),
+    ]);
+
+    $ctrl = new \App\Controllers\PlanTaskController();
+
+    // Yaroqsiz: planned->finalized (sakrash + rol mos emas) — rad etilishi kerak.
+    $reqBad = new Request('POST', "/tasks/$taskId", [], ['target_status' => 'finalized'], ['REQUEST_METHOD' => 'POST']);
+    $reqBad->setParams(['id' => (string) $taskId]);
+    $ctrl->update($reqBad);
+    $after = DB::selectOne('SELECT status FROM plan_tasks WHERE id = :id', ['id' => $taskId]);
+    assertEquals('planned', $after['status'], 'Yaroqsiz o\'tish holatni o\'zgartirmasligi kerak');
+
+    // Yaroqli: planned->in_progress (doktorant).
+    $reqOk = new Request('POST', "/tasks/$taskId", [], ['target_status' => 'in_progress'], ['REQUEST_METHOD' => 'POST']);
+    $reqOk->setParams(['id' => (string) $taskId]);
+    $ctrl->update($reqOk);
+    $after2 = DB::selectOne('SELECT status FROM plan_tasks WHERE id = :id', ['id' => $taskId]);
+    assertEquals('in_progress', $after2['status'], 'Yaroqli o\'tish holatni yangilashi kerak');
+
+    // Audit yozuvi (approve) qo'shilgan bo'lishi kerak.
+    $auditCount = (int) DB::scalar("SELECT COUNT(*) FROM audit_logs WHERE entity_type = 'plan_tasks' AND action = 'approve'");
+    assertTrue($auditCount >= 1, 'O\'tish audit_logs yozuvini qo\'shishi kerak');
+    Auth::logout();
+});
+
+test('DoctoralStudent faoliyat foizi vazifalar bajarilishidan hisoblanadi', function () {
+    bootTestDatabase();
+    // Yangi reja + vazifalar yaratamiz va foizni tekshiramiz.
+    $studentId = (int) DB::scalar('SELECT id FROM doctoral_students ORDER BY id LIMIT 1');
+    $planId = DB::insert('individual_plans', [
+        'student_id' => $studentId,
+        'academic_year' => '2099/2100',
+        'status' => 'approved',
+        'created_at' => date('Y-m-d H:i:s'),
+        'updated_at' => date('Y-m-d H:i:s'),
+    ]);
+    // Eski rejalarni bu studentdan olib tashlaymiz (aniq hisob uchun).
+    DB::run('DELETE FROM plan_tasks WHERE plan_id IN (SELECT id FROM individual_plans WHERE student_id = :sid AND id <> :pid)', ['sid' => $studentId, 'pid' => $planId]);
+    DB::run('DELETE FROM individual_plans WHERE student_id = :sid AND id <> :pid', ['sid' => $studentId, 'pid' => $planId]);
+
+    foreach ([100, 50, 0, 50] as $pct) {
+        DB::insert('plan_tasks', [
+            'plan_id' => $planId,
+            'title' => 'V',
+            'status' => 'planned',
+            'progress_percent' => $pct,
+            'created_at' => date('Y-m-d H:i:s'),
+        ]);
+    }
+    // (100+50+0+50)/4 = 50.0
+    $activity = \App\Models\DoctoralStudent::activityPercent($studentId);
+    assertEquals(50.0, $activity, 'Faoliyat foizi vazifalar o\'rtachasiga teng');
+});
+
+test('Supervisor umumiy samaradorlik ko\'rsatkichi hisoblanadi', function () {
+    bootTestDatabase();
+    // Doktoranti bor rahbar uchun 0..100 oralig'ida qiymat, doktoranti yo'q -> null.
+    $supWith = (int) DB::scalar('SELECT supervisor_id FROM doctoral_students WHERE supervisor_id IS NOT NULL ORDER BY supervisor_id LIMIT 1');
+    $eff = \App\Models\Supervisor::effectiveness($supWith);
+    assertTrue($eff !== null, 'Doktoranti bor rahbar uchun ko\'rsatkich hisoblanadi');
+    assertTrue($eff >= 0 && $eff <= 100, 'Samaradorlik 0..100 oralig\'ida');
+
+    // Doktoranti bo'lmagan yangi rahbar => null.
+    $emptySup = DB::insert('supervisors', ['full_name' => 'Bo\'sh Rahbar', 'created_at' => date('Y-m-d H:i:s')]);
+    assertTrue(\App\Models\Supervisor::effectiveness($emptySup) === null, 'Doktoranti yo\'q rahbar uchun null');
+});
+
+test('Specialty akkreditatsiyaga tayyorlik foizi ScoringEngine\'dan keladi', function () {
+    bootTestDatabase();
+    $specId = (int) DB::scalar('SELECT id FROM specialties WHERE accreditation_id IS NOT NULL ORDER BY id LIMIT 1');
+    $r = \App\Models\Specialty::accreditationReadiness($specId);
+    assertTrue($r['accreditation_id'] !== null, 'Ixtisoslik akkreditatsiyaga bog\'langan');
+    assertTrue($r['percent'] !== null, 'Tayyorlik foizi hisoblanadi (seed ballari bor)');
+    assertTrue(in_array($r['rag'], ['green', 'yellow', 'red', 'grey'], true), 'RAG holati to\'g\'ri');
+    // ScoringEngine bilan bir xil natija.
+    $expected = \App\Core\ScoringEngine::assessAccreditation((int) $r['accreditation_id']);
+    assertEquals($expected['readiness_index'], $r['percent'], 'Foiz ScoringEngine bilan mos');
+});
+
+// ---------------------------------------------------------------
 // Runner.
 // ---------------------------------------------------------------
 echo "ADPI Monitoring — test runner\n";
