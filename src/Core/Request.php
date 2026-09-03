@@ -16,6 +16,13 @@ final class Request
     /** @var array<string,string> Router tomonidan to'ldiriladigan yo'l parametrlari */
     private array $params = [];
 
+    /**
+     * Joriy so'rovning IP manzili (markazlashtirilgan). capture() vaqtida
+     * to'ldiriladi, shunda AuditLogger uni har bir chaqiruvda uzatmasdan
+     * (default sifatida) olishi mumkin — audit yozuvlari to'liq atributlanadi.
+     */
+    private static ?string $currentIp = null;
+
     public function __construct(
         string $method,
         string $path,
@@ -51,7 +58,9 @@ final class Request
             }
         }
 
-        return new self($method, $path, $_GET, $body, $_SERVER, $_FILES);
+        $request = new self($method, $path, $_GET, $body, $_SERVER, $_FILES);
+        self::$currentIp = $request->ip();
+        return $request;
     }
 
     public function method(): string
@@ -103,6 +112,16 @@ final class Request
     public function ip(): string
     {
         return $this->server['REMOTE_ADDR'] ?? '0.0.0.0';
+    }
+
+    /**
+     * Joriy so'rovning IP manzili (markazlashtirilgan). AuditLogger buni
+     * default IP sifatida ishlatadi. HTTP kontekstidan tashqarida (masalan
+     * CLI/test) null qaytishi mumkin.
+     */
+    public static function currentIp(): ?string
+    {
+        return self::$currentIp;
     }
 
     public function setParams(array $params): void

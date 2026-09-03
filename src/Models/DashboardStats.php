@@ -233,16 +233,33 @@ final class DashboardStats
     /**
      * Kamida bitta muddati o'tgan (overdue) vazifasi bor doktorantlar soni.
      *
+     * Overdue ikki ko'rinishda bo'ladi va ikkalasi ham hisobga olinadi
+     * (PlanTask::isOverdue() bilan bir xil mantiq):
+     *   1) legacy/seed 'overdue' holatida saqlangan vazifa;
+     *   2) due_date o'tgan VA holat completed/supervisor_approved/finalized
+     *      EMAS bo'lgan vazifa (prezentatsiyadan olinadigan overdue).
+     * ISO (Y-m-d) sanalar leksikografik taqqoslanadi — sqlite/pgsql/mysql'da
+     * portativ.
+     *
      * @param int[] $studentIds
      */
     private static function countBehind(array $studentIds): int
     {
         [$in, $p] = self::inClause($studentIds, 'sid');
+        $p['today'] = date('Y-m-d');
         $sql = "SELECT COUNT(DISTINCT s.id)
                 FROM doctoral_students s
                 INNER JOIN individual_plans pl ON pl.student_id = s.id
                 INNER JOIN plan_tasks t ON t.plan_id = pl.id
-                WHERE s.id IN $in AND t.status = 'overdue'";
+                WHERE s.id IN $in
+                  AND (
+                        t.status = 'overdue'
+                     OR (
+                            t.due_date IS NOT NULL AND t.due_date <> ''
+                        AND t.due_date < :today
+                        AND t.status NOT IN ('completed', 'supervisor_approved', 'finalized')
+                     )
+                  )";
         return (int) DB::scalar($sql, $p);
     }
 

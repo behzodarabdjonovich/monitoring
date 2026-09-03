@@ -34,7 +34,10 @@ final class AuditLogger
             'entity_id' => $entityId,
             'old_values' => $oldValues !== null ? json_encode($oldValues, JSON_UNESCAPED_UNICODE) : null,
             'new_values' => $newValues !== null ? json_encode($newValues, JSON_UNESCAPED_UNICODE) : null,
-            'ip_address' => $ip,
+            // IP oshkora uzatilmasa, joriy so'rovdan (markazlashtirilgan)
+            // olinadi — shunda create/update/approve/upload/link yozuvlari
+            // ham to'liq atributlanadi (null emas).
+            'ip_address' => $ip ?? Request::currentIp(),
             'created_at' => date('Y-m-d H:i:s'),
         ]);
     }

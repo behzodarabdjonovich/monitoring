@@ -1527,6 +1527,174 @@ test('ReportController Excel to\'g\'ri content-type va PDF/print render qiladi',
 });
 
 // ---------------------------------------------------------------
+// Review-fix: vazifa maydonlarini tahrirlash avtorizatsiyasi (issue 1).
+// ---------------------------------------------------------------
+
+test('PlanTaskController: faqat ko\'rish roli (ekspert) vazifa maydonini o\'zgartira olmaydi', function () {
+    bootTestDatabase();
+    // Ekspert faqat individual_plans.view ruxsatiga ega (edit yo'q).
+    Auth::attempt('ekspert', 'Parol123!');
+    Auth::flushCache();
+    assertTrue(Auth::can('individual_plans.view'), 'ekspert view ruxsatiga ega');
+    assertFalse(Auth::can('individual_plans.edit'), 'ekspert edit ruxsatiga ega EMAS');
+
+    $planId = (int) DB::scalar('SELECT id FROM individual_plans ORDER BY id LIMIT 1');
+    $taskId = DB::insert('plan_tasks', [
+        'plan_id' => $planId,
+        'title' => 'Avtorizatsiya testi',
+        'status' => 'planned',
+        'progress_percent' => 10,
+        'student_comment' => 'asl izoh',
+        'due_date' => date('Y-m-d', strtotime('+30 days')),
+        'created_at' => date('Y-m-d H:i:s'),
+        'updated_at' => date('Y-m-d H:i:s'),
+    ]);
+
+    $ctrl = new \App\Controllers\PlanTaskController();
+    // Ekspert progress/izohni o'zgartirishga urinadi — RAD ETILISHI kerak.
+    $req = new Request('POST', "/tasks/$taskId", [], [
+        'progress_percent' => '95',
+        'student_comment' => 'ruxsatsiz o\'zgartirish',
+    ], ['REQUEST_METHOD' => 'POST']);
+    $req->setParams(['id' => (string) $taskId]);
+    $ctrl->update($req);
+
+    $after = DB::selectOne('SELECT progress_percent, student_comment FROM plan_tasks WHERE id = :id', ['id' => $taskId]);
+    assertEquals(10, (int) $after['progress_percent'], 'Ko\'rish roli progressni o\'zgartira olmasligi kerak');
+    assertEquals('asl izoh', (string) $after['student_comment'], 'Ko\'rish roli izohni o\'zgartira olmasligi kerak');
+    Auth::logout();
+});
+
+test('PlanTaskController: ruxsatli muharrir (doktorant) o\'z vazifa maydonini o\'zgartira oladi', function () {
+    bootTestDatabase();
+    // Doktorant individual_plans.edit ruxsatiga ega.
+    Auth::attempt('doktorant', 'Parol123!');
+    Auth::flushCache();
+    assertTrue(Auth::can('individual_plans.edit'), 'doktorant edit ruxsatiga ega');
+
+    $planId = (int) DB::scalar('SELECT id FROM individual_plans ORDER BY id LIMIT 1');
+    $taskId = DB::insert('plan_tasks', [
+        'plan_id' => $planId,
+        'title' => 'Muharrir testi',
+        'status' => 'planned',
+        'progress_percent' => 10,
+        'due_date' => date('Y-m-d', strtotime('+30 days')),
+        'created_at' => date('Y-m-d H:i:s'),
+        'updated_at' => date('Y-m-d H:i:s'),
+    ]);
+
+    $ctrl = new \App\Controllers\PlanTaskController();
+    $req = new Request('POST', "/tasks/$taskId", [], [
+        'progress_percent' => '60',
+        'student_comment' => 'yangilangan izoh',
+    ], ['REQUEST_METHOD' => 'POST']);
+    $req->setParams(['id' => (string) $taskId]);
+    $ctrl->update($req);
+
+    $after = DB::selectOne('SELECT progress_percent, student_comment FROM plan_tasks WHERE id = :id', ['id' => $taskId]);
+    assertEquals(60, (int) $after['progress_percent'], 'Ruxsatli muharrir progressni o\'zgartira olishi kerak');
+    assertEquals('yangilangan izoh', (string) $after['student_comment'], 'Ruxsatli muharrir izohni o\'zgartira olishi kerak');
+    Auth::logout();
+});
+
+// ---------------------------------------------------------------
+// Review-fix: link/unlink marshrut guard'i kontroller bilan izchil (issue 4).
+// ---------------------------------------------------------------
+
+test('RbacMiddleware ANY: link guard (documents.edit|accreditation.edit) ruxsatlarni to\'g\'ri tekshiradi', function () {
+    bootTestDatabase();
+    $guard = new RbacMiddleware('documents.edit', 'accreditation.edit');
+    $req = new Request('POST', '/documents/1/link', [], [], ['REQUEST_METHOD' => 'POST']);
+
+    // Ekspert: documents.view/approve bor, LEKIN documents.edit/accreditation.edit YO'Q => 403.
+    Auth::attempt('ekspert', 'Parol123!');
+    Auth::flushCache();
+    assertFalse(Auth::can('documents.edit'), 'ekspert documents.edit ega emas');
+    assertFalse(Auth::can('accreditation.edit'), 'ekspert accreditation.edit ega emas');
+    $resp = $guard->handle($req);
+    assertTrue($resp !== null && $resp->status() === 403, 'Ekspert link guard\'idan o\'ta olmasligi kerak (403)');
+    Auth::logout();
+
+    // Sifat nazorati: documents.edit + accreditation.edit bor => o'tadi (null).
+    Auth::attempt('sifat', 'Parol123!');
+    Auth::flushCache();
+    assertTrue(Auth::can('documents.edit') || Auth::can('accreditation.edit'), 'sifat edit ruxsatiga ega');
+    assertTrue($guard->handle($req) === null, 'Sifat nazorati link guard\'idan o\'tishi kerak');
+    Auth::logout();
+});
+
+// ---------------------------------------------------------------
+// Review-fix: audit yozuvlari IP manzilini qamrab oladi (issue 2).
+// ---------------------------------------------------------------
+
+test('AuditLogger data-mutatsiya yozuvlariga joriy so\'rov IP manzilini yozadi', function () {
+    bootTestDatabase();
+    Auth::attempt('admin', 'Parol123!');
+    Auth::flushCache();
+
+    // HTTP so'rovini "capture" qilamiz — markazlashtirilgan IP to'ldiriladi.
+    $_SERVER['REQUEST_METHOD'] = 'POST';
+    $_SERVER['REQUEST_URI'] = '/documents';
+    $_SERVER['REMOTE_ADDR'] = '203.0.113.7';
+    $_POST = [];
+    $_GET = [];
+    $_FILES = [];
+    Request::capture();
+    assertEquals('203.0.113.7', Request::currentIp(), 'Joriy IP capture() vaqtida saqlanishi kerak');
+
+    // IP oshkora uzatilmasa ham create yozuvida IP bo'lishi kerak.
+    $logId = \App\Core\AuditLogger::log('create', 'plan_tasks', 123, null, ['title' => 'X']);
+    $ip = DB::scalar('SELECT ip_address FROM audit_logs WHERE id = :id', ['id' => $logId]);
+    assertEquals('203.0.113.7', $ip, 'create yozuvi joriy so\'rov IP manzilini olishi kerak (null emas)');
+    Auth::logout();
+});
+
+// ---------------------------------------------------------------
+// Review-fix: overdue holat izchilligi — ikki ko'rinish ham hisoblanadi (issue 3).
+// ---------------------------------------------------------------
+
+test('DashboardStats.behind_schedule ikkala overdue ko\'rinishini ham sanaydi', function () {
+    bootTestDatabase();
+    // Toza holat uchun barcha vazifalarni tozalaymiz.
+    DB::run('DELETE FROM plan_tasks');
+
+    $sids = DB::select('SELECT id FROM doctoral_students ORDER BY id LIMIT 3');
+    $planFor = static function (int $sid): int {
+        return DB::insert('individual_plans', [
+            'student_id' => $sid,
+            'academic_year' => '2099/2100',
+            'status' => 'approved',
+            'created_at' => date('Y-m-d H:i:s'),
+            'updated_at' => date('Y-m-d H:i:s'),
+        ]);
+    };
+    $past = date('Y-m-d', strtotime('-10 days'));
+    $future = date('Y-m-d', strtotime('+10 days'));
+
+    // Student A: legacy 'overdue' holatidagi vazifa.
+    $pA = $planFor((int) $sids[0]['id']);
+    DB::insert('plan_tasks', ['plan_id' => $pA, 'title' => 'A', 'status' => 'overdue', 'progress_percent' => 0, 'due_date' => $past, 'created_at' => date('Y-m-d H:i:s')]);
+
+    // Student B: due_date o'tgan, ammo holat 'in_progress' (prezentatsiyadan overdue).
+    $pB = $planFor((int) $sids[1]['id']);
+    DB::insert('plan_tasks', ['plan_id' => $pB, 'title' => 'B', 'status' => 'in_progress', 'progress_percent' => 40, 'due_date' => $past, 'created_at' => date('Y-m-d H:i:s')]);
+
+    // Student C: due_date o'tgan, ammo bajarilgan => overdue EMAS.
+    $pC = $planFor((int) $sids[2]['id']);
+    DB::insert('plan_tasks', ['plan_id' => $pC, 'title' => 'C', 'status' => 'completed', 'progress_percent' => 100, 'due_date' => $past, 'created_at' => date('Y-m-d H:i:s')]);
+    // Va kelajakdagi muddatli planned vazifa => overdue EMAS.
+    DB::insert('plan_tasks', ['plan_id' => $pC, 'title' => 'C2', 'status' => 'planned', 'progress_percent' => 0, 'due_date' => $future, 'created_at' => date('Y-m-d H:i:s')]);
+
+    $data = \App\Models\DashboardStats::compute([]);
+    // A (legacy overdue) va B (derived overdue) sanaladi, C sanalmaydi => 2.
+    assertEquals(2, $data['kpis']['behind_schedule'], 'behind_schedule ikkala overdue ko\'rinishini sanashi, bajarilganni sanmasligi kerak');
+
+    // isOverdue() ham har ikki ko'rinish bilan izchil.
+    assertTrue(\App\Models\PlanTask::isOverdue(['due_date' => $past, 'status' => 'in_progress']), 'derived overdue izchil');
+    assertFalse(\App\Models\PlanTask::isOverdue(['due_date' => $past, 'status' => 'completed']), 'bajarilgan overdue emas');
+});
+
+// ---------------------------------------------------------------
 // Runner.
 // ---------------------------------------------------------------
 echo "ADPI Monitoring — test runner\n";

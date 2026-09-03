@@ -15,11 +15,18 @@ use App\Core\View;
  */
 final class RbacMiddleware implements Middleware
 {
-    private string $permission;
+    /** @var string[] Talab qilinadigan ruxsat kodlari (ANY — bittasi yetarli). */
+    private array $permissions;
 
-    public function __construct(string $permission)
+    /**
+     * Bir yoki bir nechta ruxsat kodini qabul qiladi. Bir nechta berilsa
+     * ANY (bittasi bo'lsa yetarli) semantikasi qo'llanadi — bu kontroller
+     * ichidagi "documents.edit YOKI accreditation.edit" kabi tekshiruvlarni
+     * marshrut darajasida ham aks ettiradi (guard drift'ining oldini oladi).
+     */
+    public function __construct(string ...$permissions)
     {
-        $this->permission = $permission;
+        $this->permissions = $permissions;
     }
 
     public function handle(Request $request): ?Response
@@ -28,8 +35,16 @@ final class RbacMiddleware implements Middleware
             return Response::redirect('/login');
         }
 
-        if (!Auth::can($this->permission)) {
-            $html = View::render('errors.403', ['permission' => $this->permission]);
+        $allowed = false;
+        foreach ($this->permissions as $permission) {
+            if (Auth::can($permission)) {
+                $allowed = true;
+                break;
+            }
+        }
+
+        if (!$allowed) {
+            $html = View::render('errors.403', ['permission' => implode(' | ', $this->permissions)]);
             return Response::html($html, 403);
         }
 

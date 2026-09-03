@@ -72,34 +72,63 @@ final class PlanTaskController extends Controller
         $now = date('Y-m-d H:i:s');
         $updates = [];
 
+        // Maydon yozuvi (progress, izoh, xulosa, muddat, dalil) faqat
+        // individual_plans.edit ruxsatiga ega rollarga ochiq. Faqat ko'rish
+        // ruxsatiga ega rollar (institute_leadership, quality_control, expert)
+        // vazifa maydonlarini o'zgartira olmaydi — holat o'tishi esa alohida,
+        // holat mashinasi + rol gating orqali tekshiriladi.
+        $canEditFields = Auth::can('individual_plans.edit');
+
         // Maydon yangilanishlari (rolga qarab tegishli maydonlar).
-        foreach ([
-            'progress_percent' => 'int',
-            'student_comment' => 'str',
-            'supervisor_conclusion' => 'str',
-            'office_note' => 'str',
-            'completed_date' => 'str',
-            'due_date' => 'str',
-        ] as $field => $cast) {
-            if (array_key_exists($field, $input)) {
-                $val = $input[$field];
-                if ($cast === 'int') {
-                    $updates[$field] = ($val === '' || $val === null) ? null : (int) $val;
-                } else {
-                    $updates[$field] = $this->nullable($val);
+        if ($canEditFields) {
+            foreach ([
+                'progress_percent' => 'int',
+                'student_comment' => 'str',
+                'supervisor_conclusion' => 'str',
+                'office_note' => 'str',
+                'completed_date' => 'str',
+                'due_date' => 'str',
+            ] as $field => $cast) {
+                if (array_key_exists($field, $input)) {
+                    $val = $input[$field];
+                    if ($cast === 'int') {
+                        $updates[$field] = ($val === '' || $val === null) ? null : (int) $val;
+                    } else {
+                        $updates[$field] = $this->nullable($val);
+                    }
                 }
             }
-        }
 
-        // Tasdiqlovchi hujjat (ixtiyoriy) — FileStorage orqali.
-        $file = $request->file('evidence');
-        if ($file !== null && ($file['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_OK) {
-            try {
-                $stored = FileStorage::store($file);
-                $updates['evidence_path'] = $stored['path'];
-                AuditLogger::log('upload', 'plan_tasks', $id, null, ['evidence' => $stored['path']]);
-            } catch (\RuntimeException $ex) {
-                return $this->back($request, 'Hujjat: ' . $ex->getMessage());
+            // Tasdiqlovchi hujjat (ixtiyoriy) — FileStorage orqali.
+            $file = $request->file('evidence');
+            if ($file !== null && ($file['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_OK) {
+                try {
+                    $stored = FileStorage::store($file);
+                    $updates['evidence_path'] = $stored['path'];
+                    AuditLogger::log('upload', 'plan_tasks', $id, null, ['evidence' => $stored['path']]);
+                } catch (\RuntimeException $ex) {
+                    return $this->back($request, 'Hujjat: ' . $ex->getMessage());
+                }
+            }
+        } else {
+            // Faqat ko'rish ruxsati bo'lgan rol maydon yozishga urinsa — rad
+            // etamiz (holat o'tishisiz maydon o'zgartirishga ruxsat yo'q).
+            $wroteField = false;
+            foreach (['progress_percent', 'student_comment', 'supervisor_conclusion', 'office_note', 'completed_date', 'due_date'] as $field) {
+                if (array_key_exists($field, $input)) {
+                    $wroteField = true;
+                    break;
+                }
+            }
+            $file = $request->file('evidence');
+            if ($file !== null && ($file['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_OK) {
+                $wroteField = true;
+            }
+            if ($wroteField) {
+                return $this->back(
+                    $request,
+                    'Vazifa maydonlarini tahrirlash uchun ruxsat yo\'q (individual_plans.edit talab qilinadi).'
+                );
             }
         }
 

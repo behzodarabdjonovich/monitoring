@@ -95,6 +95,9 @@ $router->get('/plans/{id}/edit', [PlanController::class, 'edit'], [$auth(), $rba
 $router->post('/plans/{id}', [PlanController::class, 'update'], [$auth(), $rbac('individual_plans.edit')]);
 $router->post('/plans/{id}/approve', [PlanController::class, 'approve'], [$auth(), $rbac('individual_plans.approve')]);
 $router->post('/plans/{id}/tasks', [PlanTaskController::class, 'store'], [$auth(), $rbac('individual_plans.edit')]);
+// Marshrut individual_plans.view bilan ochiq (holat o'tishi so'rovi uchun),
+// biroq vazifa MAYDONLARINI yozish kontrollerda individual_plans.edit bilan
+// gate qilinadi; holat o'tishi esa holat mashinasi + rol gating orqali.
 $router->post('/tasks/{id}', [PlanTaskController::class, 'update'], [$auth(), $rbac('individual_plans.view')]);
 
 // --- Ilmiy natijalar (item 6) ---
@@ -107,8 +110,10 @@ $router->get('/documents', [DocumentController::class, 'index'], [$auth(), $rbac
 $router->post('/documents', [DocumentController::class, 'store'], [$auth(), $rbac('documents.upload')]);
 $router->get('/documents/{id}', [DocumentController::class, 'show'], [$auth(), $rbac('documents.view')]);
 $router->get('/documents/{id}/download', [DocumentController::class, 'download'], [$auth(), $rbac('documents.view')]);
-$router->post('/documents/{id}/link', [DocumentController::class, 'link'], [$auth(), $rbac('documents.view')]);
-$router->post('/documents/{id}/unlink', [DocumentController::class, 'unlink'], [$auth(), $rbac('documents.view')]);
+// Bog'lash/uzish marshrut guard'i kontroller ichidagi qat'iyroq tekshiruvga
+// (documents.edit YOKI accreditation.edit) moslashtirildi.
+$router->post('/documents/{id}/link', [DocumentController::class, 'link'], [$auth(), new RbacMiddleware('documents.edit', 'accreditation.edit')]);
+$router->post('/documents/{id}/unlink', [DocumentController::class, 'unlink'], [$auth(), new RbacMiddleware('documents.edit', 'accreditation.edit')]);
 
 // --- Attestatsiya (item 4/21) ---
 $router->get('/attestations', [AttestationController::class, 'index'], [$auth(), $rbac('attestations.view')]);
