@@ -19,6 +19,12 @@ final class AuthMiddleware implements Middleware
             Session::flash('error', 'Iltimos, tizimga kiring.');
             return Response::redirect('/login');
         }
+        // Harakatsizlik muddati (idle timeout) — muddati o'tgan bo'lsa chiqarib
+        // yuboriladi (item 19 — sessiya nazorati).
+        if (!Auth::enforceIdleTimeout()) {
+            Session::flash('error', 'Sessiya muddati tugadi. Iltimos, qayta kiring.');
+            return Response::redirect('/login');
+        }
         return null;
     }
 }

@@ -44,6 +44,25 @@ final class AuthController extends Controller
         $username = (string) $request->input('username');
         $password = (string) $request->input('password');
 
+        // 2FA yoqilgan bo'lsa va foydalanuvchida twofa_secret bo'lsa — avval
+        // parolni tekshirib, keyin TOTP bosqichiga o'tamiz (Auth::attempt
+        // sessiyani darhol ochmasligi uchun alohida tekshiramiz).
+        if (\App\Core\Config::get('security.twofa.enabled', false)) {
+            $candidate = DB::selectOne(
+                'SELECT * FROM users WHERE username = :u OR email = :u LIMIT 1',
+                ['u' => $username]
+            );
+            if ($candidate !== null
+                && (int) ($candidate['is_active'] ?? 1) === 1
+                && (int) ($candidate['is_blocked'] ?? 0) === 0
+                && Auth::verify($password, (string) $candidate['password_hash'])
+                && !empty($candidate['twofa_secret'])
+            ) {
+                Session::set('_2fa_pending_user', (int) $candidate['id']);
+                return $this->view('auth.twofa', ['error' => null]);
+            }
+        }
+
         if (!Auth::attempt($username, $password)) {
             // Muvaffaqiyatsiz urinishni audit qilamiz (foydalanuvchisiz).
             AuditLogger::log('login_failed', 'users', null, null, ['username' => $username], null, $request->ip());
@@ -56,6 +75,28 @@ final class AuthController extends Controller
         // Muvaffaqiyatli login — audit yozuvi.
         AuditLogger::log('login', 'users', Auth::id(), null, null, Auth::id(), $request->ip());
 
+        return $this->redirect('/dashboard');
+    }
+
+    /**
+     * 2FA (TOTP) tasdiqlash bosqichi. Faqat parol tekshiruvidan o'tgan va
+     * twofa_secret o'rnatilgan foydalanuvchi uchun (session _2fa_pending_user).
+     */
+    public function verifyTwofa(Request $request): Response
+    {
+        $pendingId = Session::get('_2fa_pending_user');
+        if ($pendingId === null) {
+            return $this->redirect('/login');
+        }
+        $user = DB::selectOne('SELECT * FROM users WHERE id = :id LIMIT 1', ['id' => (int) $pendingId]);
+        $code = (string) $request->input('code', '');
+        if ($user === null || empty($user['twofa_secret']) || !\App\Core\Totp::verify((string) $user['twofa_secret'], $code)) {
+            AuditLogger::log('login_failed', 'users', (int) $pendingId, null, ['reason' => '2fa'], (int) $pendingId, $request->ip());
+            return $this->view('auth.twofa', ['error' => 'Tasdiqlash kodi noto\'g\'ri.'], 401);
+        }
+        Session::remove('_2fa_pending_user');
+        Auth::loginUser((int) $user['id']);
+        AuditLogger::log('login', 'users', (int) $user['id'], null, null, (int) $user['id'], $request->ip());
         return $this->redirect('/dashboard');
     }
 

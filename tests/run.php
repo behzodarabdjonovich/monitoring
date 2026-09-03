@@ -1242,6 +1242,291 @@ test('DeficiencyController ruxsatsiz rolni rad etadi (403)', function () {
 });
 
 // ---------------------------------------------------------------
+// FEAT-008: hisobotlar, bildirishnomalar, global qidiruv, audit ko'rigi,
+// xavfsizlik hardening (bloklash, sarlavhalar, idle timeout).
+// ---------------------------------------------------------------
+
+test('Bloklangan foydalanuvchi tizimga kira olmaydi', function () {
+    bootTestDatabase();
+    // Faol foydalanuvchi kira oladi.
+    assertTrue(Auth::attempt('doktorant', 'Parol123!'), 'Bloklanmagan foydalanuvchi kira oladi');
+    Auth::logout();
+
+    // Bloklaymiz.
+    DB::run("UPDATE users SET is_blocked = 1 WHERE username = 'doktorant'");
+    Auth::flushCache();
+    assertFalse(Auth::attempt('doktorant', 'Parol123!'), 'Bloklangan foydalanuvchi kira olmasligi kerak');
+    assertFalse(Auth::check(), 'Bloklangan urinishdan keyin sessiya ochilmasligi kerak');
+});
+
+test('UserController bloklash/blokdan chiqarish audit yozadi va loginni to\'sadi', function () {
+    bootTestDatabase();
+    Auth::attempt('admin', 'Parol123!');
+    Auth::flushCache();
+
+    $targetId = (int) DB::scalar("SELECT id FROM users WHERE username = 'doktorant'");
+    $ctrl = new \App\Controllers\UserController();
+
+    $reqBlock = new Request('POST', "/users/$targetId/block", [], [], ['REQUEST_METHOD' => 'POST']);
+    $reqBlock->setParams(['id' => (string) $targetId]);
+    $ctrl->block($reqBlock);
+    assertEquals(1, (int) DB::scalar('SELECT is_blocked FROM users WHERE id = :id', ['id' => $targetId]), 'Foydalanuvchi bloklanadi');
+    assertTrue((int) DB::scalar("SELECT COUNT(*) FROM audit_logs WHERE entity_type = 'users' AND action = 'block'") >= 1, 'Bloklash audit yozadi');
+    Auth::logout();
+
+    // Bloklangan foydalanuvchi login qila olmaydi.
+    Auth::flushCache();
+    assertFalse(Auth::attempt('doktorant', 'Parol123!'), 'Bloklangan foydalanuvchi login qila olmaydi');
+
+    // Blokdan chiqaramiz -> qayta kira oladi.
+    Auth::attempt('admin', 'Parol123!');
+    Auth::flushCache();
+    $reqUnblock = new Request('POST', "/users/$targetId/unblock", [], [], ['REQUEST_METHOD' => 'POST']);
+    $reqUnblock->setParams(['id' => (string) $targetId]);
+    $ctrl->unblock($reqUnblock);
+    Auth::logout();
+    Auth::flushCache();
+    assertTrue(Auth::attempt('doktorant', 'Parol123!'), 'Blokdan chiqarilgach kira oladi');
+    Auth::logout();
+});
+
+test('Audit jurnalini faqat Super Admin ko\'ra oladi (non-admin rad etiladi)', function () {
+    bootTestDatabase();
+    $mw = new \App\Core\Middleware\SuperAdminMiddleware();
+
+    // Non-admin (doktorant) rad etiladi.
+    Auth::attempt('doktorant', 'Parol123!');
+    Auth::flushCache();
+    $req = new Request('GET', '/audit-logs', [], [], ['REQUEST_METHOD' => 'GET']);
+    $resp = $mw->handle($req);
+    assertTrue($resp !== null && $resp->status() === 403, 'Non-admin audit jurnaliga kira olmaydi (403)');
+    Auth::logout();
+
+    // Super Admin o'tadi.
+    Auth::attempt('admin', 'Parol123!');
+    Auth::flushCache();
+    assertTrue($mw->handle($req) === null, 'Super Admin audit jurnalini ko\'ra oladi');
+
+    // AuditLogController controller 200 qaytaradi va kim/qachon ustunlarini ko'rsatadi.
+    $ctrl = new \App\Controllers\AuditLogController();
+    $respIdx = $ctrl->index($req);
+    assertEquals(200, $respIdx->status(), 'Audit jurnali sahifasi 200');
+    foreach (['Kim', 'Qachon', 'Oldingi qiymat', 'Yangi qiymat'] as $needle) {
+        assertTrue(str_contains($respIdx->body(), $needle), "Audit jurnalida ustun bo'lishi kerak: $needle");
+    }
+    Auth::logout();
+});
+
+test('Audit jurnali uchun o\'chirish marshruti yo\'q (immutable)', function () {
+    $root = dirname(__DIR__);
+    $routes = file_get_contents($root . '/routes/web.php');
+    // audit-logs uchun DELETE yoki delete/destroy amali bo'lmasligi kerak.
+    assertFalse((bool) preg_match('/audit-logs.*delete/i', $routes), 'audit-logs o\'chirish marshruti bo\'lmasligi kerak');
+    assertFalse(method_exists(\App\Controllers\AuditLogController::class, 'delete'), 'AuditLogController delete metodiga ega bo\'lmasligi kerak');
+    assertFalse(method_exists(\App\Controllers\AuditLogController::class, 'destroy'), 'AuditLogController destroy metodiga ega bo\'lmasligi kerak');
+    // AuditLog modelida ham o'chirish/yangilash metodi yo'q.
+    assertFalse(method_exists(\App\Models\AuditLog::class, 'delete'), 'AuditLog modeli delete metodiga ega bo\'lmasligi kerak');
+});
+
+test('Bildirishnoma generatori muddati yaqin vazifa uchun bildirishnoma yaratadi', function () {
+    bootTestDatabase();
+    // Doktorant user'iga bog'langan yozuv topamiz.
+    $studentUserId = (int) DB::scalar("SELECT id FROM users WHERE username = 'doktorant'");
+    $studentId = (int) DB::scalar('SELECT id FROM doctoral_students ORDER BY id LIMIT 1');
+    DB::run('UPDATE doctoral_students SET user_id = :u WHERE id = :id', ['u' => $studentUserId, 'id' => $studentId]);
+
+    // 3 kun ichida muddati keladigan bajarilmagan vazifa.
+    $planId = DB::insert('individual_plans', [
+        'student_id' => $studentId, 'academic_year' => '2099/2100', 'status' => 'approved',
+        'created_at' => date('Y-m-d H:i:s'), 'updated_at' => date('Y-m-d H:i:s'),
+    ]);
+    DB::insert('plan_tasks', [
+        'plan_id' => $planId, 'title' => 'Yaqin muddatli vazifa', 'status' => 'in_progress',
+        'progress_percent' => 30, 'due_date' => date('Y-m-d', strtotime('+3 days')),
+        'created_at' => date('Y-m-d H:i:s'), 'updated_at' => date('Y-m-d H:i:s'),
+    ]);
+
+    $before = (int) DB::scalar('SELECT COUNT(*) FROM notifications WHERE user_id = :u', ['u' => $studentUserId]);
+    $created = \App\Models\Notification::generate();
+    assertTrue($created > 0, 'Kamida bitta bildirishnoma yaratilishi kerak');
+    $after = (int) DB::scalar("SELECT COUNT(*) FROM notifications WHERE user_id = :u AND type = 'task_deadline'", ['u' => $studentUserId]);
+    assertTrue($after > $before, 'Doktorant uchun muddat bildirishnomasi yaratilishi kerak');
+
+    // Takroriy generatsiya dublikat yaratmaydi.
+    $countAfterFirst = (int) DB::scalar('SELECT COUNT(*) FROM notifications');
+    \App\Models\Notification::generate();
+    assertEquals($countAfterFirst, (int) DB::scalar('SELECT COUNT(*) FROM notifications'), 'Takroriy generatsiya dublikat yaratmasligi kerak');
+
+    // O'qilgan deb belgilash ishlaydi.
+    $notifId = (int) DB::scalar("SELECT id FROM notifications WHERE user_id = :u AND type = 'task_deadline' LIMIT 1", ['u' => $studentUserId]);
+    \App\Models\Notification::markRead($notifId, $studentUserId);
+    assertEquals(1, (int) DB::scalar('SELECT is_read FROM notifications WHERE id = :id', ['id' => $notifId]), 'Bildirishnoma o\'qilgan deb belgilanadi');
+});
+
+test('NotificationController generate + mark-as-read shaxsiy kabinetda ishlaydi', function () {
+    bootTestDatabase();
+    Auth::attempt('admin', 'Parol123!');
+    Auth::flushCache();
+    $ctrl = new \App\Controllers\NotificationController();
+
+    $reqGen = new Request('POST', '/notifications/generate', [], [], ['REQUEST_METHOD' => 'POST']);
+    $respGen = $ctrl->generate($reqGen);
+    assertEquals(302, $respGen->status(), 'Generatsiya redirect qaytaradi');
+
+    $reqIdx = new Request('GET', '/notifications', [], [], ['REQUEST_METHOD' => 'GET']);
+    $respIdx = $ctrl->index($reqIdx);
+    assertEquals(200, $respIdx->status(), 'Bildirishnomalar sahifasi 200');
+    assertTrue(str_contains($respIdx->body(), 'Bildirishnomalar'), 'Sahifa sarlavhasi ko\'rinadi');
+    Auth::logout();
+});
+
+test('Global qidiruv bir nechta obyekt turi bo\'yicha natija topadi', function () {
+    bootTestDatabase();
+    // Doktorant ismidan qidiramiz (seed 20+ "Demo Doktorant ...").
+    $res = \App\Models\Search::query('Demo');
+    assertTrue($res['total'] > 0, 'Qidiruv natija berishi kerak');
+    // Natijalar tur bo'yicha guruhlangan.
+    assertTrue(count($res['specialties']) > 0, 'Ixtisosliklar guruhi natija berishi kerak (Demo ixtisosliklar)');
+
+    // Aniq ixtisoslik shifri bo'yicha.
+    $resSpec = \App\Models\Search::query('13.00.01');
+    assertTrue(count($resSpec['specialties']) >= 1, 'Shifr bo\'yicha ixtisoslik topilishi kerak');
+
+    // Bo'sh so'rov 0 natija.
+    assertEquals(0, \App\Models\Search::query('')['total'], 'Bo\'sh so\'rov 0 natija');
+
+    // SQLi/LIKE maxsus belgilar xavfsiz (xatosiz ishlaydi).
+    $resSafe = \App\Models\Search::query("100%_';--");
+    assertTrue(is_int($resSafe['total']), 'Maxsus belgilar bilan qidiruv xavfsiz ishlaydi');
+});
+
+test('SearchController JSON va HTML natija qaytaradi (topbar qidiruvi)', function () {
+    bootTestDatabase();
+    Auth::attempt('admin', 'Parol123!');
+    Auth::flushCache();
+    $ctrl = new \App\Controllers\SearchController();
+
+    $reqJson = new Request('GET', '/search', ['q' => 'Demo', 'format' => 'json'], [], ['REQUEST_METHOD' => 'GET']);
+    $respJson = $ctrl->index($reqJson);
+    assertEquals(200, $respJson->status(), 'JSON qidiruv 200');
+    assertTrue(str_contains($respJson->body(), '"total"'), 'JSON javobda total bo\'lishi kerak');
+
+    $reqHtml = new Request('GET', '/search', ['q' => 'Demo'], [], ['REQUEST_METHOD' => 'GET']);
+    $respHtml = $ctrl->index($reqHtml);
+    assertEquals(200, $respHtml->status(), 'HTML qidiruv 200');
+    assertTrue(str_contains($respHtml->body(), 'Global qidiruv'), 'HTML natija sahifasi ko\'rinadi');
+    Auth::logout();
+});
+
+test('Xavfsizlik sarlavhalari javobga qo\'llanadi (Router orqali)', function () {
+    bootTestDatabase();
+    $router = new Router();
+    $router->get('/x', fn () => \App\Core\Response::html('ok'));
+    $req = new Request('GET', '/x', [], [], ['REQUEST_METHOD' => 'GET']);
+    $resp = $router->dispatch($req);
+    $headers = $resp->headers();
+    assertEquals('DENY', $headers['X-Frame-Options'] ?? null, 'X-Frame-Options DENY bo\'lishi kerak');
+    assertEquals('nosniff', $headers['X-Content-Type-Options'] ?? null, 'X-Content-Type-Options nosniff bo\'lishi kerak');
+    assertTrue(isset($headers['Content-Security-Policy']), 'CSP sarlavhasi bo\'lishi kerak');
+    assertTrue(str_contains($headers['Content-Security-Policy'], "default-src 'self'"), 'CSP faqat self resurslarga ruxsat berishi kerak');
+    // 404 javobga ham qo'llanadi.
+    $req404 = new Request('GET', '/mavjud-emas', [], [], ['REQUEST_METHOD' => 'GET']);
+    $resp404 = $router->dispatch($req404);
+    assertEquals(404, $resp404->status(), '404 status');
+    assertTrue(isset($resp404->headers()['X-Frame-Options']), '404 javobda ham xavfsizlik sarlavhasi bo\'lishi kerak');
+});
+
+test('SecurityHeadersMiddleware CSP tashqi manbalarga ruxsat bermaydi', function () {
+    $headers = \App\Core\Middleware\SecurityHeadersMiddleware::headers();
+    $csp = $headers['Content-Security-Policy'];
+    assertFalse(str_contains($csp, 'https://'), 'CSP tashqi https manbaga ruxsat bermasligi kerak');
+    assertTrue(str_contains($csp, "object-src 'none'"), 'object-src none bo\'lishi kerak');
+    assertTrue(str_contains($csp, "frame-ancestors 'none'"), 'frame-ancestors none bo\'lishi kerak');
+});
+
+test('Sessiya idle timeout muddati o\'tgan sessiyani tugatadi', function () {
+    bootTestDatabase();
+    Auth::attempt('admin', 'Parol123!');
+    Auth::flushCache();
+    assertTrue(Auth::check(), 'Login qilingan');
+    // So'nggi faoliyatni lifetime'dan uzoq o'tmishga surib qo'yamiz.
+    $lifetime = (int) Config::get('security.session.lifetime', 7200);
+    Session::set('_auth_last_activity', time() - $lifetime - 10);
+    assertFalse(Auth::enforceIdleTimeout(), 'Muddati o\'tgan sessiya tugatilishi kerak');
+    assertFalse(Auth::check(), 'Timeout keyin foydalanuvchi chiqarilishi kerak');
+});
+
+test('TOTP kod hosil qiladi va tekshiradi (2FA skafold)', function () {
+    $secret = \App\Core\Totp::generateSecret();
+    assertTrue($secret !== '', 'Maxfiy kalit yaratilishi kerak');
+    $ts = 1700000000;
+    $code = \App\Core\Totp::code($secret, $ts);
+    assertTrue((bool) preg_match('/^\d{6}$/', $code), 'Kod 6 xonali bo\'lishi kerak');
+    assertTrue(\App\Core\Totp::verify($secret, $code, $ts), 'To\'g\'ri kod tasdiqlanishi kerak');
+    assertFalse(\App\Core\Totp::verify($secret, '000000', $ts + 300), 'Noto\'g\'ri/eskirgan kod rad etilishi kerak');
+});
+
+test('Barcha hisobot turlari (item 14) shakllanadi va eksport qilinadi', function () {
+    bootTestDatabase();
+    $types = \App\Models\Report::types();
+    // Item 14'dagi 15 ta hisobot turi.
+    assertEquals(15, count($types), '15 ta hisobot turi bo\'lishi kerak');
+
+    foreach (array_keys($types) as $type) {
+        $data = \App\Models\Report::build($type);
+        assertTrue(isset($data['headers']) && $data['headers'] !== [], "Hisobot sarlavhalari bo'lishi kerak: $type");
+        assertTrue(is_array($data['rows']), "Hisobot satrlari massiv bo'lishi kerak: $type");
+    }
+
+    // Excel eksport (xlsx yoki csv fallback) baytlar qaytaradi.
+    $sample = \App\Models\Report::build('doktorant_monitoring');
+    [$body, $mime, $ext] = \App\Core\Spreadsheet::build('Test', $sample['headers'], $sample['rows']);
+    assertTrue(strlen($body) > 0, 'Excel eksport bo\'sh bo\'lmasligi kerak');
+    assertTrue(in_array($ext, ['xlsx', 'csv'], true), 'Kengaytma xlsx yoki csv bo\'lishi kerak');
+
+    // PDF eksport %PDF sarlavhasi bilan boshlanadi.
+    $pdf = \App\Core\Pdf::table('Test hisobot', $sample['headers'], $sample['rows'], ['Meta']);
+    assertTrue(str_starts_with($pdf, '%PDF-'), 'PDF %PDF- sarlavhasi bilan boshlanishi kerak');
+    assertTrue(str_contains($pdf, '%%EOF'), 'PDF %%EOF bilan tugashi kerak');
+});
+
+test('ReportController Excel to\'g\'ri content-type va PDF/print render qiladi', function () {
+    bootTestDatabase();
+    Auth::attempt('admin', 'Parol123!');
+    Auth::flushCache();
+    $ctrl = new \App\Controllers\ReportController();
+
+    // Excel eksport: attachment content-disposition + xlsx/csv MIME.
+    $reqExcel = new Request('GET', '/reports/maqolalar', ['format' => 'excel'], [], ['REQUEST_METHOD' => 'GET']);
+    $reqExcel->setParams(['type' => 'maqolalar']);
+    $respExcel = $ctrl->show($reqExcel);
+    assertEquals(200, $respExcel->status(), 'Excel eksport 200');
+    $ct = $respExcel->headers()['Content-Type'] ?? '';
+    assertTrue(str_contains($ct, 'spreadsheetml') || str_contains($ct, 'text/csv'), 'Excel MIME to\'g\'ri bo\'lishi kerak');
+    assertTrue(str_contains($respExcel->headers()['Content-Disposition'] ?? '', 'attachment'), 'Excel yuklab olinishi kerak (attachment)');
+
+    // PDF eksport.
+    $reqPdf = new Request('GET', '/reports/maqolalar', ['format' => 'pdf'], [], ['REQUEST_METHOD' => 'GET']);
+    $reqPdf->setParams(['type' => 'maqolalar']);
+    $respPdf = $ctrl->show($reqPdf);
+    assertEquals('application/pdf', $respPdf->headers()['Content-Type'] ?? '', 'PDF content-type');
+    assertTrue(str_starts_with($respPdf->body(), '%PDF-'), 'PDF mazmuni to\'g\'ri');
+
+    // Print-view HTML render qiladi.
+    $reqPrint = new Request('GET', '/reports/maqolalar', ['format' => 'print'], [], ['REQUEST_METHOD' => 'GET']);
+    $reqPrint->setParams(['type' => 'maqolalar']);
+    $respPrint = $ctrl->show($reqPrint);
+    assertEquals(200, $respPrint->status(), 'Print-view 200');
+    assertTrue(str_contains($respPrint->body(), 'window.print()'), 'Print-view chop etish tugmasiga ega');
+
+    // Noma'lum hisobot turi 404.
+    $reqBad = new Request('GET', '/reports/mavjud-emas', [], [], ['REQUEST_METHOD' => 'GET']);
+    $reqBad->setParams(['type' => 'mavjud-emas']);
+    assertEquals(404, $ctrl->show($reqBad)->status(), 'Noma\'lum hisobot 404');
+    Auth::logout();
+});
+
+// ---------------------------------------------------------------
 // Runner.
 // ---------------------------------------------------------------
 echo "ADPI Monitoring — test runner\n";

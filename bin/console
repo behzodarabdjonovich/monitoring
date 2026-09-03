@@ -111,6 +111,12 @@ switch ($command) {
         }
         break;
 
+    case 'notify':
+        echo "Bildirishnomalar shakllantirilmoqda...\n";
+        $created = \App\Models\Notification::generate();
+        echo "Tayyor. $created ta yangi bildirishnoma yaratildi.\n";
+        break;
+
     case 'help':
     default:
         echo "Foydalanish: php bin/console <buyruq>\n\n";
@@ -119,5 +125,6 @@ switch ($command) {
         echo "  migrate:fresh  DB'ni qayta yaratadi va migratsiyalarni bajaradi\n";
         echo "  seed           Seed ma'lumotlarini kiritadi\n";
         echo "  backup         DB zaxira nusxasini oladi\n";
+        echo "  notify         Joriy ma'lumotlardan bildirishnomalarni shakllantiradi\n";
         break;
 }

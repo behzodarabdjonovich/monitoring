@@ -3,6 +3,7 @@
 namespace App\Core;
 
 use App\Core\Middleware\Middleware;
+use App\Core\Middleware\SecurityHeadersMiddleware;
 
 /**
  * Marshrutlash: GET/POST (va PUT/PATCH/DELETE) marshrutlarini ro'yxatga
@@ -101,6 +102,13 @@ final class Router
      * So'rovni dispatch qiladi: middleware quvuri -> controller -> Response.
      */
     public function dispatch(Request $request): Response
+    {
+        // Har qanday chiqishga (404, 419, controller javobi) xavfsizlik
+        // sarlavhalari qo'llaniladi (item 19 — global himoya).
+        return SecurityHeadersMiddleware::apply($this->route($request));
+    }
+
+    private function route(Request $request): Response
     {
         $matched = $this->match($request);
         if ($matched === null) {

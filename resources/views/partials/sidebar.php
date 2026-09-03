@@ -26,6 +26,11 @@ $sections = [
     ['users', 'Foydalanuvchilar', '/users'],
     ['settings', 'Sozlamalar', '/settings'],
 ];
+
+// Audit jurnali faqat Super Admin uchun (item 17).
+if (\App\Core\Auth::role() === 'super_admin') {
+    $sections[] = ['audit-logs', 'Audit jurnali', '/audit-logs'];
+}
 ?>
 <aside class="sidebar" id="sidebar" aria-label="Asosiy navigatsiya">
     <div class="sidebar-brand">

@@ -29,6 +29,13 @@ return [
         'algo' => PASSWORD_DEFAULT,
     ],
 
+    // Ikki bosqichli autentifikatsiya (2FA/TOTP) skafoldi. Standart holatda
+    // o'chirilgan; yoqilsa, twofa_secret o'rnatilgan foydalanuvchilardan login
+    // paytida TOTP kodi so'raladi (item 19). Muhit o'zgaruvchisi bilan yoqiladi.
+    'twofa' => [
+        'enabled' => (getenv('APP_2FA') ?: '0') === '1',
+    ],
+
     // Fayl yuklash xavfsizligi (dalillar bazasi uchun).
     'uploads' => [
         // Fayllar webroot'dan TASHQARIDA saqlanadi.

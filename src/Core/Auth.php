@@ -11,6 +11,7 @@ namespace App\Core;
 final class Auth
 {
     private const SESSION_USER_ID = '_auth_user_id';
+    private const SESSION_LAST_ACTIVITY = '_auth_last_activity';
 
     private static ?array $cachedUser = null;
     private static ?array $cachedPermissions = null;
@@ -68,8 +69,31 @@ final class Auth
         Session::start();
         Session::regenerate();
         Session::set(self::SESSION_USER_ID, $userId);
+        Session::set(self::SESSION_LAST_ACTIVITY, time());
         self::$cachedUser = null;
         self::$cachedPermissions = null;
+    }
+
+    /**
+     * Sessiya harakatsizlik muddati (idle timeout) tekshiruvi. So'nggi
+     * faoliyatdan beri belgilangan muddat (config security.session.lifetime)
+     * o'tgan bo'lsa sessiya tugatiladi va false qaytariladi. Aks holda so'nggi
+     * faoliyat vaqti yangilanadi.
+     */
+    public static function enforceIdleTimeout(): bool
+    {
+        if (self::id() === null) {
+            return true;
+        }
+        $lifetime = (int) Config::get('security.session.lifetime', 7200);
+        $last = Session::get(self::SESSION_LAST_ACTIVITY);
+        $now = time();
+        if (is_int($last) && $lifetime > 0 && ($now - $last) > $lifetime) {
+            self::logout();
+            return false;
+        }
+        Session::set(self::SESSION_LAST_ACTIVITY, $now);
+        return true;
     }
 
     public static function logout(): void

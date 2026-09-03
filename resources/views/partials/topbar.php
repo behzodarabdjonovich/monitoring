@@ -8,6 +8,10 @@
 $user = $user ?? null;
 $fullName = $user['full_name'] ?? 'Foydalanuvchi';
 $roleTitle = $user['role_title'] ?? '';
+$unreadCount = 0;
+if (isset($user['id'])) {
+    $unreadCount = \App\Models\Notification::unreadCount((int) $user['id']);
+}
 ?>
 <header class="topbar">
     <button class="topbar-toggle" id="sidebar-toggle" type="button" aria-label="Menyuni ochish/yopish" aria-controls="sidebar">
@@ -22,7 +26,7 @@ $roleTitle = $user['role_title'] ?? '';
     <div class="topbar-actions">
         <a class="topbar-bell" href="/notifications" aria-label="Bildirishnomalar">
             <span aria-hidden="true">&#128276;</span>
-            <span class="topbar-bell-badge" id="notif-count" hidden>0</span>
+            <span class="topbar-bell-badge" id="notif-count"<?= $unreadCount > 0 ? '' : ' hidden' ?>><?= e($unreadCount) ?></span>
         </a>
 
         <div class="topbar-user" id="user-menu">

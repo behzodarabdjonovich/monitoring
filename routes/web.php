@@ -9,21 +9,27 @@
 
 use App\Controllers\AccreditationController;
 use App\Controllers\AttestationController;
+use App\Controllers\AuditLogController;
 use App\Controllers\AuthController;
 use App\Controllers\DashboardController;
 use App\Controllers\DeficiencyController;
 use App\Controllers\DocumentController;
 use App\Controllers\InternalAuditController;
+use App\Controllers\NotificationController;
 use App\Controllers\PlanController;
 use App\Controllers\PlanTaskController;
 use App\Controllers\ProgramController;
+use App\Controllers\ReportController;
 use App\Controllers\ScientificResultController;
+use App\Controllers\SearchController;
 use App\Controllers\SettingsController;
 use App\Controllers\SpecialtyController;
 use App\Controllers\StudentController;
 use App\Controllers\SupervisorController;
+use App\Controllers\UserController;
 use App\Core\Middleware\AuthMiddleware;
 use App\Core\Middleware\RbacMiddleware;
+use App\Core\Middleware\SuperAdminMiddleware;
 use App\Core\Router;
 
 /** @var Router $router */
@@ -35,6 +41,7 @@ $router->get('/forgot-password', [AuthController::class, 'showForgot']);
 $router->post('/forgot-password', [AuthController::class, 'sendReset']);
 $router->get('/reset-password', [AuthController::class, 'showReset']);
 $router->post('/reset-password', [AuthController::class, 'reset']);
+$router->post('/login/2fa', [AuthController::class, 'verifyTwofa']);
 $router->post('/logout', [AuthController::class, 'logout'], [new AuthMiddleware()]);
 
 // --- Dashboard (autentifikatsiya + RBAC) ---
@@ -149,3 +156,27 @@ $router->get('/audits/{id}', [InternalAuditController::class, 'show'], [$auth(),
 // --- Sozlamalar (Sozlamalar) — baholash metodikasi (Super Admin) ---
 $router->get('/settings', [SettingsController::class, 'index'], [$auth(), $rbac('settings.view')]);
 $router->post('/settings', [SettingsController::class, 'update'], [$auth(), $rbac('settings.configure')]);
+
+// --- Hisobotlar (item 14) — print / Excel / PDF eksport ---
+$router->get('/reports', [ReportController::class, 'index'], [$auth(), $rbac('reports.view')]);
+$router->get('/reports/{type}', [ReportController::class, 'show'], [$auth(), $rbac('reports.view')]);
+
+// --- Bildirishnomalar (item 15) — shaxsiy kabinet ---
+$router->get('/notifications', [NotificationController::class, 'index'], [$auth(), $rbac('notifications.view')]);
+$router->post('/notifications/generate', [NotificationController::class, 'generate'], [$auth(), $rbac('notifications.view')]);
+$router->post('/notifications/read-all', [NotificationController::class, 'markAllRead'], [$auth(), $rbac('notifications.view')]);
+$router->post('/notifications/{id}/read', [NotificationController::class, 'markRead'], [$auth(), $rbac('notifications.view')]);
+
+// --- Global qidiruv (item 16) — topbar qidiruv qutisi ---
+$router->get('/search', [SearchController::class, 'index'], [$auth()]);
+
+// --- Audit jurnali ko'rigi (item 17) — FAQAT o'qish, FAQAT Super Admin ---
+// O'chirish/yangilash marshruti ATAYLAB YO'Q (audit_logs o'zgarmas).
+$router->get('/audit-logs', [AuditLogController::class, 'index'], [$auth(), new SuperAdminMiddleware()]);
+
+// --- Foydalanuvchilar boshqaruvi (item 19) — bloklash, parol majburlash, 2FA ---
+$router->get('/users', [UserController::class, 'index'], [$auth(), $rbac('users.view')]);
+$router->post('/users/{id}/block', [UserController::class, 'block'], [$auth(), $rbac('users.edit')]);
+$router->post('/users/{id}/unblock', [UserController::class, 'unblock'], [$auth(), $rbac('users.edit')]);
+$router->post('/users/{id}/force-reset', [UserController::class, 'forceReset'], [$auth(), $rbac('users.edit')]);
+$router->post('/users/{id}/twofa', [UserController::class, 'toggleTwofa'], [$auth(), $rbac('users.edit')]);

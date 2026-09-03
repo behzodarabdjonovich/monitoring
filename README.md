@@ -4,10 +4,13 @@ Andijon davlat pedagogika instituti (ADPI) uchun doktorantura jarayonlarini
 monitoring qilish va maxsus davlat akkreditatsiyasiga tayyorgarlik darajasini
 baholovchi o'zbek tilidagi axborot tizimi.
 
-Bu repozitoriya **foundation (asos)** bosqichini o'z ichiga oladi: loyiha karkasi,
-yadro (core) freymvork, barcha jadvallar uchun migratsiyalar, seed ma'lumotlar,
-RBAC asosi, login/parol autentifikatsiyasi va 16 bo'limli o'zbekcha sidebar bilan
-responsive asosiy layout.
+Bu repozitoriya **to'liq tizim**ni o'z ichiga oladi: yadro (core) freymvork,
+RBAC (9 rol), analitik dashboard, doktorantlar, individual rejalar (5 bosqichli
+oqim), ilmiy natijalar, ilmiy rahbarlar, ixtisosliklar, markazlashtirilgan
+akkreditatsiya moduli (sozlanadigan tayyorlik indeksi), dalillar bazasi,
+kamchiliklar + Action Plan, ichki audit, **hisobotlar (PDF/Excel/print),
+bildirishnomalar, global qidiruv, o'zgarmas audit jurnali** va to'liq xavfsizlik
+hardening.
 
 ---
 
@@ -85,6 +88,7 @@ So'ng brauzerda `http://127.0.0.1:8000/login` sahifasiga kiring.
 | `php bin/console migrate:fresh` | SQLite DB'ni o'chirib qayta yaratadi |
 | `php bin/console seed` | Seed (demo/placeholder) ma'lumotlarini kiritadi |
 | `php bin/console backup` | SQLite DB zaxira nusxasini oladi (pgsql/mysql uchun dump buyrug'ini ko'rsatadi) |
+| `php bin/console notify` | Joriy ma'lumotlardan bildirishnomalarni shakllantiradi (muddat, dalil, indikator) |
 
 ### Testlar
 
@@ -154,10 +158,54 @@ to'liq administrator tomonidan sozlanadi.
 
 ---
 
+## Hisobotlar (PDF / Excel / chop etish)
+
+Tizim item 14'dagi **15 ta hisobot turini** avtomatik shakllantiradi (doktorant
+monitoring, doktorant yillik, individual reja bajarilishi, kafedra kesimi,
+ixtisoslik, ilmiy rahbar, ilmiy natijalar, maqolalar, attestatsiya,
+akkreditatsiya indikatorlari, bajarilmagan indikatorlar, yetishmayotgan
+dalillar, kamchiliklar + Action Plan, ichki baholash, akkreditatsiyaga
+tayyorlik). Har bir hisobot uchta chiqish yo'liga ega:
+
+- **Chop etish (print)** — `?format=print`: layoutsiz, chop etishga mos CSS
+  bilan HTML ko'rinish. Brauzerning "Chop etish → PDF sifatida saqlash"
+  imkoniyati orqali PDF ham olinadi.
+- **Excel** — `?format=excel`: **kutubxonasiz** (dependency-free) qo'lda yozilgan
+  minimal **OpenXML/SpreadsheetML `.xlsx`** yozuvchi (`App\Core\Spreadsheet`,
+  PHP'ning ichki `ZipArchive` orqali). Agar `ZipArchive` mavjud bo'lmasa,
+  UTF-8 BOM bilan **CSV** fallback qaytariladi (Excel ochadi).
+- **PDF** — `?format=pdf`: **kutubxonasiz** qo'lda yozilgan minimal **PDF 1.4**
+  yozuvchi (`App\Core\Pdf`) jadval ma'lumotlarini ko'p sahifali hujjatga
+  chizadi (standart Helvetica shrifti, WinAnsi kodlash). Bu tashqi kutubxonasiz
+  to'g'ridan-to'g'ri yuklab olinadigan PDF beradi; formatlashga boy hujjat kerak
+  bo'lsa print-view (brauzer print-to-PDF) tavsiya etiladi.
+
+> **Nima uchun shunday?** Oflayn muhitda (Packagist/npm/CDN bloklangan)
+> `dompdf`, `PhpSpreadsheet` kabi kutubxonalarni o'rnatib bo'lmaydi. Shuning
+> uchun `.xlsx` va `.pdf` yozuvchilari qo'lda, faqat PHP standart kengaytmalari
+> (`zip`, `iconv`, `hash`) bilan amalga oshirilgan.
+
+## Bildirishnomalar
+
+Avtomatik ogohlantirishlar foydalanuvchining shaxsiy kabinetida (topbar
+qo'ng'iroq + `/notifications` sahifasi) ko'rsatiladi va **o'qilgan deb
+belgilanadi**. Generator (`php bin/console notify` yoki sahifadagi "yangilash"
+tugmasi) joriy ma'lumotlardan hodisalarni hisoblaydi: vazifa muddati
+yaqinlashmoqda (7 kun qoldi), indikatorda dalil yetishmayapti, ixtisoslikda N ta
+bajarilmagan indikator, ilmiy rahbar tasdig'ini kutayotgan vazifalar.
+
+## Global qidiruv
+
+Topbardagi qidiruv qutisi `/search` endpointiga ulanadi: doktorantlar, ilmiy
+rahbarlar, ixtisosliklar, hujjatlar (dalillar) va akkreditatsiya indikatorlari
+bo'yicha qidiradi; natijalar tur bo'yicha guruhlanadi. JSON (`?format=json`) va
+HTML chiqishlarini qo'llab-quvvatlaydi.
+
 ## Xavfsizlik
 
 - **Parol**: `password_hash` / `password_verify` (bcrypt/argon2).
-- **Sessiya**: HttpOnly + SameSite cookie, login vaqtida `session_regenerate_id`.
+- **Sessiya**: HttpOnly + SameSite cookie, login vaqtida `session_regenerate_id`,
+  **harakatsizlik muddati (idle timeout)** (`security.session.lifetime`), logout.
 - **CSRF**: har o'zgartiruvchi (POST/PUT/PATCH/DELETE) so'rovda majburiy token
   (login formasi ham).
 - **XSS**: barcha view chiqishi `e()` helperi orqali ekranlanadi.
@@ -165,8 +213,21 @@ to'liq administrator tomonidan sozlanadi.
 - **Fayl yuklash**: kengaytma + MIME + hajm oq ro'yxati; fayllar webroot'dan
   tashqarida `storage/` ichida tasodifiy nom bilan; olib berish faqat
   himoyalangan kontroller orqali (path traversal himoyasi bilan).
-- **Audit**: `AuditLogger` create/update/upload/approve/login kabi amallarni
-  o'zgarmas `audit_logs` jadvaliga yozadi.
+- **Foydalanuvchini bloklash**: `is_blocked = 1` bo'lgan foydalanuvchi tizimga
+  kira olmaydi (`/users` sahifasidan boshqariladi).
+- **Parolni tiklash**: `password_resets` tokeni (sha256, muddatli) orqali
+  forgot/reset oqimi.
+- **2FA (TOTP) skafoldi**: `App\Core\Totp` (RFC 6238, kutubxonasiz). `APP_2FA=1`
+  muhit o'zgaruvchisi bilan yoqiladi; yoqilganda `twofa_secret` o'rnatilgan
+  foydalanuvchilardan login paytida 6 xonali kod so'raladi.
+- **Xavfsizlik sarlavhalari**: `SecurityHeadersMiddleware` har bir javobga
+  `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy`
+  va faqat `self` resurslariga ruxsat beruvchi **CSP** qo'shadi (global).
+- **DB zaxira**: `php bin/console backup`.
+- **Audit**: `AuditLogger` create/update/upload/approve/login/block kabi
+  amallarni o'zgarmas `audit_logs` jadvaliga yozadi (kim, qachon, oldingi/yangi
+  qiymat). Audit jurnali ko'rigi (`/audit-logs`) **faqat o'qish** va **faqat
+  Super Admin** uchun; o'chirish marshruti/endpointi **atayin yo'q**.
 
 ---
 
