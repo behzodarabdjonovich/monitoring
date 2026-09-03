@@ -10,9 +10,11 @@
 use App\Controllers\AttestationController;
 use App\Controllers\AuthController;
 use App\Controllers\DashboardController;
+use App\Controllers\DocumentController;
 use App\Controllers\PlanController;
 use App\Controllers\PlanTaskController;
 use App\Controllers\ProgramController;
+use App\Controllers\ScientificResultController;
 use App\Controllers\SpecialtyController;
 use App\Controllers\StudentController;
 use App\Controllers\SupervisorController;
@@ -83,6 +85,19 @@ $router->post('/plans/{id}', [PlanController::class, 'update'], [$auth(), $rbac(
 $router->post('/plans/{id}/approve', [PlanController::class, 'approve'], [$auth(), $rbac('individual_plans.approve')]);
 $router->post('/plans/{id}/tasks', [PlanTaskController::class, 'store'], [$auth(), $rbac('individual_plans.edit')]);
 $router->post('/tasks/{id}', [PlanTaskController::class, 'update'], [$auth(), $rbac('individual_plans.view')]);
+
+// --- Ilmiy natijalar (item 6) ---
+$router->get('/results', [ScientificResultController::class, 'index'], [$auth(), $rbac('scientific_results.view')]);
+$router->get('/results/create', [ScientificResultController::class, 'create'], [$auth(), $rbac('scientific_results.create')]);
+$router->post('/results', [ScientificResultController::class, 'store'], [$auth(), $rbac('scientific_results.create')]);
+
+// --- Dalillar bazasi (item 11) + M:N indikator bog'lash ---
+$router->get('/documents', [DocumentController::class, 'index'], [$auth(), $rbac('documents.view')]);
+$router->post('/documents', [DocumentController::class, 'store'], [$auth(), $rbac('documents.upload')]);
+$router->get('/documents/{id}', [DocumentController::class, 'show'], [$auth(), $rbac('documents.view')]);
+$router->get('/documents/{id}/download', [DocumentController::class, 'download'], [$auth(), $rbac('documents.view')]);
+$router->post('/documents/{id}/link', [DocumentController::class, 'link'], [$auth(), $rbac('documents.view')]);
+$router->post('/documents/{id}/unlink', [DocumentController::class, 'unlink'], [$auth(), $rbac('documents.view')]);
 
 // --- Attestatsiya (item 4/21) ---
 $router->get('/attestations', [AttestationController::class, 'index'], [$auth(), $rbac('attestations.view')]);

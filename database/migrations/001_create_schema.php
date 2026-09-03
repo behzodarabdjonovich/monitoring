@@ -215,19 +215,28 @@ return function (): void {
         $t->foreign('student_id', 'doctoral_students');
     });
 
-    // 14) scientific_results
+    // 14) scientific_results — item 6: barcha ilmiy natija turlari.
+    //     Har natija doktorant va/yoki ilmiy rahbarga bog'lanadi; tasdiqlovchi
+    //     fayl (FileStorage yo'li) YOKI havola (URL) biriktiriladi.
     Schema::create('scientific_results', function ($t) {
         $t->id();
-        $t->integer('student_id', false);
+        $t->integer('student_id');            // doktorant (ixtiyoriy — rahbar natijasi ham bo'lishi mumkin)
+        $t->integer('supervisor_id');         // ilmiy rahbar (ixtiyoriy)
         $t->integer('plan_task_id');
-        $t->string('result_type', 32);
-        $t->integer('publication_id');
-        $t->integer('conference_id');
+        $t->string('result_type', 48, false); // enum/lookup kaliti (ScientificResult::TYPES)
+        $t->integer('publication_id');        // maqola specializatsiyasi (publications)
+        $t->integer('conference_id');         // konferensiya specializatsiyasi (conferences)
         $t->string('title', 255);
+        $t->text('description');              // qisqacha izoh
         $t->date('achieved_at');
+        $t->integer('document_id');           // tasdiqlovchi hujjat (documents) — fayl varianti
+        $t->text('url');                      // tasdiqlovchi havola (havola) — URL varianti
         $t->boolean('verified', false, false);
+        $t->integer('created_by');
         $t->timestamp('created_at');
+        $t->timestamp('updated_at');
         $t->foreign('student_id', 'doctoral_students');
+        $t->foreign('supervisor_id', 'supervisors');
         $t->foreign('plan_task_id', 'plan_tasks');
         $t->foreign('publication_id', 'publications');
         $t->foreign('conference_id', 'conferences');
@@ -296,17 +305,22 @@ return function (): void {
     });
 
     // 20) documents (indicator_evidence'dan oldin yaratiladi, chunki FK)
+    //     item 11: markazlashtirilgan dalillar bazasi — barcha hujjat
+    //     toifalari (category), metama'lumot (title, category, owner, upload
+    //     date, size, mime). Fayllar webroot'dan TASHQARIDA storage/ ichida.
     Schema::create('documents', function ($t) {
         $t->id();
         $t->string('title', 255, false);
+        $t->string('category', 64, false, 'boshqa'); // dalil toifasi (Document::CATEGORIES)
         $t->text('file_path', false);
+        $t->string('original_name', 255);            // dastlabki fayl nomi
         $t->string('mime_type', 128);
         $t->integer('file_size');
-        $t->string('doc_type', 64);
-        $t->integer('uploaded_by');
+        $t->string('doc_type', 64);                  // legacy: umumiy tur belgisi
+        $t->integer('uploaded_by');                  // egasi (yuklagan foydalanuvchi)
         $t->integer('student_id');
         $t->integer('scientific_result_id');
-        $t->timestamp('created_at');
+        $t->timestamp('created_at');                 // yuklangan sana
         $t->foreign('uploaded_by', 'users');
         $t->foreign('student_id', 'doctoral_students');
         $t->foreign('scientific_result_id', 'scientific_results');

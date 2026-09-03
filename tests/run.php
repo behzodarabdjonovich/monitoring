@@ -451,6 +451,250 @@ test('Specialty akkreditatsiyaga tayyorlik foizi ScoringEngine\'dan keladi', fun
 });
 
 // ---------------------------------------------------------------
+// FEAT-005: ilmiy natijalar + dalillar bazasi + M:N + himoyalangan yuklab olish.
+// ---------------------------------------------------------------
+
+/**
+ * Test yordamchisi: vaqtinchalik faylni FileStorage-mos $_FILES massiviga
+ * o'raydi (CLI'da is_uploaded_file ishlamaydi — FileStorage copy() fallback).
+ */
+function makeUpload(string $name, string $mime, string $contents): array
+{
+    $tmp = tempnam(sys_get_temp_dir(), 'upl');
+    file_put_contents($tmp, $contents);
+    return [
+        'name' => $name,
+        'type' => $mime,
+        'tmp_name' => $tmp,
+        'error' => UPLOAD_ERR_OK,
+        'size' => strlen($contents),
+    ];
+}
+
+// Minimal yaroqli PDF/PNG/JPEG baytlari (MIME sniffing uchun sarlavha muhim).
+// PNG/JPEG uchun GD bilan haqiqiy (kichik) rasm hosil qilamiz — finfo aniq
+// image/png va image/jpeg qaytarishi uchun.
+$PDF_BYTES = "%PDF-1.4\n%\xE2\xE3\xCF\xD3\n1 0 obj<<>>endobj\ntrailer<<>>\n%%EOF";
+$makeImage = static function (string $format): string {
+    $im = imagecreatetruecolor(2, 2);
+    ob_start();
+    if ($format === 'png') {
+        imagepng($im);
+    } else {
+        imagejpeg($im);
+    }
+    $bytes = (string) ob_get_clean();
+    imagedestroy($im);
+    return $bytes;
+};
+$PNG_BYTES = $makeImage('png');
+$JPG_BYTES = $makeImage('jpeg');
+
+test('FileStorage ruxsat etilgan turlarni (pdf/jpg/png) qabul qiladi', function () use ($PDF_BYTES, $PNG_BYTES, $JPG_BYTES) {
+    bootTestDatabase();
+
+    $pdf = \App\Core\FileStorage::store(makeUpload('dalil.pdf', 'application/pdf', $PDF_BYTES));
+    assertEquals('application/pdf', $pdf['mime'], 'PDF MIME aniqlanishi kerak');
+    assertTrue(str_ends_with($pdf['path'], '.pdf'), 'PDF kengaytmasi saqlanishi kerak');
+
+    $png = \App\Core\FileStorage::store(makeUpload('rasm.png', 'image/png', $PNG_BYTES));
+    assertEquals('image/png', $png['mime'], 'PNG MIME aniqlanishi kerak');
+
+    $jpg = \App\Core\FileStorage::store(makeUpload('rasm.jpg', 'image/jpeg', $JPG_BYTES));
+    assertEquals('image/jpeg', $jpg['mime'], 'JPEG MIME aniqlanishi kerak');
+});
+
+test('FileStorage ruxsat etilmagan turlarni rad etadi (kengaytma va MIME)', function () use ($PDF_BYTES) {
+    bootTestDatabase();
+
+    // Ruxsat etilmagan kengaytma (.exe).
+    $threw = false;
+    try {
+        \App\Core\FileStorage::store(makeUpload('virus.exe', 'application/octet-stream', 'MZ' . str_repeat("\x00", 32)));
+    } catch (\RuntimeException) {
+        $threw = true;
+    }
+    assertTrue($threw, 'Ruxsat etilmagan kengaytma rad etilishi kerak');
+
+    // Ruxsat etilgan kengaytma, LEKIN mos kelmaydigan/ruxsatsiz MIME (.pdf
+    // nomi ostidagi matn fayl => text/plain, oq ro'yxatda yo'q).
+    $threw2 = false;
+    try {
+        \App\Core\FileStorage::store(makeUpload('soxta.pdf', 'application/pdf', 'shunchaki oddiy matn, PDF emas'));
+    } catch (\RuntimeException) {
+        $threw2 = true;
+    }
+    assertTrue($threw2, 'MIME oq ro\'yxatda bo\'lmagan fayl rad etilishi kerak');
+
+    // Hajmi juda katta fayl rad etilishi kerak.
+    $big = makeUpload('katta.pdf', 'application/pdf', $PDF_BYTES);
+    $big['size'] = 50 * 1024 * 1024; // 50 MB (chegara 10 MB)
+    $threw3 = false;
+    try {
+        \App\Core\FileStorage::store($big);
+    } catch (\RuntimeException) {
+        $threw3 = true;
+    }
+    assertTrue($threw3, 'Chegaradan katta fayl rad etilishi kerak');
+});
+
+test('Document M:N: bir hujjat bir nechta indikatorga bog\'lanadi va uziladi', function () {
+    bootTestDatabase();
+    Auth::attempt('admin', 'Parol123!');
+    Auth::flushCache();
+
+    $docId = DB::insert('documents', [
+        'title' => 'Test dalil', 'category' => 'buyruqlar',
+        'file_path' => 'storage/uploads/test.pdf', 'original_name' => 'test.pdf',
+        'mime_type' => 'application/pdf', 'file_size' => 100, 'doc_type' => 'dalil',
+        'uploaded_by' => Auth::id(), 'created_at' => date('Y-m-d H:i:s'),
+    ]);
+    // Toza (dalilsiz) ikkita yangi indikator yaratamiz — seed dalillari
+    // aralashmasligi uchun.
+    $critId = (int) DB::scalar('SELECT id FROM accreditation_criteria ORDER BY id LIMIT 1');
+    $mk = static fn (string $code) => DB::insert('accreditation_indicators', [
+        'criteria_id' => $critId, 'code' => $code, 'name' => 'MN ' . $code,
+        'weight' => 1.0, 'rag_status' => 'grey',
+        'created_at' => date('Y-m-d H:i:s'), 'updated_at' => date('Y-m-d H:i:s'),
+    ]);
+    $i1 = $mk('MN.1');
+    $i2 = $mk('MN.2');
+
+    // Ikki indikatorga bog'laymiz.
+    assertTrue(\App\Models\Document::linkToIndicator($docId, $i1, Auth::id()), 'Birinchi bog\'lash muvaffaqiyatli');
+    assertTrue(\App\Models\Document::linkToIndicator($docId, $i2, Auth::id()), 'Ikkinchi bog\'lash muvaffaqiyatli');
+
+    // Takroriy bog'lash rad etiladi (UNIQUE yaxlitligi).
+    assertFalse(\App\Models\Document::linkToIndicator($docId, $i1, Auth::id()), 'Takroriy bog\'lash rad etilishi kerak');
+
+    // Hujjat ostida ikkala indikator ko'rinadi.
+    $linked = \App\Models\Document::linkedIndicators($docId);
+    assertEquals(2, count($linked), 'Hujjat 2 ta indikatorga bog\'langan bo\'lishi kerak');
+
+    // Har indikator ostida hujjat ko'rinadi.
+    assertEquals(1, count(\App\Models\Document::forIndicator($i1)), 'Indikator 1 ostida hujjat ko\'rinadi');
+    assertEquals(1, count(\App\Models\Document::forIndicator($i2)), 'Indikator 2 ostida hujjat ko\'rinadi');
+
+    // Uzish ishlaydi.
+    assertTrue(\App\Models\Document::unlinkFromIndicator($docId, $i1), 'Uzish muvaffaqiyatli');
+    assertEquals(1, count(\App\Models\Document::linkedIndicators($docId)), 'Uzilgandan keyin 1 ta qoladi');
+    assertEquals(0, count(\App\Models\Document::forIndicator($i1)), 'Uzilgan indikator ostida hujjat qolmaydi');
+    Auth::logout();
+});
+
+test('ScoringEngine: dalilsiz indikator grey, dalil bog\'langach qayta hisoblanadi', function () {
+    bootTestDatabase();
+    Auth::attempt('admin', 'Parol123!');
+    Auth::flushCache();
+
+    // Dalilsiz indikator yaratamiz (ball bilan, lekin evidence yo'q).
+    $critId = (int) DB::scalar('SELECT id FROM accreditation_criteria ORDER BY id LIMIT 1');
+    $indId = DB::insert('accreditation_indicators', [
+        'criteria_id' => $critId, 'code' => 'TEST.EV', 'name' => 'Test indikator',
+        'weight' => 1.0, 'rag_status' => 'green', 'score' => 90.0,
+        'created_at' => date('Y-m-d H:i:s'), 'updated_at' => date('Y-m-d H:i:s'),
+    ]);
+    // Dalil yo'q => refresh grey qaytaradi.
+    assertEquals('grey', \App\Core\ScoringEngine::refreshIndicator($indId), 'Dalilsiz indikator grey bo\'lishi kerak');
+    assertEquals('grey', DB::scalar('SELECT rag_status FROM accreditation_indicators WHERE id = :id', ['id' => $indId]), 'DB rag_status grey');
+
+    // Dalil bog'laymiz => yuqori ball green bo'ladi.
+    $docId = DB::insert('documents', [
+        'title' => 'EV', 'category' => 'boshqa', 'file_path' => 'storage/uploads/ev.pdf',
+        'original_name' => 'ev.pdf', 'mime_type' => 'application/pdf', 'file_size' => 100,
+        'doc_type' => 'dalil', 'uploaded_by' => Auth::id(), 'created_at' => date('Y-m-d H:i:s'),
+    ]);
+    \App\Models\Document::linkToIndicator($docId, $indId, Auth::id());
+    assertEquals('green', \App\Core\ScoringEngine::refreshIndicator($indId), 'Dalil + 90 ball => green');
+    Auth::logout();
+});
+
+test('DocumentController himoyalangan yuklab olish ruxsatsiz rolni rad etadi', function () use ($PDF_BYTES) {
+    bootTestDatabase();
+
+    // Fayl yuklaymiz (admin sifatida) va documents yozuvini yaratamiz.
+    Auth::attempt('admin', 'Parol123!');
+    Auth::flushCache();
+    $stored = \App\Core\FileStorage::store(makeUpload('himoya.pdf', 'application/pdf', $PDF_BYTES));
+    $docId = DB::insert('documents', [
+        'title' => 'Himoyalangan', 'category' => 'buyruqlar', 'file_path' => $stored['path'],
+        'original_name' => $stored['original_name'], 'mime_type' => $stored['mime'],
+        'file_size' => $stored['size'], 'doc_type' => 'dalil', 'uploaded_by' => Auth::id(),
+        'created_at' => date('Y-m-d H:i:s'),
+    ]);
+    Auth::logout();
+
+    $ctrl = new \App\Controllers\DocumentController();
+    $req = new Request('GET', "/documents/$docId/download", [], [], ['REQUEST_METHOD' => 'GET']);
+    $req->setParams(['id' => (string) $docId]);
+
+    // Ruxsatli rol (documents.view bor) — 200 va fayl mazmuni.
+    Auth::attempt('admin', 'Parol123!');
+    Auth::flushCache();
+    $ok = $ctrl->download($req);
+    assertEquals(200, $ok->status(), 'Ruxsatli rol faylni ola olishi kerak');
+    assertTrue($ok->body() === $PDF_BYTES, 'Yuklab olingan mazmun asl fayl bilan mos kelishi kerak');
+    Auth::logout();
+
+    // Ruxsatsiz holat: hech kim kirmagan (documents.view yo'q) — 403.
+    Auth::flushCache();
+    $denied = $ctrl->download($req);
+    assertEquals(403, $denied->status(), 'Ruxsatsiz (documents.view yo\'q) so\'rov 403 olishi kerak');
+    assertTrue($denied->body() !== $PDF_BYTES, 'Ruxsatsiz so\'rovga fayl mazmuni berilmasligi kerak');
+});
+
+test('ScientificResult barcha turlarni lookup sifatida qamrab oladi', function () {
+    $types = \App\Models\ScientificResult::TYPES;
+    // Foydalanuvchi topshirig'idagi 14 ta tur mavjud bo'lishi kerak.
+    $expected = [
+        'ilmiy_maqola', 'oak_maqola', 'scopus_maqola', 'wos_maqola',
+        'xalqaro_konferensiya', 'respublika_konferensiya', 'monografiya',
+        'oquv_uslubiy_nashr', 'patent', 'mualliflik_guvohnomasi', 'grant',
+        'xalqaro_loyiha', 'ilmiy_seminar', 'boshqa',
+    ];
+    foreach ($expected as $key) {
+        assertTrue(isset($types[$key]), "Tur mavjud bo'lishi kerak: $key");
+    }
+    assertEquals(14, count($types), '14 ta ilmiy natija turi bo\'lishi kerak');
+});
+
+test('ScientificResultController fayl bilan va havola bilan natija yozadi', function () use ($PDF_BYTES) {
+    bootTestDatabase();
+    Auth::attempt('doktorant', 'Parol123!');
+    Auth::flushCache();
+
+    $studentId = (int) DB::scalar('SELECT id FROM doctoral_students ORDER BY id LIMIT 1');
+    $ctrl = new \App\Controllers\ScientificResultController();
+
+    // 1) Fayl bilan (Scopus maqola => publications specializatsiyasi).
+    $before = (int) DB::scalar('SELECT COUNT(*) FROM scientific_results');
+    $reqFile = new Request('POST', '/results', [], [
+        'result_type' => 'scopus_maqola', 'title' => 'Test Scopus maqola',
+        'student_id' => (string) $studentId, 'achieved_at' => '2024-01-01',
+    ], ['REQUEST_METHOD' => 'POST'], ['evidence_file' => makeUpload('m.pdf', 'application/pdf', $PDF_BYTES)]);
+    $ctrl->store($reqFile);
+    $r1 = DB::selectOne('SELECT * FROM scientific_results ORDER BY id DESC LIMIT 1');
+    assertEquals('scopus_maqola', $r1['result_type'], 'Tur saqlanishi kerak');
+    assertTrue($r1['document_id'] !== null, 'Fayl bog\'langan hujjat bo\'lishi kerak');
+    assertTrue($r1['publication_id'] !== null, 'Scopus maqola publications specializatsiyasini to\'ldiradi');
+
+    // 2) Havola bilan (grant => URL).
+    $reqUrl = new Request('POST', '/results', [], [
+        'result_type' => 'grant', 'title' => 'Test grant',
+        'student_id' => (string) $studentId, 'url' => 'https://example.org/grant',
+    ], ['REQUEST_METHOD' => 'POST']);
+    $ctrl->store($reqUrl);
+    $r2 = DB::selectOne('SELECT * FROM scientific_results ORDER BY id DESC LIMIT 1');
+    assertEquals('grant', $r2['result_type'], 'Grant turi saqlanishi kerak');
+    assertEquals('https://example.org/grant', $r2['url'], 'Havola saqlanishi kerak');
+    assertTrue($r2['document_id'] === null, 'Havola variantida fayl bo\'lmasligi kerak');
+
+    $after = (int) DB::scalar('SELECT COUNT(*) FROM scientific_results');
+    assertEquals($before + 2, $after, 'Ikkita natija qo\'shilishi kerak');
+    Auth::logout();
+});
+
+// ---------------------------------------------------------------
 // Runner.
 // ---------------------------------------------------------------
 echo "ADPI Monitoring — test runner\n";

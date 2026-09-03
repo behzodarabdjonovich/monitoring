@@ -689,7 +689,9 @@ return function (): void {
         if ($ir % 2 === 0) {
             $docId = DB::insert('documents', [
                 'title' => 'Demo dalil hujjati ' . ($ir + 1),
+                'category' => ['buyruqlar', 'kengash_qarorlari', 'bayonnomalar', 'maqolalar', 'sertifikatlar'][$ir % 5],
                 'file_path' => 'storage/uploads/demo-' . ($ir + 1) . '.pdf',
+                'original_name' => 'demo-' . ($ir + 1) . '.pdf',
                 'mime_type' => 'application/pdf',
                 'file_size' => 10240,
                 'doc_type' => 'dalil',
@@ -706,6 +708,12 @@ return function (): void {
                 'linked_at' => $now,
             ]);
         }
+    }
+
+    // Dalil holatiga qarab har indikator RAG statusini qayta hisoblaymiz:
+    // dalil (indicator_evidence) bog'lanmagan indikator "grey" bo'ladi.
+    foreach ($indicatorRows as $indRow) {
+        \App\Core\ScoringEngine::refreshIndicator((int) $indRow['id']);
     }
 
     // Akkreditatsiya tayyorlik indeksini ScoringEngine bilan hisoblab yozamiz.

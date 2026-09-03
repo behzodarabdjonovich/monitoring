@@ -77,9 +77,12 @@ final class ScoringEngine
      */
     public static function assessAccreditation(int $accreditationId): array
     {
-        // Indikator ballari va og'irliklarini o'qiymiz (prepared statement).
+        // Indikator ballari, og'irliklari va bog'langan dalillar sonini
+        // o'qiymiz (prepared statement). Dalilsiz indikator "grey" hisoblanadi
+        // (score inobatga olinmaydi — tayyorlik indeksiga hissa qo'shmaydi).
         $rows = DB::select(
-            'SELECT i.weight AS weight, i.score AS score
+            'SELECT i.weight AS weight, i.score AS score,
+                    (SELECT COUNT(*) FROM indicator_evidence ie WHERE ie.indicator_id = i.id) AS evidence_count
              FROM accreditation_indicators i
              INNER JOIN accreditation_criteria c ON c.id = i.criteria_id
              WHERE c.accreditation_id = :aid',
@@ -88,7 +91,10 @@ final class ScoringEngine
 
         $items = array_map(static fn ($r) => [
             'weight' => $r['weight'] !== null ? (float) $r['weight'] : 1.0,
-            'score' => $r['score'] !== null ? (float) $r['score'] : null,
+            // Dalil yo'q bo'lsa score = null => grey (indeksga kirmaydi).
+            'score' => ((int) ($r['evidence_count'] ?? 0) > 0 && $r['score'] !== null)
+                ? (float) $r['score']
+                : null,
         ], $rows);
 
         $readiness = self::weightedReadiness($items);
@@ -96,6 +102,38 @@ final class ScoringEngine
             'readiness_index' => $readiness,
             'rag_status' => self::ragStatus($readiness),
         ];
+    }
+
+    /**
+     * Bitta indikator uchun RAG holatini dalil mavjudligi + ball asosida
+     * hisoblaydi. Dalil (indicator_evidence) yo'q bo'lsa har doim "grey".
+     */
+    public static function indicatorRag(int $indicatorId): string
+    {
+        $row = DB::selectOne(
+            'SELECT i.score AS score,
+                    (SELECT COUNT(*) FROM indicator_evidence ie WHERE ie.indicator_id = i.id) AS evidence_count
+             FROM accreditation_indicators i WHERE i.id = :id',
+            ['id' => $indicatorId]
+        );
+        if ($row === null || (int) ($row['evidence_count'] ?? 0) === 0) {
+            return 'grey';
+        }
+        return self::ragStatus($row['score'] === null ? null : (float) $row['score']);
+    }
+
+    /**
+     * Indikator rag_status ustunini dalil holatiga qarab qayta hisoblab
+     * saqlaydi (dalil bog'langan/uzilganda chaqiriladi).
+     */
+    public static function refreshIndicator(int $indicatorId): string
+    {
+        $rag = self::indicatorRag($indicatorId);
+        DB::run(
+            'UPDATE accreditation_indicators SET rag_status = :r, updated_at = :u WHERE id = :id',
+            ['r' => $rag, 'u' => date('Y-m-d H:i:s'), 'id' => $indicatorId]
+        );
+        return $rag;
     }
 
     private static function setting(string $key, mixed $default): mixed
