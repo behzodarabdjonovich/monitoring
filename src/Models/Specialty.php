@@ -77,12 +77,13 @@ final class Specialty
         $spec = self::find($specialtyId);
         $accId = $spec['accreditation_id'] ?? null;
         if ($accId === null) {
-            return ['percent' => null, 'rag' => 'grey', 'accreditation_id' => null];
+            return ['percent' => null, 'rag' => 'grey', 'label' => 'Baholanmagan', 'accreditation_id' => null];
         }
         $assessment = ScoringEngine::assessAccreditation((int) $accId);
         return [
             'percent' => $assessment['readiness_index'],
             'rag' => $assessment['rag_status'],
+            'label' => $assessment['label'],
             'accreditation_id' => (int) $accId,
         ];
     }

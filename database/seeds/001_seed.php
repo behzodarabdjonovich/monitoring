@@ -729,6 +729,10 @@ return function (): void {
     $settings = [
         ['scoring.threshold_green', '80', 'number', 'RAG yashil chegarasi (foiz).'],
         ['scoring.threshold_yellow', '50', 'number', 'RAG sariq chegarasi (foiz).'],
+        ['scoring.score_green', '100', 'number', '"Talabga to\'liq mos" bahosi bali (0..100).'],
+        ['scoring.score_yellow', '60', 'number', '"Qisman mos" bahosi bali (0..100).'],
+        ['scoring.score_red', '20', 'number', '"Talabga mos emas" bahosi bali (0..100).'],
+        ['scoring.grey_policy', 'exclude', 'string', 'Baholanmagan (kulrang) indikator siyosati: exclude/zero.'],
         ['scoring.default_indicator_weight', '1.0', 'number', 'Indikatorning standart og\'irligi.'],
         ['app.placeholder_notice', '1', 'boolean', 'Namuna (placeholder) ma\'lumot ogohlantirishini ko\'rsatish.'],
     ];

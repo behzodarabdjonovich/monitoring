@@ -391,3 +391,21 @@ h3 { font-size: 1.05rem; }
 @media (min-width: 1024px) {
     .sidebar-backdrop { display: none !important; }
 }
+
+/* ---------------- Akkreditatsiya: indikator kartalari ---------------- */
+.indicator-card {
+    border-left: 5px solid var(--rag-grey);
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+.indicator-green { border-left-color: var(--rag-green); }
+.indicator-yellow { border-left-color: var(--rag-yellow); }
+.indicator-red { border-left-color: var(--rag-red); }
+.indicator-grey { border-left-color: var(--rag-grey); }
+.indicator-card-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 0.5rem;
+}

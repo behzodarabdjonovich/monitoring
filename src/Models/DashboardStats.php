@@ -314,7 +314,7 @@ final class DashboardStats
         // Institut darajasidagi (birinchi) akkreditatsiya siklini olamiz.
         $acc = DB::selectOne('SELECT * FROM accreditations ORDER BY id LIMIT 1');
         if ($acc === null) {
-            return ['percent' => null, 'rag' => 'grey', 'status' => null, 'cycle' => null, 'is_placeholder' => false];
+            return ['percent' => null, 'rag' => 'grey', 'label' => 'Baholanmagan', 'status' => null, 'cycle' => null, 'is_placeholder' => false];
         }
         // Agar akkreditatsiya holati filtri berilgan bo'lsa va mos kelmasa —
         // hero'ni grey qilib ko'rsatamiz (natija filtrga bo'ysunishini isbotlaydi).
@@ -322,6 +322,7 @@ final class DashboardStats
             return [
                 'percent' => null,
                 'rag' => 'grey',
+                'label' => 'Baholanmagan',
                 'status' => $acc['status'],
                 'cycle' => $acc['cycle_year'],
                 'is_placeholder' => (int) $acc['is_placeholder'] === 1,
@@ -331,6 +332,7 @@ final class DashboardStats
         return [
             'percent' => $assessment['readiness_index'],
             'rag' => $assessment['rag_status'],
+            'label' => $assessment['label'],
             'status' => $acc['status'],
             'cycle' => $acc['cycle_year'],
             'is_placeholder' => (int) $acc['is_placeholder'] === 1,

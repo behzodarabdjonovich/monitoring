@@ -53,7 +53,9 @@ $kpiCard = function (string $label, $value, string $badgeClass, string $badgeTex
         <?= Chart::gauge($heroPct, $heroRag, ['size' => 200]) ?>
     </div>
     <div class="hero-body">
-        <h2 class="hero-title">MAXSUS DAVLAT AKKREDITATSIYASIGA TAYYORLIK — <?= e($heroLabel) ?></h2>
+        <h2 class="hero-title">MAXSUS DAVLAT AKKREDITATSIYASIGA TAYYORLIK — <?= e($heroLabel) ?>
+            <?php if (!empty($hero['label'])): ?><span class="badge badge-<?= e($heroRag) ?>"><?= e($hero['label']) ?></span><?php endif; ?>
+        </h2>
         <div class="progress hero-progress" role="progressbar"
              aria-valuenow="<?= e($heroPct === null ? 0 : round($heroPct)) ?>" aria-valuemin="0" aria-valuemax="100">
             <div class="progress-bar rag-fill-<?= e($heroRag) ?>" style="width: <?= e($heroPct === null ? 0 : max(0, min(100, $heroPct))) ?>%"></div>

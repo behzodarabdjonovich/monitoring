@@ -7,6 +7,7 @@
  * qo'shiladi.
  */
 
+use App\Controllers\AccreditationController;
 use App\Controllers\AttestationController;
 use App\Controllers\AuthController;
 use App\Controllers\DashboardController;
@@ -15,6 +16,7 @@ use App\Controllers\PlanController;
 use App\Controllers\PlanTaskController;
 use App\Controllers\ProgramController;
 use App\Controllers\ScientificResultController;
+use App\Controllers\SettingsController;
 use App\Controllers\SpecialtyController;
 use App\Controllers\StudentController;
 use App\Controllers\SupervisorController;
@@ -105,3 +107,26 @@ $router->post('/attestations', [AttestationController::class, 'store'], [$auth()
 $router->get('/attestations/{id}', [AttestationController::class, 'show'], [$auth(), $rbac('attestations.view')]);
 $router->post('/attestations/{id}/approve', [AttestationController::class, 'approve'], [$auth(), $rbac('attestations.approve')]);
 $router->post('/attestations/{id}', [AttestationController::class, 'update'], [$auth(), $rbac('attestations.edit')]);
+
+// --- MAXSUS DAVLAT AKKREDITATSIYASI (item 9-10) — ENG ASOSIY modul ---
+// Akkreditatsiya -> Mezon -> Indikator -> Talab -> Dalil -> Baho -> Kamchilik -> Chora-tadbir.
+$router->get('/accreditations', [AccreditationController::class, 'index'], [$auth(), $rbac('accreditation.view')]);
+$router->get('/accreditations/create', [AccreditationController::class, 'create'], [$auth(), $rbac('accreditation.create')]);
+$router->post('/accreditations', [AccreditationController::class, 'store'], [$auth(), $rbac('accreditation.create')]);
+$router->get('/accreditations/{id}', [AccreditationController::class, 'show'], [$auth(), $rbac('accreditation.view')]);
+$router->get('/accreditations/{id}/edit', [AccreditationController::class, 'edit'], [$auth(), $rbac('accreditation.edit')]);
+$router->post('/accreditations/{id}', [AccreditationController::class, 'update'], [$auth(), $rbac('accreditation.edit')]);
+$router->post('/accreditations/{id}/criteria', [AccreditationController::class, 'storeCriterion'], [$auth(), $rbac('accreditation.edit')]);
+$router->post('/accreditations/{id}/clear-placeholder', [AccreditationController::class, 'clearPlaceholder'], [$auth(), $rbac('accreditation.configure')]);
+// Mezon (Criteria) -> indikatorlar ro'yxati (nested navigation).
+$router->get('/criteria/{id}', [AccreditationController::class, 'criterion'], [$auth(), $rbac('accreditation.view')]);
+$router->post('/criteria/{id}', [AccreditationController::class, 'updateCriterion'], [$auth(), $rbac('accreditation.edit')]);
+$router->post('/criteria/{id}/indicators', [AccreditationController::class, 'storeIndicator'], [$auth(), $rbac('accreditation.edit')]);
+// Indikator kartasi (barcha item-9 maydonlari) + baho + tahrir.
+$router->get('/indicators/{id}', [AccreditationController::class, 'indicator'], [$auth(), $rbac('accreditation.view')]);
+$router->post('/indicators/{id}', [AccreditationController::class, 'updateIndicator'], [$auth(), $rbac('accreditation.edit')]);
+$router->post('/indicators/{id}/assess', [AccreditationController::class, 'assess'], [$auth(), $rbac('accreditation.approve')]);
+
+// --- Sozlamalar (Sozlamalar) — baholash metodikasi (Super Admin) ---
+$router->get('/settings', [SettingsController::class, 'index'], [$auth(), $rbac('settings.view')]);
+$router->post('/settings', [SettingsController::class, 'update'], [$auth(), $rbac('settings.configure')]);

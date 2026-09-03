@@ -695,6 +695,351 @@ test('ScientificResultController fayl bilan va havola bilan natija yozadi', func
 });
 
 // ---------------------------------------------------------------
+// FEAT-006: akkreditatsiya moduli — sozlanadigan ScoringEngine, 4 RAG
+// baholash holati, tayyorlik indeksi matematikasi va konfiguratsiya.
+// ---------------------------------------------------------------
+
+test('ScoringEngine weightedReadiness og\'irlikli o\'rtachani to\'g\'ri hisoblaydi', function () {
+    $SE = \App\Core\ScoringEngine::class;
+    // Teng og'irlik: (100 + 50) / 2 = 75.
+    assertEquals(75.0, $SE::weightedReadiness([
+        ['weight' => 1.0, 'score' => 100.0],
+        ['weight' => 1.0, 'score' => 50.0],
+    ], 'exclude'));
+
+    // Turli og'irlik: (100*3 + 0*1) / (3+1) = 75.
+    assertEquals(75.0, $SE::weightedReadiness([
+        ['weight' => 3.0, 'score' => 100.0],
+        ['weight' => 1.0, 'score' => 0.0],
+    ], 'exclude'));
+
+    // grey (null) exclude siyosatida hisobdan chiqadi: (80)/1 = 80.
+    assertEquals(80.0, $SE::weightedReadiness([
+        ['weight' => 1.0, 'score' => 80.0],
+        ['weight' => 1.0, 'score' => null],
+    ], 'exclude'));
+
+    // grey zero siyosatida 0 sifatida (og'irligi bilan): (80 + 0) / 2 = 40.
+    assertEquals(40.0, $SE::weightedReadiness([
+        ['weight' => 1.0, 'score' => 80.0],
+        ['weight' => 1.0, 'score' => null],
+    ], 'zero'));
+
+    // Barchasi grey (exclude) => null.
+    assertTrue($SE::weightedReadiness([
+        ['weight' => 1.0, 'score' => null],
+    ], 'exclude') === null);
+});
+
+test('ScoringEngine RAG chegaralari to\'g\'ri yorliq beradi', function () {
+    bootTestDatabase();
+    $SE = \App\Core\ScoringEngine::class;
+    // Standart chegaralar: green>=80, yellow>=50, else red; null => grey.
+    assertEquals('green', $SE::ragStatus(91.0));
+    assertEquals('yellow', $SE::ragStatus(73.0));
+    assertEquals('red', $SE::ragStatus(48.0));
+    assertEquals('grey', $SE::ragStatus(null));
+
+    // Foydalanuvchi misollari: 91% Tayyor, 73% Takomillashtirish kerak, 48% Yuqori xavf.
+    assertEquals('Tayyor', $SE::readinessLabel(91.0)['label']);
+    assertEquals('Takomillashtirish kerak', $SE::readinessLabel(73.0)['label']);
+    assertEquals('Yuqori xavf', $SE::readinessLabel(48.0)['label']);
+    assertEquals('Baholanmagan', $SE::readinessLabel(null)['label']);
+
+    // Chegara aynan qiymatida (80) green.
+    assertEquals('green', $SE::ragStatus(80.0));
+    assertEquals('yellow', $SE::ragStatus(50.0));
+    assertEquals('red', $SE::ragStatus(49.99));
+});
+
+test('ScoringEngine: 4 RAG baholash holati mavjud va o\'zbekcha yorliqli', function () {
+    $SE = \App\Core\ScoringEngine::class;
+    assertEquals(4, count($SE::RAG_STATES), '4 ta RAG holati bo\'lishi kerak');
+    $labels = $SE::ragStateLabels();
+    assertEquals('Talabga to\'liq mos', $labels['green']);
+    assertEquals('Qisman mos', $labels['yellow']);
+    assertEquals('Talabga mos emas', $labels['red']);
+    assertEquals('Baholanmagan', $labels['grey']);
+});
+
+test('Indikator bahosi (setAssessment) RAG + score + tayyorlik indeksini o\'zgartiradi', function () {
+    bootTestDatabase();
+    Auth::attempt('ekspert', 'Parol123!');
+    Auth::flushCache();
+
+    // Toza mezon + dalilli indikator yaratamiz (izolyatsiyalangan).
+    $accId = DB::insert('accreditations', [
+        'title' => 'Test akkr', 'cycle_year' => '2099', 'status' => 'planning',
+        'is_placeholder' => 0, 'created_at' => date('Y-m-d H:i:s'), 'updated_at' => date('Y-m-d H:i:s'),
+    ]);
+    $critId = DB::insert('accreditation_criteria', [
+        'accreditation_id' => $accId, 'code' => 'T1', 'name' => 'Test mezon',
+        'weight' => 1.0, 'display_order' => 1, 'is_placeholder' => 0, 'created_at' => date('Y-m-d H:i:s'),
+    ]);
+    $indId = DB::insert('accreditation_indicators', [
+        'criteria_id' => $critId, 'code' => 'T1.1', 'name' => 'Test indikator',
+        'weight' => 1.0, 'rag_status' => 'grey', 'is_placeholder' => 0,
+        'created_at' => date('Y-m-d H:i:s'), 'updated_at' => date('Y-m-d H:i:s'),
+    ]);
+    // Dalil biriktiramiz (baho grey'ga tushmasligi uchun).
+    $docId = DB::insert('documents', [
+        'title' => 'D', 'category' => 'boshqa', 'file_path' => 'storage/uploads/d.pdf',
+        'original_name' => 'd.pdf', 'mime_type' => 'application/pdf', 'file_size' => 10,
+        'doc_type' => 'dalil', 'uploaded_by' => Auth::id(), 'created_at' => date('Y-m-d H:i:s'),
+    ]);
+    \App\Models\Document::linkToIndicator($docId, $indId, Auth::id());
+
+    // "Talabga to'liq mos" (green) => score = 100 (standart) => indeks 100%.
+    \App\Models\Indicator::setAssessment($indId, 'green');
+    $a1 = \App\Core\ScoringEngine::assessAccreditation($accId);
+    assertEquals(100.0, $a1['readiness_index'], 'Green baho => 100% indeks');
+    assertEquals('green', $a1['rag_status']);
+    assertEquals('Tayyor', $a1['label']);
+
+    // "Qisman mos" (yellow) => score = 60 => indeks 60% => yellow Takomillashtirish kerak.
+    \App\Models\Indicator::setAssessment($indId, 'yellow');
+    $a2 = \App\Core\ScoringEngine::assessAccreditation($accId);
+    assertEquals(60.0, $a2['readiness_index'], 'Yellow baho => 60% indeks');
+    assertEquals('yellow', $a2['rag_status']);
+
+    // "Baholanmagan" (grey) => indeksga kirmaydi => null (yagona indikator).
+    \App\Models\Indicator::setAssessment($indId, 'grey');
+    $a3 = \App\Core\ScoringEngine::assessAccreditation($accId);
+    assertTrue($a3['readiness_index'] === null, 'Grey baho (yagona indikator) => indeks null');
+    assertEquals('grey', DB::scalar('SELECT rag_status FROM accreditation_indicators WHERE id = :id', ['id' => $indId]));
+    Auth::logout();
+});
+
+test('Sozlamalar o\'zgarishi tayyorlik indeksini o\'zgartiradi (konfiguratsiya)', function () {
+    bootTestDatabase();
+
+    // Izolyatsiyalangan akkr: bitta dalilli indikatorga green baho (score=100).
+    Auth::attempt('admin', 'Parol123!');
+    Auth::flushCache();
+    $accId = DB::insert('accreditations', [
+        'title' => 'Cfg akkr', 'cycle_year' => '2099', 'status' => 'planning',
+        'is_placeholder' => 0, 'created_at' => date('Y-m-d H:i:s'), 'updated_at' => date('Y-m-d H:i:s'),
+    ]);
+    $critId = DB::insert('accreditation_criteria', [
+        'accreditation_id' => $accId, 'code' => 'C', 'name' => 'C', 'weight' => 1.0,
+        'display_order' => 1, 'is_placeholder' => 0, 'created_at' => date('Y-m-d H:i:s'),
+    ]);
+    $indId = DB::insert('accreditation_indicators', [
+        'criteria_id' => $critId, 'code' => 'C.1', 'name' => 'C1', 'weight' => 1.0,
+        'rag_status' => 'grey', 'is_placeholder' => 0,
+        'created_at' => date('Y-m-d H:i:s'), 'updated_at' => date('Y-m-d H:i:s'),
+    ]);
+    $docId = DB::insert('documents', [
+        'title' => 'D', 'category' => 'boshqa', 'file_path' => 'storage/uploads/c.pdf',
+        'original_name' => 'c.pdf', 'mime_type' => 'application/pdf', 'file_size' => 10,
+        'doc_type' => 'dalil', 'uploaded_by' => Auth::id(), 'created_at' => date('Y-m-d H:i:s'),
+    ]);
+    \App\Models\Document::linkToIndicator($docId, $indId, Auth::id());
+    \App\Models\Indicator::setAssessment($indId, 'yellow'); // score = 60 (standart)
+
+    $before = \App\Core\ScoringEngine::assessAccreditation($accId);
+    assertEquals(60.0, $before['readiness_index'], 'Standart yellow bali = 60');
+
+    // "Qisman mos" balini 60 -> 90 ga o'zgartiramiz => indeks 90% ga ko'tariladi.
+    DB::run("UPDATE settings SET value = '90' WHERE key = 'scoring.score_yellow'");
+    \App\Models\Indicator::setAssessment($indId, 'yellow'); // qayta baho => yangi score
+    $afterScore = \App\Core\ScoringEngine::assessAccreditation($accId);
+    assertEquals(90.0, $afterScore['readiness_index'], 'score_yellow o\'zgarishi indeksni o\'zgartiradi');
+
+    // Chegarani o'zgartirish yorliqni o'zgartiradi: green chegarasini 95 qilamiz => 90% endi yellow.
+    assertEquals('green', $afterScore['rag_status'], '90% standart chegara (80) bilan green');
+    DB::run("UPDATE settings SET value = '95' WHERE key = 'scoring.threshold_green'");
+    $afterThreshold = \App\Core\ScoringEngine::assessAccreditation($accId);
+    assertEquals('yellow', $afterThreshold['rag_status'], 'green chegarasi 95 bo\'lgach 90% => yellow');
+    assertEquals('Takomillashtirish kerak', $afterThreshold['label']);
+    Auth::logout();
+});
+
+test('ScoringEngine grey_policy zero indeksni pasaytiradi', function () {
+    bootTestDatabase();
+    Auth::attempt('admin', 'Parol123!');
+    Auth::flushCache();
+    $accId = DB::insert('accreditations', [
+        'title' => 'Grey akkr', 'cycle_year' => '2099', 'status' => 'planning',
+        'is_placeholder' => 0, 'created_at' => date('Y-m-d H:i:s'), 'updated_at' => date('Y-m-d H:i:s'),
+    ]);
+    $critId = DB::insert('accreditation_criteria', [
+        'accreditation_id' => $accId, 'code' => 'G', 'name' => 'G', 'weight' => 1.0,
+        'display_order' => 1, 'is_placeholder' => 0, 'created_at' => date('Y-m-d H:i:s'),
+    ]);
+    // Ikki indikator: biri dalilli green, biri dalilsiz (grey).
+    $i1 = DB::insert('accreditation_indicators', [
+        'criteria_id' => $critId, 'code' => 'G.1', 'name' => 'G1', 'weight' => 1.0,
+        'rag_status' => 'grey', 'is_placeholder' => 0,
+        'created_at' => date('Y-m-d H:i:s'), 'updated_at' => date('Y-m-d H:i:s'),
+    ]);
+    $i2 = DB::insert('accreditation_indicators', [
+        'criteria_id' => $critId, 'code' => 'G.2', 'name' => 'G2', 'weight' => 1.0,
+        'rag_status' => 'grey', 'is_placeholder' => 0,
+        'created_at' => date('Y-m-d H:i:s'), 'updated_at' => date('Y-m-d H:i:s'),
+    ]);
+    $docId = DB::insert('documents', [
+        'title' => 'D', 'category' => 'boshqa', 'file_path' => 'storage/uploads/g.pdf',
+        'original_name' => 'g.pdf', 'mime_type' => 'application/pdf', 'file_size' => 10,
+        'doc_type' => 'dalil', 'uploaded_by' => Auth::id(), 'created_at' => date('Y-m-d H:i:s'),
+    ]);
+    \App\Models\Document::linkToIndicator($docId, $i1, Auth::id());
+    \App\Models\Indicator::setAssessment($i1, 'green'); // i2 dalilsiz -> grey
+
+    // exclude (standart): faqat i1 => 100%.
+    $excl = \App\Core\ScoringEngine::assessAccreditation($accId);
+    assertEquals(100.0, $excl['readiness_index'], 'exclude siyosatida grey hisobdan chiqadi => 100%');
+
+    // zero: i2 (grey) 0 sifatida => (100 + 0)/2 = 50%.
+    DB::run("UPDATE settings SET value = 'zero' WHERE key = 'scoring.grey_policy'");
+    $zero = \App\Core\ScoringEngine::assessAccreditation($accId);
+    assertEquals(50.0, $zero['readiness_index'], 'zero siyosatida grey 0 sifatida => 50%');
+    Auth::logout();
+});
+
+test('AccreditationController: baho RBAC bilan cheklangan va indeks yangilanadi', function () {
+    bootTestDatabase();
+
+    // Dalilli indikator tayyorlaymiz.
+    Auth::attempt('admin', 'Parol123!');
+    Auth::flushCache();
+    $indId = (int) DB::scalar('SELECT id FROM accreditation_indicators ORDER BY id LIMIT 1');
+    $accId = (int) DB::scalar(
+        'SELECT c.accreditation_id FROM accreditation_criteria c
+         INNER JOIN accreditation_indicators i ON i.criteria_id = c.id WHERE i.id = :id',
+        ['id' => $indId]
+    );
+    // Dalil borligiga ishonch hosil qilamiz.
+    if ((int) DB::scalar('SELECT COUNT(*) FROM indicator_evidence WHERE indicator_id = :i', ['i' => $indId]) === 0) {
+        $docId = DB::insert('documents', [
+            'title' => 'D', 'category' => 'boshqa', 'file_path' => 'storage/uploads/a.pdf',
+            'original_name' => 'a.pdf', 'mime_type' => 'application/pdf', 'file_size' => 10,
+            'doc_type' => 'dalil', 'uploaded_by' => Auth::id(), 'created_at' => date('Y-m-d H:i:s'),
+        ]);
+        \App\Models\Document::linkToIndicator($docId, $indId, Auth::id());
+    }
+    Auth::logout();
+
+    $ctrl = new \App\Controllers\AccreditationController();
+
+    // Ruxsatsiz rol (doktorant — accreditation.approve yo'q) => 403, o'zgarmaydi.
+    Auth::attempt('doktorant', 'Parol123!');
+    Auth::flushCache();
+    $before = DB::scalar('SELECT rag_status FROM accreditation_indicators WHERE id = :id', ['id' => $indId]);
+    $reqDenied = new Request('POST', "/indicators/$indId/assess", [], ['rag_status' => 'green'], ['REQUEST_METHOD' => 'POST']);
+    $reqDenied->setParams(['id' => (string) $indId]);
+    $respDenied = $ctrl->assess($reqDenied);
+    assertEquals(403, $respDenied->status(), 'Ruxsatsiz rol 403 olishi kerak');
+    assertEquals($before, DB::scalar('SELECT rag_status FROM accreditation_indicators WHERE id = :id', ['id' => $indId]), 'Baho o\'zgarmasligi kerak');
+    Auth::logout();
+
+    // Ruxsatli rol (ekspert — accreditation.approve bor) => baho saqlanadi.
+    Auth::attempt('ekspert', 'Parol123!');
+    Auth::flushCache();
+    $reqOk = new Request('POST', "/indicators/$indId/assess", [], ['rag_status' => 'red'], ['REQUEST_METHOD' => 'POST']);
+    $reqOk->setParams(['id' => (string) $indId]);
+    $respOk = $ctrl->assess($reqOk);
+    assertEquals(302, $respOk->status(), 'Ruxsatli baho redirect (302) qaytaradi');
+    assertEquals('red', DB::scalar('SELECT rag_status FROM accreditation_indicators WHERE id = :id', ['id' => $indId]), 'Baho saqlanishi kerak');
+    // Audit yozuvi qo'shilgan.
+    assertTrue((int) DB::scalar("SELECT COUNT(*) FROM audit_logs WHERE entity_type = 'accreditation_indicators' AND action = 'update'") >= 1, 'Baho audit yozadi');
+    // Akkreditatsiya readiness_index qayta yozilgan.
+    $stored = DB::scalar('SELECT readiness_index FROM accreditations WHERE id = :id', ['id' => $accId]);
+    $computed = \App\Core\ScoringEngine::assessAccreditation($accId)['readiness_index'];
+    assertEquals($computed, $stored === null ? null : (float) $stored, 'Saqlangan indeks hisoblangan bilan mos');
+    Auth::logout();
+});
+
+test('SettingsController konfiguratsiyani saqlaydi va barcha indekslarni qayta hisoblaydi', function () {
+    bootTestDatabase();
+    Auth::attempt('admin', 'Parol123!');
+    Auth::flushCache();
+
+    $ctrl = new \App\Controllers\SettingsController();
+    $req = new Request('POST', '/settings', [], [
+        'scoring.threshold_green' => '85',
+        'scoring.threshold_yellow' => '55',
+        'scoring.score_yellow' => '70',
+        'scoring.grey_policy' => 'zero',
+    ], ['REQUEST_METHOD' => 'POST']);
+    $resp = $ctrl->update($req);
+    assertEquals(302, $resp->status(), 'Sozlama saqlangach redirect');
+    assertEquals('85', DB::scalar("SELECT value FROM settings WHERE key = 'scoring.threshold_green'"));
+    assertEquals('70', DB::scalar("SELECT value FROM settings WHERE key = 'scoring.score_yellow'"));
+    assertEquals('zero', DB::scalar("SELECT value FROM settings WHERE key = 'scoring.grey_policy'"));
+
+    // HTTP formalarda PHP nuqtani "_" ga aylantiradi — underscore variantini
+    // ham qabul qilishi kerak (scoring_threshold_green).
+    $reqU = new Request('POST', '/settings', [], [
+        'scoring_threshold_green' => '88',
+    ], ['REQUEST_METHOD' => 'POST']);
+    $ctrl->update($reqU);
+    assertEquals('88', DB::scalar("SELECT value FROM settings WHERE key = 'scoring.threshold_green'"), 'Underscore maydon nomi ham qabul qilinishi kerak');
+
+    // readiness_index barcha akkreditatsiyalar uchun qayta yozilgan (null bo'lmagan bo'lsa mos).
+    $accId = (int) DB::scalar('SELECT id FROM accreditations ORDER BY id LIMIT 1');
+    $stored = DB::scalar('SELECT readiness_index FROM accreditations WHERE id = :id', ['id' => $accId]);
+    $computed = \App\Core\ScoringEngine::assessAccreditation($accId)['readiness_index'];
+    assertEquals($computed, $stored === null ? null : (float) $stored, 'Qayta hisoblangan indeks saqlanadi');
+    Auth::logout();
+});
+
+test('AccreditationController clearPlaceholder is_placeholder bayrog\'ini tozalaydi', function () {
+    bootTestDatabase();
+    Auth::attempt('admin', 'Parol123!');
+    Auth::flushCache();
+    $accId = (int) DB::scalar('SELECT id FROM accreditations WHERE is_placeholder = 1 ORDER BY id LIMIT 1');
+    assertTrue($accId > 0, 'Placeholder akkreditatsiya seed qilingan');
+
+    $ctrl = new \App\Controllers\AccreditationController();
+    $req = new Request('POST', "/accreditations/$accId/clear-placeholder", [], [], ['REQUEST_METHOD' => 'POST']);
+    $req->setParams(['id' => (string) $accId]);
+    $ctrl->clearPlaceholder($req);
+
+    assertEquals(0, (int) DB::scalar('SELECT is_placeholder FROM accreditations WHERE id = :id', ['id' => $accId]), 'Akkr placeholder tozalanadi');
+    assertEquals(0, (int) DB::scalar('SELECT COUNT(*) FROM accreditation_criteria WHERE accreditation_id = :aid AND is_placeholder = 1', ['aid' => $accId]), 'Mezonlar tozalanadi');
+    assertEquals(0, (int) DB::scalar(
+        'SELECT COUNT(*) FROM accreditation_indicators WHERE is_placeholder = 1 AND criteria_id IN (SELECT id FROM accreditation_criteria WHERE accreditation_id = :aid)',
+        ['aid' => $accId]
+    ), 'Indikatorlar tozalanadi');
+    Auth::logout();
+});
+
+test('AccreditationController show va indikator sahifasi 200 + placeholder banner', function () {
+    bootTestDatabase();
+    Auth::attempt('admin', 'Parol123!');
+    Auth::flushCache();
+
+    $ctrl = new \App\Controllers\AccreditationController();
+
+    // Ro'yxat sahifasi.
+    $reqIdx = new Request('GET', '/accreditations', [], [], ['REQUEST_METHOD' => 'GET']);
+    $respIdx = $ctrl->index($reqIdx);
+    assertEquals(200, $respIdx->status(), 'Akkreditatsiya ro\'yxati 200');
+
+    // Sikl sahifasi + placeholder banner ko'rinadi.
+    $accId = (int) DB::scalar('SELECT id FROM accreditations ORDER BY id LIMIT 1');
+    $reqShow = new Request('GET', "/accreditations/$accId", [], [], ['REQUEST_METHOD' => 'GET']);
+    $reqShow->setParams(['id' => (string) $accId]);
+    $respShow = $ctrl->show($reqShow);
+    assertEquals(200, $respShow->status(), 'Akkr sikl sahifasi 200');
+    assertTrue(str_contains($respShow->body(), 'NAMUNA') || str_contains($respShow->body(), 'placeholder'), 'Placeholder banner/belgi ko\'rinishi kerak');
+
+    // Indikator kartasi: barcha item-9 maydonlari + 4 baho holati.
+    $indId = (int) DB::scalar('SELECT id FROM accreditation_indicators ORDER BY id LIMIT 1');
+    $reqInd = new Request('GET', "/indicators/$indId", [], [], ['REQUEST_METHOD' => 'GET']);
+    $reqInd->setParams(['id' => (string) $indId]);
+    $respInd = $ctrl->indicator($reqInd);
+    assertEquals(200, $respInd->status(), 'Indikator kartasi 200');
+    $html = $respInd->body();
+    // e() apostrofni &#039; ga aylantiradi — apostrofsiz bo'laklar bilan tekshiramiz.
+    foreach (['Indikator kodi', 'Talab mazmuni', 'zini baholash', 'ul bo', 'ul shaxs', 'liq mos', 'Qisman mos', 'Talabga mos emas', 'Baholanmagan'] as $needle) {
+        assertTrue(str_contains($html, $needle), "Indikator kartasida topilishi kerak: $needle");
+    }
+    Auth::logout();
+});
+
+// ---------------------------------------------------------------
 // Runner.
 // ---------------------------------------------------------------
 echo "ADPI Monitoring — test runner\n";

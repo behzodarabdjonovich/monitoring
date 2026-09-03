@@ -25,7 +25,9 @@ $row = function (string $label, $value) {
 
 <div class="card hero-card hero-<?= e($rag) ?>">
     <div class="hero-body">
-        <h2 class="hero-title">Akkreditatsiyaga tayyorlik: <?= $p === null ? 'Ma\'lumot yo\'q' : e(round($p)) . '%' ?></h2>
+        <h2 class="hero-title">Akkreditatsiyaga tayyorlik indeksi: <?= $p === null ? 'Ma\'lumot yo\'q' : e(round($p)) . '%' ?>
+            <?php if (!empty($readiness['label'])): ?><span class="badge badge-<?= e($rag) ?>"><?= e($readiness['label']) ?></span><?php endif; ?>
+        </h2>
         <div class="progress hero-progress" role="progressbar" aria-valuenow="<?= e($p === null ? 0 : round($p)) ?>" aria-valuemin="0" aria-valuemax="100">
             <div class="progress-bar rag-fill-<?= e($rag) ?>" style="width: <?= e($p === null ? 0 : max(0, min(100, $p))) ?>%"></div>
         </div>
