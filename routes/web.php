@@ -65,6 +65,23 @@ $router->get('/doktorant/dashboard', [DashboardController::class, 'index'], [
     new AuthMiddleware(),
     new RbacMiddleware('dashboard.view'),
 ]);
+$router->get('/doktorant/login', [
+    AuthController::class,
+    'showDoctoralLogin'
+]);
+
+$router->post('/doktorant/login', [
+    AuthController::class,
+    'doctoralLogin'
+]);
+
+$router->get('/doktorant/dashboard', [
+    DashboardController::class,
+    'index'
+], [
+    new AuthMiddleware(),
+    new RbacMiddleware('dashboard.view'),
+]);
 
 /**
  * Modul marshrutlari uchun yordamchi: har biri Auth + RBAC middleware bilan.
