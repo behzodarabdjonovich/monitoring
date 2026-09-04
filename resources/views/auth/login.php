@@ -12,7 +12,9 @@ $error = $error ?? null;
 $success = $success ?? null;
 $old_username = $old_username ?? '';
 ?>
-<h1 class="auth-title">Tizimga kirish</h1>
+<h1 class="auth-title">
+    <?= e($portal_title ?? 'Tizimga kirish') ?>
+</h1>
 <p class="auth-subtitle"><?= e(config('app.institute')) ?></p>
 
 <?php if ($error): ?>
@@ -20,7 +22,7 @@ $old_username = $old_username ?? '';
 <?php endif; ?>
 <?php if ($success): ?>
     <div class="alert alert-success" role="status"><?= e($success) ?></div>
-<?php endif; ?>
+<form class="auth-form" action="<?= e($login_action ?? '/login') ?>" method="post" novalidate>
 
 <form class="auth-form" action="/login" method="post" novalidate>
     <?= \App\Core\Csrf::field() ?>
