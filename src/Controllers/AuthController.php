@@ -196,7 +196,7 @@ final class AuthController extends Controller
         Session::flash('success', 'Parol yangilandi. Endi tizimga kiring.');
         return $this->redirect('/login');
     }
-}
+
 public function showDoctoralLogin(Request $request): Response
 {
     if (Auth::check()) {
@@ -284,5 +284,6 @@ public function doctoralLogin(Request $request): Response
         $request->ip()
     );
 
-    return $this->redirect('/doktorant/dashboard');
+return $this->redirect('/doktorant/dashboard');
+    }
 }
