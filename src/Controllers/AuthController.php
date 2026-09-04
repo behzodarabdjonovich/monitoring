@@ -197,3 +197,92 @@ final class AuthController extends Controller
         return $this->redirect('/login');
     }
 }
+public function showDoctoralLogin(Request $request): Response
+{
+    if (Auth::check()) {
+        if (Auth::role() === 'doktorant') {
+            return $this->redirect('/doktorant/dashboard');
+        }
+
+        return $this->redirect('/dashboard');
+    }
+
+    return $this->view('auth.login', [
+        'error' => Session::flash('error'),
+        'success' => Session::flash('success'),
+        'old_username' => '',
+        'doctoral_login' => true,
+    ]);
+}
+
+public function doctoralLogin(Request $request): Response
+{
+    $validator = Validator::make($request->all(), [
+        'username' => 'required|string|max:191',
+        'password' => 'required|string|max:191',
+    ]);
+
+    if ($validator->fails()) {
+        return $this->view('auth.login', [
+            'error' => $validator->firstError(),
+            'old_username' => (string) $request->input('username', ''),
+            'doctoral_login' => true,
+        ], 422);
+    }
+
+    $username = (string) $request->input('username');
+    $password = (string) $request->input('password');
+
+    if (!Auth::attempt($username, $password)) {
+        AuditLogger::log(
+            'login_failed',
+            'users',
+            null,
+            null,
+            ['username' => $username, 'portal' => 'doktorant'],
+            null,
+            $request->ip()
+        );
+
+        return $this->view('auth.login', [
+            'error' => 'Login yoki parol noto\'g\'ri.',
+            'old_username' => $username,
+            'doctoral_login' => true,
+        ], 401);
+    }
+
+    // Faqat doktorant roliga ruxsat.
+    if (Auth::role() !== 'doktorant') {
+        $userId = Auth::id();
+
+        AuditLogger::log(
+            'login_failed',
+            'users',
+            $userId,
+            null,
+            ['reason' => 'wrong_portal', 'portal' => 'doktorant'],
+            $userId,
+            $request->ip()
+        );
+
+        Auth::logout();
+
+        return $this->view('auth.login', [
+            'error' => 'Bu kirish sahifasi faqat doktorantlar uchun.',
+            'old_username' => $username,
+            'doctoral_login' => true,
+        ], 403);
+    }
+
+    AuditLogger::log(
+        'login',
+        'users',
+        Auth::id(),
+        null,
+        ['portal' => 'doktorant'],
+        Auth::id(),
+        $request->ip()
+    );
+
+    return $this->redirect('/doktorant/dashboard');
+}
