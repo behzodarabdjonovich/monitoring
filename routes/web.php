@@ -49,22 +49,6 @@ $router->get('/doktorant/login', [AuthController::class, 'showLogin']);
 $router->post('/doktorant/login', [AuthController::class, 'login']);
 
 // --- Doktorant portali ---
-$router->get('/doktorant/login', [AuthController::class, 'showDoctoralLogin']);
-$router->post('/doktorant/login', [AuthController::class, 'doctoralLogin']);
-
-// --- Dashboard (autentifikatsiya + RBAC) ---
-$router->get('/', [DashboardController::class, 'index'], [
-    new AuthMiddleware(),
-    new RbacMiddleware('dashboard.view'),
-]);
-$router->get('/dashboard', [DashboardController::class, 'index'], [
-    new AuthMiddleware(),
-    new RbacMiddleware('dashboard.view'),
-]);
-$router->get('/doktorant/dashboard', [DashboardController::class, 'index'], [
-    new AuthMiddleware(),
-    new RbacMiddleware('dashboard.view'),
-]);
 $router->get('/doktorant/login', [
     AuthController::class,
     'showDoctoralLogin'
@@ -75,6 +59,18 @@ $router->post('/doktorant/login', [
     'doctoralLogin'
 ]);
 
+// --- Dashboard (autentifikatsiya + RBAC) ---
+$router->get('/', [DashboardController::class, 'index'], [
+    new AuthMiddleware(),
+    new RbacMiddleware('dashboard.view'),
+]);
+
+$router->get('/dashboard', [DashboardController::class, 'index'], [
+    new AuthMiddleware(),
+    new RbacMiddleware('dashboard.view'),
+]);
+
+// --- Doktorant dashboard ---
 $router->get('/doktorant/dashboard', [
     DashboardController::class,
     'index'
