@@ -48,6 +48,10 @@ $router->post('/logout', [AuthController::class, 'logout'], [new AuthMiddleware(
 $router->get('/doktorant/login', [AuthController::class, 'showLogin']);
 $router->post('/doktorant/login', [AuthController::class, 'login']);
 
+// --- Doktorant portali ---
+$router->get('/doktorant/login', [AuthController::class, 'showDoctoralLogin']);
+$router->post('/doktorant/login', [AuthController::class, 'doctoralLogin']);
+
 // --- Dashboard (autentifikatsiya + RBAC) ---
 $router->get('/', [DashboardController::class, 'index'], [
     new AuthMiddleware(),
