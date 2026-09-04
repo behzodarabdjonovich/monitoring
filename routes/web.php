@@ -43,7 +43,10 @@ $router->get('/reset-password', [AuthController::class, 'showReset']);
 $router->post('/reset-password', [AuthController::class, 'reset']);
 $router->post('/login/2fa', [AuthController::class, 'verifyTwofa']);
 $router->post('/logout', [AuthController::class, 'logout'], [new AuthMiddleware()]);
+// Doktorant uchun alohida kirish
+$router->get('/doktorant/login', [\App\Controllers\DoctoralLoginController::class, 'showLogin']);
 
+$router->post('/doktorant/login', [\App\Controllers\DoctoralLoginController::class, 'login']);
 // --- Dashboard (autentifikatsiya + RBAC) ---
 $router->get('/', [DashboardController::class, 'index'], [
     new AuthMiddleware(),
