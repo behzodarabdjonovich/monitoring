@@ -127,10 +127,15 @@ final class AuthController extends Controller
             'email' => 'required|email|max:191',
         ]);
 
-        if ($validator->fails()) {
-            Session::flash('error', $validator->firstError());
-            return $this->redirect('/forgot-password');
-        }
+      if ($validator->fails()) {
+    return $this->view('auth.login', [
+        'error' => $validator->firstError(),
+        'old_username' => (string) $request->input('username', ''),
+        'doctoral_login' => true,
+        'login_action' => '/doktorant/login',
+        'portal_title' => 'Doktorant kabinetiga kirish',
+    ], 422);
+}
 
         $email = (string) $request->input('email');
         $user = DB::selectOne('SELECT id FROM users WHERE email = :e LIMIT 1', ['e' => $email]);
@@ -207,11 +212,23 @@ public function showDoctoralLogin(Request $request): Response
         return $this->redirect('/dashboard');
     }
 
+   public function showDoctoralLogin(Request $request): Response
+{
+    if (Auth::check()) {
+        if (Auth::role() === 'doktorant') {
+            return $this->redirect('/doktorant/dashboard');
+        }
+
+        return $this->redirect('/dashboard');
+    }
+
     return $this->view('auth.login', [
         'error' => Session::flash('error'),
         'success' => Session::flash('success'),
         'old_username' => '',
         'doctoral_login' => true,
+        'login_action' => '/doktorant/login',
+        'portal_title' => 'Doktorant kabinetiga kirish',
     ]);
 }
 
@@ -244,11 +261,13 @@ public function doctoralLogin(Request $request): Response
             $request->ip()
         );
 
-        return $this->view('auth.login', [
-            'error' => 'Login yoki parol noto\'g\'ri.',
-            'old_username' => $username,
-            'doctoral_login' => true,
-        ], 401);
+       return $this->view('auth.login', [
+    'error' => 'Login yoki parol noto\'g\'ri.',
+    'old_username' => $username,
+    'doctoral_login' => true,
+    'login_action' => '/doktorant/login',
+    'portal_title' => 'Doktorant kabinetiga kirish',
+], 401);
     }
 
     // Faqat doktorant roliga ruxsat.
@@ -268,10 +287,12 @@ public function doctoralLogin(Request $request): Response
         Auth::logout();
 
         return $this->view('auth.login', [
-            'error' => 'Bu kirish sahifasi faqat doktorantlar uchun.',
-            'old_username' => $username,
-            'doctoral_login' => true,
-        ], 403);
+    'error' => 'Bu kirish sahifasi faqat doktorantlar uchun.',
+    'old_username' => $username,
+    'doctoral_login' => true,
+    'login_action' => '/doktorant/login',
+    'portal_title' => 'Doktorant kabinetiga kirish',
+], 403);
     }
 
     AuditLogger::log(
