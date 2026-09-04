@@ -22,9 +22,9 @@ $old_username = $old_username ?? '';
 <?php endif; ?>
 <?php if ($success): ?>
     <div class="alert alert-success" role="status"><?= e($success) ?></div>
-<form class="auth-form" action="<?= e($login_action ?? '/login') ?>" method="post" novalidate>
+<?php endif; ?>
 
-<form class="auth-form" action="/login" method="post" novalidate>
+<form class="auth-form" action="<?= e($login_action ?? '/login') ?>" method="post" novalidate>
     <?= \App\Core\Csrf::field() ?>
 
     <div class="form-group">
