@@ -1,0 +1,16 @@
+.git
+.gitignore
+
+.env
+.env.*
+
+database/database.sqlite
+
+storage/backups/*
+storage/logs/*
+storage/uploads/*
+
+tests/
+docs/
+
+README.md
