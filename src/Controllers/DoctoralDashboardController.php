@@ -5,6 +5,7 @@ namespace App\Controllers;
 use App\Core\Auth;
 use App\Core\Request;
 use App\Core\Response;
+use App\Models\DoctoralStudent;
 
 final class DoctoralDashboardController extends Controller
 {
@@ -18,9 +19,30 @@ final class DoctoralDashboardController extends Controller
             return $this->redirect('/dashboard');
         }
 
+        $user = Auth::user();
+
+        $student = DoctoralStudent::findByUser((int) Auth::id());
+
+        if ($student !== null) {
+            $student = DoctoralStudent::findWithRelations((int) $student['id']);
+
+            $activityPercent = DoctoralStudent::activityPercent(
+                (int) $student['id']
+            );
+
+            $profileData = DoctoralStudent::profileData($student);
+        } else {
+            $activityPercent = 0;
+            $profileData = [];
+        }
+
         return $this->view('doctoral.dashboard', [
             'title' => 'Doktorant kabineti',
-            'user' => Auth::user(),
+            'user' => $user,
+            'student' => $student,
+            'activityPercent' => $activityPercent,
+            'profileData' => $profileData,
+            'active' => 'dashboard',
         ]);
     }
 }
