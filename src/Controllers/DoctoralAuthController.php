@@ -9,8 +9,14 @@ use App\Core\Response;
 use App\Core\Session;
 use App\Core\Validator;
 
+/**
+ * Doktorant portali uchun alohida autentifikatsiya.
+ */
 final class DoctoralAuthController extends Controller
 {
+    /**
+     * Doktorant login sahifasini ko'rsatadi.
+     */
     public function showLogin(Request $request): Response
     {
         if (Auth::check()) {
@@ -30,6 +36,9 @@ final class DoctoralAuthController extends Controller
         ]);
     }
 
+    /**
+     * Doktorant loginini tekshiradi.
+     */
     public function login(Request $request): Response
     {
         $validator = Validator::make($request->all(), [
@@ -51,6 +60,19 @@ final class DoctoralAuthController extends Controller
         $password = (string) $request->input('password');
 
         if (!Auth::attempt($username, $password)) {
+            AuditLogger::log(
+                'login_failed',
+                'users',
+                null,
+                null,
+                [
+                    'username' => $username,
+                    'portal' => 'doktorant',
+                ],
+                null,
+                $request->ip()
+            );
+
             return $this->view('auth.login', [
                 'error' => 'Login yoki parol noto\'g\'ri.',
                 'success' => null,
@@ -60,11 +82,27 @@ final class DoctoralAuthController extends Controller
             ], 401);
         }
 
+        // Faqat doktorant roliga ruxsat.
         if (Auth::role() !== 'doktorant') {
+            $userId = Auth::id();
+
+            AuditLogger::log(
+                'login_failed',
+                'users',
+                $userId,
+                null,
+                [
+                    'reason' => 'wrong_portal',
+                    'portal' => 'doktorant',
+                ],
+                $userId,
+                $request->ip()
+            );
+
             Auth::logout();
 
             return $this->view('auth.login', [
-                'error' => 'Bu sahifa faqat doktorantlar uchun.',
+                'error' => 'Bu kirish sahifasi faqat doktorantlar uchun.',
                 'success' => null,
                 'old_username' => $username,
                 'login_action' => '/doktorant/login',
@@ -77,7 +115,9 @@ final class DoctoralAuthController extends Controller
             'users',
             Auth::id(),
             null,
-            ['portal' => 'doktorant'],
+            [
+                'portal' => 'doktorant',
+            ],
             Auth::id(),
             $request->ip()
         );
