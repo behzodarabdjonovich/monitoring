@@ -20,7 +20,7 @@ final class DoctoralAuthController extends Controller
     public function showLogin(Request $request): Response
     {
         if (Auth::check()) {
-            if (Auth::role() === 'doktorant') {
+           if (Auth::role() === 'doctoral_student') {
                 return $this->redirect('/doktorant/dashboard');
             }
 
@@ -83,7 +83,7 @@ final class DoctoralAuthController extends Controller
         }
 
         // Faqat doktorant roliga ruxsat.
-        if (Auth::role() !== 'doktorant') {
+      if (Auth::role() !== 'doctoral_student') {
             $userId = Auth::id();
 
             AuditLogger::log(
