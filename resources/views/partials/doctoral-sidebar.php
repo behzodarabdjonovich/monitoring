@@ -9,7 +9,6 @@ $sections = [
     ['attestations', 'Attestatsiya', '/attestations'],
     ['notifications', 'Bildirishnomalar', '/notifications'],
 ];
-?>
 
 <aside class="sidebar" id="sidebar" aria-label="Doktorant navigatsiyasi">
     <div class="sidebar-brand">
