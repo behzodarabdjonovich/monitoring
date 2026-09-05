@@ -12,7 +12,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kirish — <?= e(config('app.short_name', 'ADPI Monitoring')) ?></title>
-    <link rel="stylesheet" href="/assets/css/app.css">
+   <link rel="stylesheet" href="/assets/css/app.css?v=2">
 </head>
 <body class="auth-body">
     <div class="auth-wrapper">
