@@ -15,7 +15,7 @@ final class DoctoralDashboardController extends Controller
             return $this->redirect('/doktorant/login');
         }
 
-        if (Auth::role() !== 'doktorant') {
+       if (Auth::role() !== 'doctoral_student') {
             return $this->redirect('/dashboard');
         }
 
