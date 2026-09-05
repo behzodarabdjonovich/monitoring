@@ -7,6 +7,16 @@
 
 declare(strict_types=1);
 
+// PHP built-in serverda mavjud statik fayllarni to'g'ridan-to'g'ri berish.
+if (PHP_SAPI === 'cli-server') {
+    $path = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
+    $file = __DIR__ . $path;
+
+    if ($path !== '/' && is_file($file)) {
+        return false;
+    }
+}
+
 use App\Core\Config;
 use App\Core\Middleware\CsrfMiddleware;
 use App\Core\Request;
