@@ -32,6 +32,7 @@ use App\Core\Middleware\RbacMiddleware;
 use App\Core\Middleware\SuperAdminMiddleware;
 use App\Core\Router;
 use App\Controllers\DoctoralAuthController;
+use App\Controllers\DoctoralDashboardController;
 
 /** @var Router $router */
 
@@ -67,7 +68,7 @@ $router->get('/dashboard', [
 
 // --- Doktorant dashboard ---
 $router->get('/doktorant/dashboard', [
-    DashboardController::class,
+    DoctoralDashboardController::class,
     'index'
 ], [
     new AuthMiddleware(),
