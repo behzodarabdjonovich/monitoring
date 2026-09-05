@@ -305,7 +305,7 @@ public function doctoralLogin(Request $request): Response
         $request->ip()
     );
 
-        Session::flash('success', 'Parol yangilandi. Endi tizimga kiring.');
+              Session::flash('success', 'Parol yangilandi. Endi tizimga kiring.');
         return $this->redirect('/login');
     }
 }
