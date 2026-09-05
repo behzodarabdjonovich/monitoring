@@ -203,18 +203,3 @@ final class AuthController extends Controller
     }
 
 }
-
-        AuditLogger::log(
-            'password_reset',
-            'users',
-            (int) $row['user_id'],
-            null,
-            null,
-            (int) $row['user_id'],
-            $request->ip()
-        );
-
-        Session::flash('success', 'Parol yangilandi. Endi tizimga kiring.');
-        return $this->redirect('/login');
-    }
-}
