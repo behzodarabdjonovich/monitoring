@@ -305,6 +305,7 @@ public function doctoralLogin(Request $request): Response
         $request->ip()
     );
 
-return $this->redirect('/doktorant/dashboard');
+        Session::flash('success', 'Parol yangilandi. Endi tizimga kiring.');
+        return $this->redirect('/login');
     }
 }
