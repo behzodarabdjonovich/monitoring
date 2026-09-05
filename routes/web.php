@@ -31,6 +31,7 @@ use App\Core\Middleware\AuthMiddleware;
 use App\Core\Middleware\RbacMiddleware;
 use App\Core\Middleware\SuperAdminMiddleware;
 use App\Core\Router;
+use App\Controllers\DoctoralAuthController;
 
 /** @var Router $router */
 
