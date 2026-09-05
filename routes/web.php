@@ -56,6 +56,24 @@ $router->post('/doktorant/login', [
     'login'
 ]);
 
+// --- Asosiy dashboard ---
+$router->get('/dashboard', [
+    DashboardController::class,
+    'index'
+], [
+    new AuthMiddleware(),
+    new RbacMiddleware('dashboard.view'),
+]);
+
+// --- Doktorant dashboard ---
+$router->get('/doktorant/dashboard', [
+    DashboardController::class,
+    'index'
+], [
+    new AuthMiddleware(),
+    new RbacMiddleware('dashboard.view'),
+]);
+
 $router->get('/doktorant/dashboard', [
     DashboardController::class,
     'index'
