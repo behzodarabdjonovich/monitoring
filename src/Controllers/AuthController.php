@@ -18,7 +18,11 @@ final class AuthController extends Controller
     public function showLogin(Request $request): Response
     {
         if (Auth::check()) {
-            return $this->redirect('/dashboard');
+            if (Auth::role() === 'doktorant') {
+    return $this->redirect('/doktorant/dashboard');
+}
+
+return $this->redirect('/dashboard');
         }
         return $this->view('auth.login', [
             'error' => Session::flash('error'),
