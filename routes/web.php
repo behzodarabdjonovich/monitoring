@@ -36,14 +36,13 @@ use App\Controllers\DoctoralAuthController;
 /** @var Router $router */
 
 // --- Autentifikatsiya (mehmon) ---
+
+$router->get('/', function () {
+    return \App\Core\Response::redirect('/login');
+});
+
 $router->get('/login', [AuthController::class, 'showLogin']);
 $router->post('/login', [AuthController::class, 'login']);
-$router->get('/forgot-password', [AuthController::class, 'showForgot']);
-$router->post('/forgot-password', [AuthController::class, 'sendReset']);
-$router->get('/reset-password', [AuthController::class, 'showReset']);
-$router->post('/reset-password', [AuthController::class, 'reset']);
-$router->post('/login/2fa', [AuthController::class, 'verifyTwofa']);
-$router->post('/logout', [AuthController::class, 'logout'], [new AuthMiddleware()]);
 
 // --- Doktorant portali ---
 
