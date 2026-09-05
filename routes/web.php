@@ -50,27 +50,16 @@ $router->post('/doktorant/login', [AuthController::class, 'login']);
 
 // --- Doktorant portali ---
 $router->get('/doktorant/login', [
-    AuthController::class,
-    'showDoctoralLogin'
+    DoctoralAuthController::class,
+    'showLogin'
 ]);
 
 $router->post('/doktorant/login', [
-    AuthController::class,
-    'doctoralLogin'
+    DoctoralAuthController::class,
+    'login'
 ]);
 
 // --- Dashboard (autentifikatsiya + RBAC) ---
-$router->get('/', [DashboardController::class, 'index'], [
-    new AuthMiddleware(),
-    new RbacMiddleware('dashboard.view'),
-]);
-
-$router->get('/dashboard', [DashboardController::class, 'index'], [
-    new AuthMiddleware(),
-    new RbacMiddleware('dashboard.view'),
-]);
-
-// --- Doktorant dashboard ---
 $router->get('/doktorant/dashboard', [
     DashboardController::class,
     'index'
