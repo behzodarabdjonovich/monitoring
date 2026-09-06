@@ -91,6 +91,20 @@ if (Auth::role() === 'doctoral_student') {
         );
     }
 }
+
+        if (Auth::role() === 'doctoral_student') {
+    $student = DoctoralStudent::findByUser((int) Auth::id());
+
+    if (
+        $student === null ||
+        (int) ($plan['student_id'] ?? 0) !== (int) $student['id']
+    ) {
+        return Response::html(
+            \App\Core\View::render('errors.403'),
+            403
+        );
+    }
+}
         
         $input = $request->all();
         $now = date('Y-m-d H:i:s');
