@@ -108,8 +108,6 @@ $router->post('/doktorant/ilmiy-rahbar', [
 /**
  * Modul marshrutlari uchun yordamchi...
  */
- * Modul marshrutlari uchun yordamchi: har biri Auth + RBAC middleware bilan.
- */
 $auth = static fn () => new AuthMiddleware();
 $rbac = static fn (string $perm) => new RbacMiddleware($perm);
 
