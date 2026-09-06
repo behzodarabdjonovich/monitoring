@@ -103,8 +103,31 @@ $router->post('/doktorant/ilmiy-rahbar', [
     new AuthMiddleware(),
 ]);
 
+// --- Ilmiy bo‘lim: ilmiy rahbar so‘rovlari ---
+
+$router->get('/ilmiy-bolim/rahbar-sorovlari', [
+    SupervisorRequestController::class,
+    'officeIndex'
+], [
+    new AuthMiddleware(),
+]);
+
+$router->post('/ilmiy-bolim/rahbar-sorovlari/{id}/approve', [
+    SupervisorRequestController::class,
+    'approve'
+], [
+    new AuthMiddleware(),
+]);
+
+$router->post('/ilmiy-bolim/rahbar-sorovlari/{id}/reject', [
+    SupervisorRequestController::class,
+    'reject'
+], [
+    new AuthMiddleware(),
+]);
+
 /**
- * Modul marshrutlari uchun yordamchi...
+ * Modul marshrutlari...
  */
 $auth = static fn () => new AuthMiddleware();
 $rbac = static fn (string $perm) => new RbacMiddleware($perm);
