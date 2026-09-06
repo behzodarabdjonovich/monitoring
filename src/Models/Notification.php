@@ -227,6 +227,58 @@ final class Notification
         );
     }
 
-   return $created;
+          return $created;
+    }
+
+    /**
+     * Berilgan rollardagi barcha aktiv foydalanuvchilarga
+     * bildirishnoma yaratadi.
+     *
+     * @param array<int,string> $roleNames
+     */
+    private static function notifyRoles(
+        array $roleNames,
+        string $type,
+        string $title,
+        ?string $body,
+        ?string $link
+    ): int {
+        if ($roleNames === []) {
+            return 0;
+        }
+
+        $placeholders = [];
+        $params = [];
+
+        foreach (array_values($roleNames) as $i => $name) {
+            $placeholders[] = ':r' . $i;
+            $params['r' . $i] = $name;
+        }
+
+        $users = DB::select(
+            'SELECT u.id
+             FROM users u
+             INNER JOIN roles r ON r.id = u.role_id
+             WHERE r.name IN (' . implode(', ', $placeholders) . ')
+               AND u.is_active = 1
+               AND u.is_blocked = 0',
+            $params
+        );
+
+        $created = 0;
+
+        foreach ($users as $u) {
+            if (self::create(
+                (int) $u['id'],
+                $type,
+                $title,
+                $body,
+                $link
+            )) {
+                $created++;
+            }
+        }
+
+        return $created;
     }
 }
