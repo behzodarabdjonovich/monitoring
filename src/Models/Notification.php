@@ -201,6 +201,7 @@ final class Notification
     $rows = DB::select(
         "SELECT t.id AS task_id,
                 t.title,
+                p.id AS plan_id,
                 s.full_name AS student_name
          FROM plan_tasks t
          INNER JOIN individual_plans p ON p.id = t.plan_id
@@ -222,62 +223,9 @@ final class Notification
             'pending_approval',
             $title,
             $body,
-            '/plans#task-' . (int) $r['task_id']
+            '/plans/' . (int) $r['plan_id'] . '#task-' . (int) $r['task_id']
         );
     }
 
-            return $created;
-    }
-
-    /**
-     * Berilgan rollardagi barcha (aktiv, bloklanmagan) foydalanuvchilarga
-     * bildirishnoma yaratadi.
-     *
-     * @param array<int,string> $roleNames
-     */
-    private static function notifyRoles(
-        array $roleNames,
-        string $type,
-        string $title,
-        ?string $body,
-        ?string $link
-    ): int {
-        if ($roleNames === []) {
-            return 0;
-        }
-
-        $placeholders = [];
-        $params = [];
-
-        foreach (array_values($roleNames) as $i => $name) {
-            $placeholders[] = ':r' . $i;
-            $params['r' . $i] = $name;
-        }
-
-        $users = DB::select(
-            'SELECT u.id
-             FROM users u
-             INNER JOIN roles r ON r.id = u.role_id
-             WHERE r.name IN (' . implode(', ', $placeholders) . ')
-               AND u.is_active = 1
-               AND u.is_blocked = 0',
-            $params
-        );
-
-        $created = 0;
-
-        foreach ($users as $u) {
-            if (self::create(
-                (int) $u['id'],
-                $type,
-                $title,
-                $body,
-                $link
-            )) {
-                $created++;
-            }
-        }
-
-        return $created;
-    }
+    return $created;
 }
