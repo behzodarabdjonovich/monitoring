@@ -157,7 +157,7 @@ $id = DB::insert('documents', [
             return $this->notFound();
         }
 
-        if (Auth::role() === 'doctoral_student') {
+       if (Auth::role() === 'doctoral_student') {
     $student = DoctoralStudent::findByUser((int) Auth::id());
 
     if (
