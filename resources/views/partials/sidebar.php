@@ -12,6 +12,7 @@ $sections = [
     ['dashboard', 'Dashboard', '/dashboard'],
     ['students', 'Doktorantlar', '/students'],
     ['supervisors', 'Ilmiy rahbarlar', '/supervisors'],
+    ['supervisor-requests', 'Ilmiy rahbar so‘rovlari', '/ilmiy-bolim/rahbar-sorovlari'],
     ['specialties', 'Ixtisosliklar', '/specialties'],
     ['plans', 'Individual rejalar', '/plans'],
     ['results', 'Ilmiy natijalar', '/results'],
