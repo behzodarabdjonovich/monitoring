@@ -47,22 +47,36 @@ if (Auth::role() === 'doctoral_student') {
         ]);
     }
 
-    public function show(Request $request): Response
-    {
-        $id = (int) $request->param('id');
-        $attestation = Attestation::findWithRelations($id);
-        if ($attestation === null) {
-            return Response::html(\App\Core\View::render('errors.404'), 404);
-        }
-        return $this->view('attestations.show', [
-            'user' => Auth::user(),
-            'title' => 'Attestatsiya',
-            'active' => 'attestations',
-            'attestation' => $attestation,
-            'results' => Attestation::RESULTS,
-            'canApprove' => Auth::can('attestations.approve'),
-        ]);
+   public function show(Request $request): Response
+{
+    $id = (int) $request->param('id');
+    $attestation = Attestation::findWithRelations($id);
+
+    if ($attestation === null) {
+        return Response::html(\App\Core\View::render('errors.404'), 404);
     }
+
+    // Doktorant faqat o'z attestatsiyasini ko'rishi mumkin.
+    if (Auth::role() === 'doctoral_student') {
+        $student = DoctoralStudent::findByUser((int) Auth::id());
+
+        if (
+            $student === null ||
+            (int) ($attestation['student_id'] ?? 0) !== (int) $student['id']
+        ) {
+            return Response::html(\App\Core\View::render('errors.403'), 403);
+        }
+    }
+
+    return $this->view('attestations.show', [
+        'user' => Auth::user(),
+        'title' => 'Attestatsiya',
+        'active' => 'attestations',
+        'attestation' => $attestation,
+        'results' => Attestation::RESULTS,
+        'canApprove' => Auth::can('attestations.approve'),
+    ]);
+}
 
     public function store(Request $request): Response
     {
