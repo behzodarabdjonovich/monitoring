@@ -9,7 +9,8 @@ use App\Core\Request;
 use App\Core\Response;
 use App\Core\Session;
 use App\Core\Validator;
-use App\Models\Attestation;
+use App\Models\Attestation;.
+use App\Models\DoctoralStudent;
 
 /**
  * Attestatsiya moduli (item 4/21) — doktorantga bog'langan CRUD.
@@ -18,11 +19,27 @@ final class AttestationController extends Controller
 {
     public function index(Request $request): Response
     {
+       $attestations = Attestation::all();
+
+if (Auth::role() === 'doctoral_student') {
+    $student = DoctoralStudent::findByUser((int) Auth::id());
+
+    if ($student === null) {
+        return $this->redirect('/doktorant/dashboard');
+    }
+
+    $attestations = array_values(array_filter(
+        $attestations,
+        static fn (array $attestation): bool =>
+            (int) ($attestation['student_id'] ?? 0) === (int) $student['id']
+    ));
+}
+        
         return $this->view('attestations.index', [
             'user' => Auth::user(),
             'title' => 'Attestatsiya',
             'active' => 'attestations',
-            'attestations' => Attestation::all(),
+          'attestations' => $attestations,
             'results' => Attestation::RESULTS,
             'students' => DB::select('SELECT id, full_name FROM doctoral_students ORDER BY full_name'),
             'canCreate' => Auth::can('attestations.create'),
