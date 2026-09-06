@@ -28,12 +28,14 @@ $this->layout('layouts.app');
                 <option value="<?= e($key) ?>" <?= $filters['type'] === $key ? 'selected' : '' ?>><?= e($label) ?></option>
             <?php endforeach; ?>
         </select>
+       <?php if (\App\Core\Auth::role() !== 'doctoral_student'): ?>
         <select name="student">
             <option value="">— Barcha doktorantlar —</option>
             <?php foreach ($students as $s): ?>
                 <option value="<?= e($s['id']) ?>" <?= $filters['student'] === (string) $s['id'] ? 'selected' : '' ?>><?= e($s['full_name']) ?></option>
             <?php endforeach; ?>
-        </select>
+    <?php endif; ?>  
+    </select>
         <button type="submit" class="btn">Filtr</button>
     </form>
 
