@@ -79,14 +79,27 @@ final class PlanTask
      * @return array<string,string[]> rol => ruxsat etilgan maqsad holatlar
      */
     public static function roleTargets(): array
-    {
-        return [
-            'doctoral_student' => [self::IN_PROGRESS, self::COMPLETED],
-            'supervisor' => [self::SUPERVISOR_APPROVED],
-            'department_head' => [self::SUPERVISOR_APPROVED],
-            'doctorate_office' => [self::FINALIZED],
-        ];
-    }
+{
+    return [
+        'doctoral_student' => [
+            self::IN_PROGRESS,
+            self::COMPLETED,
+        ],
+
+        'supervisor' => [
+            self::SUPERVISOR_APPROVED,
+        ],
+
+        'department_head' => [
+            self::SUPERVISOR_APPROVED,
+        ],
+
+        'doctorate_office' => [
+            self::SUPERVISOR_APPROVED,
+            self::FINALIZED,
+        ],
+    ];
+}
 
     /**
      * O'tish holat mashinasi bo'yicha ruxsat etilganmi (roldan mustaqil)?
