@@ -18,7 +18,11 @@ final class AuthController extends Controller
     public function showLogin(Request $request): Response
     {
         if (Auth::check()) {
-            if (Auth::role() === 'doktorant') {
+            if (Auth::role() === 'doctoral_student') {
+    return $this->redirect('/doktorant/dashboard');
+}
+
+if (Auth::role() === 'doctoral_student') {
     return $this->redirect('/doktorant/dashboard');
 }
 
