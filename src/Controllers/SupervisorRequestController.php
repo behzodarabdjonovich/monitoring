@@ -183,22 +183,34 @@ final class SupervisorRequestController extends Controller
         $now = date('Y-m-d H:i:s');
 
         DB::run(
-            'UPDATE doctoral_students
-             SET supervisor_id = :supervisor_id,
-                 updated_at = :updated_at
-             WHERE id = :id',
-            [
-                'supervisor_id' => (int) $supervisorRequest['supervisor_id'],
-                'updated_at' => $now,
-                'id' => (int) $student['id'],
-            ]
-        );
+    'UPDATE doctoral_students
+     SET supervisor_id = :supervisor_id,
+         updated_at = :updated_at
+     WHERE id = :id',
+    [
+        'supervisor_id' => (int) $supervisorRequest['supervisor_id'],
+        'updated_at' => $now,
+        'id' => (int) $student['id'],
+    ]
+);
 
-        SupervisorRequest::approve(
-            $id,
-            (int) Auth::id(),
-            $reviewNote !== '' ? $reviewNote : null
-        );
+DB::run(
+    'UPDATE individual_plans
+     SET supervisor_id = :supervisor_id,
+         updated_at = :updated_at
+     WHERE student_id = :student_id',
+    [
+        'supervisor_id' => (int) $supervisorRequest['supervisor_id'],
+        'updated_at' => $now,
+        'student_id' => (int) $student['id'],
+    ]
+);
+
+SupervisorRequest::approve(
+    $id,
+    (int) Auth::id(),
+    $reviewNote !== '' ? $reviewNote : null
+);
 
         AuditLogger::log(
             'update',
