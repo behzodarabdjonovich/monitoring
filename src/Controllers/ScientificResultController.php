@@ -262,7 +262,64 @@ $documentId = null;
 
     private function back(Request $request, string $error): Response
     {
-        Session::flash('error', $error);
-        return $this->redirect($request->header('Referer') ?? '/results');
+               Session::flash('success', 'Ilmiy natija qo\'shildi.');
+        return $this->redirect('/results');
     }
-}
+
+    public function verify(Request $request): Response
+    {
+        if (!Auth::check()) {
+            return $this->redirect('/login');
+        }
+
+        if (!in_array(Auth::role(), [
+            'doctorate_office',
+            'research_vice_head',
+            'super_admin',
+        ], true)) {
+            return $this->forbidden();
+        }
+
+        $id = (int) $request->param('id');
+
+        $result = ScientificResult::find($id);
+
+        if ($result === null) {
+            return $this->notFound();
+        }
+
+        if ((int) ($result['verified'] ?? 0) === 1) {
+            Session::flash('error', 'Bu ilmiy natija avval tasdiqlangan.');
+            return $this->redirect('/results');
+        }
+
+        DB::run(
+            'UPDATE scientific_results
+             SET verified = 1,
+                 updated_at = :updated_at
+             WHERE id = :id',
+            [
+                'updated_at' => date('Y-m-d H:i:s'),
+                'id' => $id,
+            ]
+        );
+
+        AuditLogger::log(
+            'approve',
+            'scientific_results',
+            $id,
+            ['verified' => 0],
+            ['verified' => 1]
+        );
+
+        Session::flash('success', 'Ilmiy natija tasdiqlandi.');
+
+        return $this->redirect('/results');
+    }
+
+    // -----------------------------------------------------------------
+
+    /**
+     * @return array<string,mixed>|Response
+     */
+    private function validated(Request $request): array|Response
