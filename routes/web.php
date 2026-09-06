@@ -45,6 +45,8 @@ $router->get('/', function () {
 $router->get('/login', [AuthController::class, 'showLogin']);
 $router->post('/login', [AuthController::class, 'login']);
 
+$router->get('/logout', [AuthController::class, 'logout']);
+
 // --- Doktorant portali ---
 
 $router->get('/doktorant/login', [
