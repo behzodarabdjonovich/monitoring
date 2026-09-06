@@ -47,6 +47,8 @@ final class PlanTaskController extends Controller
     }
 
           $input = $request->all();
+
+    // qolgan kod...
         $validator = Validator::make($input, [
             'title' => 'required|string|max:191',
             'progress_percent' => 'integer',
