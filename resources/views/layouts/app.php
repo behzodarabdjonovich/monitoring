@@ -24,17 +24,20 @@ $institute = config('app.institute', '');
 </head>
 <body>
 <div class="app-shell">
-   <?php if (\App\Core\Auth::role() === 'doctoral_student'): ?>
 
-    <?= $this->partial('partials.doctoral-sidebar', [
-        'active' => $active ?? ''
-    ]) ?>
+    <?php if (\App\Core\Auth::role() === 'doctoral_student'): ?>
 
-<?php else: ?>
+        <?= $this->partial('partials.doctoral-sidebar', [
+            'active' => $active ?? ''
+        ]) ?>
 
-    <?= $this->partial('partials.sidebar', [
-        'active' => $active ?? ''
-    ]) ?>
+    <?php else: ?>
+
+        <?= $this->partial('partials.sidebar', [
+            'active' => $active ?? ''
+        ]) ?>
+
+    <?php endif; ?>
 
 <?php endif; ?>
 
