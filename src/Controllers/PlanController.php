@@ -76,8 +76,7 @@ public function doctoral(Request $request): Response
     }
 
     $tasks = PlanTask::forPlan($id);
-        $tasks = PlanTask::forPlan($id);
-        // Har vazifa uchun overdue va navbatdagi mumkin bo'lgan o'tishlarni hisoblaymiz.
+              // Har vazifa uchun overdue va navbatdagi mumkin bo'lgan o'tishlarni hisoblaymiz.
         $role = Auth::role();
         foreach ($tasks as &$t) {
             $t['is_overdue'] = PlanTask::isOverdue($t);
