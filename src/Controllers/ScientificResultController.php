@@ -362,13 +362,37 @@ public function reject(Request $request): Response
         return $this->redirect('/results');
     }
 
+    $rejectionReason = trim(
+        (string) $request->input('rejection_reason', '')
+    );
+
+    if ($rejectionReason === '') {
+        Session::flash(
+            'error',
+            'Rad etish sababini kiriting.'
+        );
+
+        return $this->redirect('/results');
+    }
+
+    if (mb_strlen($rejectionReason) > 500) {
+        Session::flash(
+            'error',
+            'Rad etish sababi 500 belgidan oshmasligi kerak.'
+        );
+
+        return $this->redirect('/results');
+    }
+
     DB::run(
         "UPDATE scientific_results
          SET status = 'rejected',
              verified = 0,
+             rejection_reason = :rejection_reason,
              updated_at = :updated_at
          WHERE id = :id",
         [
+            'rejection_reason' => $rejectionReason,
             'updated_at' => date('Y-m-d H:i:s'),
             'id' => $id,
         ]
@@ -381,10 +405,12 @@ public function reject(Request $request): Response
         [
             'status' => $result['status'] ?? 'pending',
             'verified' => $result['verified'] ?? 0,
+            'rejection_reason' => $result['rejection_reason'] ?? null,
         ],
         [
             'status' => 'rejected',
             'verified' => 0,
+            'rejection_reason' => $rejectionReason,
         ]
     );
 
@@ -394,5 +420,4 @@ public function reject(Request $request): Response
     );
 
     return $this->redirect('/results');
-}
 }
