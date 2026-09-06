@@ -33,9 +33,15 @@ $sections = [
                         <span class="sidebar-label"><?= e($label) ?></span>
                     </a>
                 </li>
-            <?php endforeach; ?>
+                        <?php endforeach; ?>
         </ul>
     </nav>
+
+    <div style="padding: 16px;">
+        <a href="/doktorant/logout" class="btn btn-outline-danger w-100">
+            Chiqish
+        </a>
+    </div>
 </aside>
 
 <div class="sidebar-backdrop" id="sidebar-backdrop" hidden></div>
