@@ -13,6 +13,7 @@ use App\Core\Session;
 use App\Core\Validator;
 use App\Core\View;
 use App\Models\Document;
+use App\Models\DoctoralStudent;
 
 /**
  * Dalillar (Evidence) bazasi moduli (item 11).
@@ -30,6 +31,17 @@ final class DocumentController extends Controller
             'q' => trim((string) $request->query('q', '')),
             'category' => (string) $request->query('category', ''),
         ];
+
+        if (Auth::role() === 'doctoral_student') {
+    $student = DoctoralStudent::findByUser((int) Auth::id());
+
+    if ($student === null) {
+        return $this->redirect('/doktorant/dashboard');
+    }
+
+    $filters['student_id'] = (int) $student['id'];
+}
+        
         return $this->view('documents.index', [
             'user' => Auth::user(),
             'title' => 'Dalillar bazasi',
