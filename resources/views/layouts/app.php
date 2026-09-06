@@ -43,8 +43,7 @@ $institute = config('app.institute', '');
         <?= $this->partial('partials.topbar', ['user' => $user]) ?>
 
         <main class="app-content" id="app-content">
-            <?= $this->partial('partials.placeholder-banner') ?>
-
+          
             <?php $flashSuccess = \App\Core\Session::flash('success'); ?>
             <?php if ($flashSuccess): ?>
                 <div class="alert alert-success" role="status"><?= e($flashSuccess) ?></div>
