@@ -3,6 +3,7 @@ $active = $active ?? '';
 
 $sections = [
     ['dashboard', 'Kabinet', '/doktorant/dashboard'],
+    ['supervisor', 'Ilmiy rahbar', '/doktorant/ilmiy-rahbar'],
     ['plans', 'Individual reja', '/doktorant/reja'],
     ['results', 'Ilmiy natijalar', '/results'],
     ['documents', 'Hujjatlar', '/documents'],
