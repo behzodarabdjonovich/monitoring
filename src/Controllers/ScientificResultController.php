@@ -269,60 +269,130 @@ $documentId = null;
     }
 
     public function verify(Request $request): Response
-    {
-        if (!Auth::check()) {
-            return $this->redirect('/login');
-        }
+{
+    if (!Auth::check()) {
+        return $this->redirect('/login');
+    }
 
-        if (!in_array(Auth::role(), [
-            'doctorate_office',
-            'research_vice_head',
-            'super_admin',
-        ], true)) {
-            return $this->forbidden();
-        }
+    if (!in_array(Auth::role(), [
+        'doctorate_office',
+        'research_vice_head',
+        'super_admin',
+    ], true)) {
+        return $this->forbidden();
+    }
 
-        $id = (int) $request->param('id');
+    $id = (int) $request->param('id');
+    $result = ScientificResult::find($id);
 
-        $result = ScientificResult::find($id);
+    if ($result === null) {
+        return $this->notFound();
+    }
 
-        if ($result === null) {
-            return $this->notFound();
-        }
-
-        if ((int) ($result['verified'] ?? 0) === 1) {
-            Session::flash(
-                'error',
-                'Bu ilmiy natija avval tasdiqlangan.'
-            );
-
-            return $this->redirect('/results');
-        }
-
-        DB::run(
-            'UPDATE scientific_results
-             SET verified = 1,
-                 updated_at = :updated_at
-             WHERE id = :id',
-            [
-                'updated_at' => date('Y-m-d H:i:s'),
-                'id' => $id,
-            ]
-        );
-
-        AuditLogger::log(
-            'approve',
-            'scientific_results',
-            $id,
-            ['verified' => 0],
-            ['verified' => 1]
-        );
-
+    if (($result['status'] ?? 'pending') !== 'pending') {
         Session::flash(
-            'success',
-            'Ilmiy natija tasdiqlandi.'
+            'error',
+            'Bu ilmiy natija allaqachon ko‘rib chiqilgan.'
         );
 
         return $this->redirect('/results');
     }
+
+    DB::run(
+        "UPDATE scientific_results
+         SET status = 'approved',
+             verified = 1,
+             updated_at = :updated_at
+         WHERE id = :id",
+        [
+            'updated_at' => date('Y-m-d H:i:s'),
+            'id' => $id,
+        ]
+    );
+
+    AuditLogger::log(
+        'approve',
+        'scientific_results',
+        $id,
+        [
+            'status' => $result['status'] ?? 'pending',
+            'verified' => $result['verified'] ?? 0,
+        ],
+        [
+            'status' => 'approved',
+            'verified' => 1,
+        ]
+    );
+
+    Session::flash(
+        'success',
+        'Ilmiy natija tasdiqlandi.'
+    );
+
+    return $this->redirect('/results');
+}
+
+public function reject(Request $request): Response
+{
+    if (!Auth::check()) {
+        return $this->redirect('/login');
+    }
+
+    if (!in_array(Auth::role(), [
+        'doctorate_office',
+        'research_vice_head',
+        'super_admin',
+    ], true)) {
+        return $this->forbidden();
+    }
+
+    $id = (int) $request->param('id');
+    $result = ScientificResult::find($id);
+
+    if ($result === null) {
+        return $this->notFound();
+    }
+
+    if (($result['status'] ?? 'pending') !== 'pending') {
+        Session::flash(
+            'error',
+            'Bu ilmiy natija allaqachon ko‘rib chiqilgan.'
+        );
+
+        return $this->redirect('/results');
+    }
+
+    DB::run(
+        "UPDATE scientific_results
+         SET status = 'rejected',
+             verified = 0,
+             updated_at = :updated_at
+         WHERE id = :id",
+        [
+            'updated_at' => date('Y-m-d H:i:s'),
+            'id' => $id,
+        ]
+    );
+
+    AuditLogger::log(
+        'reject',
+        'scientific_results',
+        $id,
+        [
+            'status' => $result['status'] ?? 'pending',
+            'verified' => $result['verified'] ?? 0,
+        ],
+        [
+            'status' => 'rejected',
+            'verified' => 0,
+        ]
+    );
+
+    Session::flash(
+        'success',
+        'Ilmiy natija rad etildi.'
+    );
+
+    return $this->redirect('/results');
+}
 }
