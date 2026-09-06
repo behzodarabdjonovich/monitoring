@@ -83,9 +83,14 @@ public function store(Request $request): Response
     }
 
     $data['student_id'] = (int) $student['id'];
+
+    if (!empty($student['supervisor_id'])) {
+        $data['supervisor_id'] = (int) $student['supervisor_id'];
+    }
 }
-    // Tasdiqlovchi fayl (ixtiyoriy) — documents jadvaliga yoziladi.
-        $documentId = null;
+
+// Tasdiqlovchi fayl (ixtiyoriy) - documents jadvaliga yoziladi.
+$documentId = null;
         $file = $request->file('evidence_file');
         if ($file !== null && ($file['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_OK) {
             try {
