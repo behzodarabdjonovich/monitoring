@@ -266,7 +266,6 @@ final class SupervisorRequestController extends Controller
         );
 
         Session::flash('success', 'Ilmiy rahbar so‘rovi rad etildi.');
-
         return $this->redirect('/ilmiy-bolim/rahbar-sorovlari');
     }
 }
