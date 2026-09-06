@@ -30,7 +30,7 @@ final class DoctoralDashboardController extends Controller
                 (int) $student['id']
             );
 
-            $profileData = DoctoralStudent::profileData($student);
+           $profileData = DoctoralStudent::profileData((int) $student['id']);
         } else {
             $activityPercent = 0;
             $profileData = [];
