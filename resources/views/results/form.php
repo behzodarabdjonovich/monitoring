@@ -48,15 +48,17 @@ $this->layout('layouts.app');
         </select>
     </div>
 <?php endif; ?>
-        <div class="form-group">
-            <label for="supervisor_id">Ilmiy rahbar</label>
-            <select id="supervisor_id" name="supervisor_id">
-                <option value="">—</option>
-                <?php foreach ($supervisors as $sup): ?>
-                    <option value="<?= e($sup['id']) ?>"><?= e($sup['full_name']) ?></option>
-                <?php endforeach; ?>
-            </select>
-        </div>
+       <?php if (\App\Core\Auth::role() !== 'doctoral_student'): ?>
+<div class="form-group">
+    <label for="supervisor_id">Ilmiy rahbar</label>
+    <select id="supervisor_id" name="supervisor_id">
+        <option value="">—</option>
+        <?php foreach ($supervisors as $sup): ?>
+            <option value="<?= e($sup['id']) ?>"><?= e($sup['full_name']) ?></option>
+        <?php endforeach; ?>
+    </select>
+</div>
+<?php endif; ?>
         <div class="form-group">
             <label for="achieved_at">Sana</label>
             <input type="date" id="achieved_at" name="achieved_at">
