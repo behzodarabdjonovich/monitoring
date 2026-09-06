@@ -115,6 +115,16 @@ $id = DB::insert('documents', [
         if ($doc === null) {
             return $this->notFound();
         }
+        if (Auth::role() === 'doctoral_student') {
+    $student = DoctoralStudent::findByUser((int) Auth::id());
+
+    if (
+        $student === null ||
+        (int) ($doc['student_id'] ?? 0) !== (int) $student['id']
+    ) {
+        return Response::html(\App\Core\View::render('errors.403'), 403);
+    }
+}
         // Bog'lash uchun mavjud indikatorlar (allaqachon bog'langanlar bundan tashqari).
         $allIndicators = DB::select(
             'SELECT id, code, name FROM accreditation_indicators ORDER BY code'
