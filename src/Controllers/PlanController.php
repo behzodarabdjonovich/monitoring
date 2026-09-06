@@ -27,7 +27,33 @@ final class PlanController extends Controller
             'statuses' => IndividualPlan::STATUSES,
         ]);
     }
+public function doctoral(Request $request): Response
+{
+    if (Auth::role() !== 'doctoral_student') {
+        return $this->redirect('/dashboard');
+    }
 
+    $student = \App\Models\DoctoralStudent::findByUser((int) Auth::id());
+
+    if ($student === null) {
+        return $this->redirect('/doktorant/dashboard');
+    }
+
+    $plans = IndividualPlan::forStudent((int) $student['id']);
+
+    if (empty($plans)) {
+        return $this->view('plans.index', [
+            'user' => Auth::user(),
+            'title' => 'Individual reja',
+            'active' => 'plans',
+            'plans' => [],
+            'statuses' => IndividualPlan::STATUSES,
+        ]);
+    }
+
+    return $this->redirect('/plans/' . (int) $plans[0]['id']);
+}
+    
     public function show(Request $request): Response
     {
         $id = (int) $request->param('id');
