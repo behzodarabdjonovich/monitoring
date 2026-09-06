@@ -1,5 +1,14 @@
 <?php
 
+$this->layout('layouts.app');
+
+/**
+ * Doktorant uchun alohida kabinet.
+ *
+ * @var \App\Core\View $this
+ * ...
+ */
+
 namespace App\Core;
 
 /**
