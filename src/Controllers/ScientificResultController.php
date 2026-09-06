@@ -421,3 +421,4 @@ public function reject(Request $request): Response
 
     return $this->redirect('/results');
 }
+}
