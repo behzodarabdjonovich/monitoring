@@ -94,7 +94,6 @@ $router->get('/doktorant/ilmiy-rahbar', [
     'index'
 ], [
     new AuthMiddleware(),
-    new RbacMiddleware('supervisors.view'),
 ]);
 
 $router->post('/doktorant/ilmiy-rahbar', [
@@ -102,7 +101,6 @@ $router->post('/doktorant/ilmiy-rahbar', [
     'store'
 ], [
     new AuthMiddleware(),
-    new RbacMiddleware('supervisors.view'),
 ]);
 
 /**
