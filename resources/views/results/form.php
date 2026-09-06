@@ -37,15 +37,17 @@ $this->layout('layouts.app');
             <label for="title">Sarlavha *</label>
             <input type="text" id="title" name="title" required maxlength="255">
         </div>
-        <div class="form-group">
-            <label for="student_id">Doktorant</label>
-            <select id="student_id" name="student_id">
-                <option value="">—</option>
-                <?php foreach ($students as $s): ?>
-                    <option value="<?= e($s['id']) ?>"><?= e($s['full_name']) ?></option>
-                <?php endforeach; ?>
-            </select>
-        </div>
+        <?php if (\App\Core\Auth::role() !== 'doctoral_student'): ?>
+    <div class="form-group">
+        <label for="student_id">Doktorant</label>
+        <select id="student_id" name="student_id">
+            <option value="">—</option>
+            <?php foreach ($students as $s): ?>
+                <option value="<?= e($s['id']) ?>"><?= e($s['full_name']) ?></option>
+            <?php endforeach; ?>
+        </select>
+    </div>
+<?php endif; ?>
         <div class="form-group">
             <label for="supervisor_id">Ilmiy rahbar</label>
             <select id="supervisor_id" name="supervisor_id">
