@@ -227,5 +227,6 @@ final class Notification
         );
     }
 
-    return $created;
+   return $created;
+    }
 }
