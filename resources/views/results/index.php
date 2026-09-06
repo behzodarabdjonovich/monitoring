@@ -228,19 +228,29 @@ $this->layout('layouts.app');
 
         <div style="display:flex;gap:0.4rem;flex-wrap:wrap;">
 
-            <form
-                method="post"
-                action="/results/<?= e($r['id']) ?>/verify"
-            >
-                <?= Csrf::field() ?>
+           <form
+    method="post"
+    action="/results/<?= e($r['id']) ?>/reject"
+    style="display:flex;gap:0.4rem;align-items:center;"
+>
+    <?= Csrf::field() ?>
 
-                <button
-                    type="submit"
-                    class="btn btn-primary"
-                >
-                    Tasdiqlash
-                </button>
-            </form>
+    <input
+        type="text"
+        name="rejection_reason"
+        placeholder="Rad etish sababi"
+        required
+        maxlength="500"
+        style="min-width:180px;"
+    >
+
+    <button
+        type="submit"
+        class="btn"
+    >
+        Rad etish
+    </button>
+</form>
 
             <form
                 method="post"
