@@ -77,19 +77,31 @@ final class DocumentController extends Controller
             return $this->back($request, $ex->getMessage(), '/documents');
         }
 
-        $id = DB::insert('documents', [
-            'title' => (string) $input['title'],
-            'category' => (string) $input['category'],
-            'file_path' => $stored['path'],
-            'original_name' => $stored['original_name'],
-            'mime_type' => $stored['mime'],
-            'file_size' => $stored['size'],
-            'doc_type' => 'dalil',
-            'uploaded_by' => Auth::id(),
-            'student_id' => null,
-            'scientific_result_id' => null,
-            'created_at' => date('Y-m-d H:i:s'),
-        ]);
+          $studentId = null;
+
+if (Auth::role() === 'doctoral_student') {
+    $student = DoctoralStudent::findByUser((int) Auth::id());
+
+    if ($student === null) {
+        return $this->redirect('/doktorant/dashboard');
+    }
+
+    $studentId = (int) $student['id'];
+}
+
+$id = DB::insert('documents', [
+    'title' => (string) $input['title'],
+    'category' => (string) $input['category'],
+    'file_path' => $stored['path'],
+    'original_name' => $stored['original_name'],
+    'mime_type' => $stored['mime'],
+    'file_size' => $stored['size'],
+    'doc_type' => 'dalil',
+    'uploaded_by' => Auth::id(),
+    'student_id' => $studentId,
+    'scientific_result_id' => null,
+    'created_at' => date('Y-m-d H:i:s'),
+]);
         AuditLogger::log('upload', 'documents', $id, null, ['category' => (string) $input['category']]);
 
         Session::flash('success', 'Dalil hujjati yuklandi.');
