@@ -259,11 +259,13 @@ $documentId = null;
         'supervisors' => $supervisors,
     ]);
 }
-
     private function back(Request $request, string $error): Response
     {
-               Session::flash('success', 'Ilmiy natija qo\'shildi.');
-        return $this->redirect('/results');
+        Session::flash('error', $error);
+
+        return $this->redirect(
+            $request->header('Referer') ?? '/results'
+        );
     }
 
     public function verify(Request $request): Response
@@ -289,7 +291,11 @@ $documentId = null;
         }
 
         if ((int) ($result['verified'] ?? 0) === 1) {
-            Session::flash('error', 'Bu ilmiy natija avval tasdiqlangan.');
+            Session::flash(
+                'error',
+                'Bu ilmiy natija avval tasdiqlangan.'
+            );
+
             return $this->redirect('/results');
         }
 
@@ -312,14 +318,11 @@ $documentId = null;
             ['verified' => 1]
         );
 
-        Session::flash('success', 'Ilmiy natija tasdiqlandi.');
+        Session::flash(
+            'success',
+            'Ilmiy natija tasdiqlandi.'
+        );
 
         return $this->redirect('/results');
     }
-
-    // -----------------------------------------------------------------
-
-    /**
-     * @return array<string,mixed>|Response
-     */
-    private function validated(Request $request): array|Response
+}
