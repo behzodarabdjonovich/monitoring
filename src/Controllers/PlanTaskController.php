@@ -20,15 +20,33 @@ use App\Models\DoctoralStudent;
  */
 final class PlanTaskController extends Controller
 {
-    public function store(Request $request): Response
-    {
-        $planId = (int) $request->param('id');
-        $plan = IndividualPlan::find($planId);
-        if ($plan === null) {
-            return Response::html(\App\Core\View::render('errors.404'), 404);
-        }
+   public function store(Request $request): Response
+{
+    $planId = (int) $request->param('id');
+    $plan = IndividualPlan::find($planId);
 
-        $input = $request->all();
+    if ($plan === null) {
+        return Response::html(
+            \App\Core\View::render('errors.404'),
+            404
+        );
+    }
+
+    if (Auth::role() === 'doctoral_student') {
+        $student = DoctoralStudent::findByUser((int) Auth::id());
+
+        if (
+            $student === null ||
+            (int) ($plan['student_id'] ?? 0) !== (int) $student['id']
+        ) {
+            return Response::html(
+                \App\Core\View::render('errors.403'),
+                403
+            );
+        }
+    }
+
+          $input = $request->all();
         $validator = Validator::make($input, [
             'title' => 'required|string|max:191',
             'progress_percent' => 'integer',
