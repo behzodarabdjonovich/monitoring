@@ -122,8 +122,10 @@ final class DoctoralAuthController extends Controller
             $request->ip()
         );
 
-        return $this->redirect('/doktorant/dashboard');
-        /**
+               return $this->redirect('/doktorant/dashboard');
+    }
+
+    /**
      * Doktorant kabinetidan chiqish.
      */
     public function logout(Request $request): Response
