@@ -33,6 +33,7 @@ use App\Core\Middleware\SuperAdminMiddleware;
 use App\Core\Router;
 use App\Controllers\DoctoralAuthController;
 use App\Controllers\DoctoralDashboardController;
+use App\Controllers\SupervisorRequestController;
 
 /** @var Router $router */
 
@@ -86,7 +87,27 @@ $router->get('/doktorant/reja', [
     new RbacMiddleware('individual_plans.view'),
 ]);
 
+// --- Doktorant: ilmiy rahbar so‘rovi ---
+
+$router->get('/doktorant/ilmiy-rahbar', [
+    SupervisorRequestController::class,
+    'index'
+], [
+    new AuthMiddleware(),
+    new RbacMiddleware('supervisors.view'),
+]);
+
+$router->post('/doktorant/ilmiy-rahbar', [
+    SupervisorRequestController::class,
+    'store'
+], [
+    new AuthMiddleware(),
+    new RbacMiddleware('supervisors.view'),
+]);
+
 /**
+ * Modul marshrutlari uchun yordamchi...
+ */
  * Modul marshrutlari uchun yordamchi: har biri Auth + RBAC middleware bilan.
  */
 $auth = static fn () => new AuthMiddleware();
