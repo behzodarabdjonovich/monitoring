@@ -106,13 +106,17 @@ final class DoctoralStudent
      */
     public static function activityPercent(int $studentId): float
     {
-        $tasks = DB::select(
-            'SELECT t.status, t.progress_percent
-             FROM plan_tasks t
-             INNER JOIN individual_plans p ON p.id = t.plan_id
-             WHERE p.student_id = :sid',
-            ['sid' => $studentId]
-        );
+       $tasks = DB::select(
+    'SELECT t.status, t.progress_percent
+     FROM plan_tasks t
+     INNER JOIN individual_plans p ON p.id = t.plan_id
+     WHERE p.student_id = :sid
+       AND p.status = :status',
+    [
+        'sid' => $studentId,
+        'status' => 'approved',
+    ]
+);
         $pct = PlanTask::planCompletionPercent($tasks);
         if ($pct !== null) {
             return $pct;
