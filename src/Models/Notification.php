@@ -193,28 +193,40 @@ final class Notification
     }
 
     /**
-     * Ilmiy rahbar tasdig'ini kutayotgan hujjat/vazifalar — tegishli
-     * doktorantning ilmiy rahbariga (user bog'langan bo'lsa).
-     */
+ * Doktorant bajargan va tasdiqlashni kutayotgan vazifalar —
+ * Doktorantura bo'limiga bildirishnoma yuboradi.
+ */
     private static function generatePendingApprovalNotifications(): int
-    {
-        $rows = DB::select(
-            "SELECT t.id AS task_id, t.title, su.user_id AS supervisor_user_id
-             FROM plan_tasks t
-             INNER JOIN individual_plans p ON p.id = t.plan_id
-             INNER JOIN doctoral_students s ON s.id = p.student_id
-             INNER JOIN supervisors su ON su.id = s.supervisor_id
-             WHERE t.status = 'completed' AND su.user_id IS NOT NULL"
+{
+    $rows = DB::select(
+        "SELECT t.id AS task_id,
+                t.title,
+                s.full_name AS student_name
+         FROM plan_tasks t
+         INNER JOIN individual_plans p ON p.id = t.plan_id
+         INNER JOIN doctoral_students s ON s.id = p.student_id
+         WHERE t.status = 'completed'"
+    );
+
+    $created = 0;
+
+    foreach ($rows as $r) {
+        $title = 'Tasdiqlashni kutayotgan vazifa';
+
+        $body = '"' . $r['student_name'] . '" doktorantining "' .
+            $r['title'] .
+            '" vazifasi bajarildi va tasdiqlashni kutmoqda.';
+
+        $created += self::notifyRoles(
+            ['doctorate_office'],
+            'pending_approval',
+            $title,
+            $body,
+            '/plans#task-' . (int) $r['task_id']
         );
-        $created = 0;
-        foreach ($rows as $r) {
-            $title = 'Tasdiqlashni kutayotgan vazifa';
-            $body = 'Vazifa "' . $r['title'] . '" doktorant tomonidan bajarildi va ilmiy rahbar tasdig\'ini kutmoqda.';
-            if (self::create((int) $r['supervisor_user_id'], 'pending_approval', $title, $body, '/plans#task-' . $r['task_id'])) {
-                $created++;
-            }
-        }
-        return $created;
+    }
+
+            return $created;
     }
 
     /**
@@ -223,28 +235,49 @@ final class Notification
      *
      * @param array<int,string> $roleNames
      */
-    private static function notifyRoles(array $roleNames, string $type, string $title, ?string $body, ?string $link): int
-    {
+    private static function notifyRoles(
+        array $roleNames,
+        string $type,
+        string $title,
+        ?string $body,
+        ?string $link
+    ): int {
         if ($roleNames === []) {
             return 0;
         }
+
         $placeholders = [];
         $params = [];
+
         foreach (array_values($roleNames) as $i => $name) {
             $placeholders[] = ':r' . $i;
             $params['r' . $i] = $name;
         }
+
         $users = DB::select(
-            'SELECT u.id FROM users u INNER JOIN roles r ON r.id = u.role_id
-             WHERE r.name IN (' . implode(', ', $placeholders) . ') AND u.is_active = 1 AND u.is_blocked = 0',
+            'SELECT u.id
+             FROM users u
+             INNER JOIN roles r ON r.id = u.role_id
+             WHERE r.name IN (' . implode(', ', $placeholders) . ')
+               AND u.is_active = 1
+               AND u.is_blocked = 0',
             $params
         );
+
         $created = 0;
+
         foreach ($users as $u) {
-            if (self::create((int) $u['id'], $type, $title, $body, $link)) {
+            if (self::create(
+                (int) $u['id'],
+                $type,
+                $title,
+                $body,
+                $link
+            )) {
                 $created++;
             }
         }
+
         return $created;
     }
 }
