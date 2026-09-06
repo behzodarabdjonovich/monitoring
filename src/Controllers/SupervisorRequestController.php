@@ -9,6 +9,8 @@ use App\Core\Session;
 use App\Models\DoctoralStudent;
 use App\Models\Supervisor;
 use App\Models\SupervisorRequest;
+use App\Core\AuditLogger;
+use App\Core\DB;
 
 final class SupervisorRequestController extends Controller
 {
