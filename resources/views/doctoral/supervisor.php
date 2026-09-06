@@ -1,5 +1,7 @@
 <?php
 
+use App\Core\Csrf;
+
 $this->layout('layouts.app');
 
 /**
@@ -102,7 +104,7 @@ $requests = $requests ?? [];
         <h2>Ilmiy rahbar bo‘yicha so‘rov yuborish</h2>
 
         <form method="post" action="/doktorant/ilmiy-rahbar">
-            <?= csrf_field() ?>
+           <?= Csrf::field() ?>
 
             <div class="form-group">
                 <label for="supervisor_id">
