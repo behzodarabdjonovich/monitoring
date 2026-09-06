@@ -84,10 +84,9 @@ public function store(Request $request): Response
 
     $data['student_id'] = (int) $student['id'];
 
-    if (!empty($student['supervisor_id'])) {
-        $data['supervisor_id'] = (int) $student['supervisor_id'];
-    }
-}
+    $data['supervisor_id'] = !empty($student['supervisor_id'])
+    ? (int) $student['supervisor_id']
+    : null;
 
 // Tasdiqlovchi fayl (ixtiyoriy) - documents jadvaliga yoziladi.
 $documentId = null;
