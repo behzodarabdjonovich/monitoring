@@ -123,5 +123,29 @@ final class DoctoralAuthController extends Controller
         );
 
         return $this->redirect('/doktorant/dashboard');
+        /**
+     * Doktorant kabinetidan chiqish.
+     */
+    public function logout(Request $request): Response
+    {
+        if (Auth::check()) {
+            $userId = Auth::id();
+
+            AuditLogger::log(
+                'logout',
+                'users',
+                $userId,
+                null,
+                [
+                    'portal' => 'doktorant',
+                ],
+                $userId,
+                $request->ip()
+            );
+        }
+
+        Auth::logout();
+
+        return $this->redirect('/doktorant/login');
     }
 }
