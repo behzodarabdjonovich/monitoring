@@ -34,7 +34,6 @@ use App\Core\Router;
 use App\Controllers\DoctoralAuthController;
 use App\Controllers\DoctoralDashboardController;
 use App\Controllers\SupervisorRequestController;
-use App\Controllers\ScientificResultController;
 
 /** @var Router $router */
 
