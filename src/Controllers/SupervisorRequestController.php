@@ -120,6 +120,153 @@ final class SupervisorRequestController extends Controller
             'Ilmiy rahbar bo‘yicha so‘rovingiz ilmiy bo‘limga yuborildi.'
         );
 
-        return $this->redirect('/doktorant/ilmiy-rahbar');
+               return $this->redirect('/doktorant/ilmiy-rahbar');
+    }
+
+    /**
+     * Ilmiy bo‘lim: barcha ilmiy rahbar so‘rovlarini ko‘rish.
+     */
+    public function officeIndex(Request $request): Response
+    {
+        if (!Auth::check()) {
+            return $this->redirect('/login');
+        }
+
+        if (!in_array(Auth::role(), ['doctorate_office', 'research_vice_head', 'super_admin'], true)) {
+            return $this->forbidden();
+        }
+
+        return $this->view('supervisor-requests.index', [
+            'user' => Auth::user(),
+            'title' => 'Ilmiy rahbar so‘rovlari',
+            'active' => 'supervisor-requests',
+            'requests' => SupervisorRequest::allWithRelations(),
+        ]);
+    }
+
+    /**
+     * Ilmiy bo‘lim: so‘rovni tasdiqlash.
+     */
+    public function approve(Request $request): Response
+    {
+        if (!Auth::check()) {
+            return $this->redirect('/login');
+        }
+
+        if (!in_array(Auth::role(), ['doctorate_office', 'research_vice_head', 'super_admin'], true)) {
+            return $this->forbidden();
+        }
+
+        $id = (int) $request->param('id');
+        $reviewNote = trim((string) $request->input('review_note', ''));
+
+        $supervisorRequest = SupervisorRequest::find($id);
+
+        if ($supervisorRequest === null) {
+            return $this->notFound();
+        }
+
+        if (($supervisorRequest['status'] ?? '') !== SupervisorRequest::PENDING) {
+            Session::flash('error', 'Bu so‘rov avval ko‘rib chiqilgan.');
+            return $this->redirect('/ilmiy-bolim/rahbar-sorovlari');
+        }
+
+        $student = DoctoralStudent::find((int) $supervisorRequest['student_id']);
+        $supervisor = Supervisor::find((int) $supervisorRequest['supervisor_id']);
+
+        if ($student === null || $supervisor === null) {
+            Session::flash('error', 'Doktorant yoki ilmiy rahbar topilmadi.');
+            return $this->redirect('/ilmiy-bolim/rahbar-sorovlari');
+        }
+
+        $oldSupervisorId = $student['supervisor_id'] ?? null;
+        $now = date('Y-m-d H:i:s');
+
+        DB::run(
+            'UPDATE doctoral_students
+             SET supervisor_id = :supervisor_id,
+                 updated_at = :updated_at
+             WHERE id = :id',
+            [
+                'supervisor_id' => (int) $supervisorRequest['supervisor_id'],
+                'updated_at' => $now,
+                'id' => (int) $student['id'],
+            ]
+        );
+
+        SupervisorRequest::approve(
+            $id,
+            (int) Auth::id(),
+            $reviewNote !== '' ? $reviewNote : null
+        );
+
+        AuditLogger::log(
+            'update',
+            'doctoral_students',
+            (int) $student['id'],
+            ['supervisor_id' => $oldSupervisorId],
+            [
+                'supervisor_id' => (int) $supervisorRequest['supervisor_id'],
+                'supervisor_request_id' => $id,
+            ]
+        );
+
+        Session::flash('success', 'Ilmiy rahbar so‘rovi tasdiqlandi.');
+
+        return $this->redirect('/ilmiy-bolim/rahbar-sorovlari');
+    }
+
+    /**
+     * Ilmiy bo‘lim: so‘rovni rad etish.
+     */
+    public function reject(Request $request): Response
+    {
+        if (!Auth::check()) {
+            return $this->redirect('/login');
+        }
+
+        if (!in_array(Auth::role(), ['doctorate_office', 'research_vice_head', 'super_admin'], true)) {
+            return $this->forbidden();
+        }
+
+        $id = (int) $request->param('id');
+        $reviewNote = trim((string) $request->input('review_note', ''));
+
+        $supervisorRequest = SupervisorRequest::find($id);
+
+        if ($supervisorRequest === null) {
+            return $this->notFound();
+        }
+
+        if (($supervisorRequest['status'] ?? '') !== SupervisorRequest::PENDING) {
+            Session::flash('error', 'Bu so‘rov avval ko‘rib chiqilgan.');
+            return $this->redirect('/ilmiy-bolim/rahbar-sorovlari');
+        }
+
+        if ($reviewNote === '') {
+            Session::flash('error', 'Rad etish sababini kiriting.');
+            return $this->redirect('/ilmiy-bolim/rahbar-sorovlari');
+        }
+
+        SupervisorRequest::reject(
+            $id,
+            (int) Auth::id(),
+            $reviewNote
+        );
+
+        AuditLogger::log(
+            'update',
+            'supervisor_requests',
+            $id,
+            ['status' => SupervisorRequest::PENDING],
+            [
+                'status' => SupervisorRequest::REJECTED,
+                'review_note' => $reviewNote,
+            ]
+        );
+
+        Session::flash('success', 'Ilmiy rahbar so‘rovi rad etildi.');
+
+        return $this->redirect('/ilmiy-bolim/rahbar-sorovlari');
     }
 }
