@@ -121,11 +121,3 @@ $percent = max(0, min(100, (int) round((float) $activityPercent)));
         <p>Tizimdagi yangi xabar va eslatmalarni ko‘ring.</p>
         <a class="btn btn-primary" href="/notifications">Ochish</a>
     </div>
-
-    <div class="card">
-        <h3>Kabinet</h3>
-        <p>Doktorant profiliga oid asosiy ma’lumotlar va holat.</p>
-        <a class="btn btn-primary" href="/doktorant/dashboard">Ochish</a>
-    </div>
-
-</div>
