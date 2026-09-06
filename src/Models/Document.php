@@ -66,12 +66,17 @@ final class Document
             $where[] = 'd.category = :cat';
             $params['cat'] = $f['category'];
         }
-        if (!empty($f['q'])) {
-            $where[] = '(d.title LIKE :q OR d.original_name LIKE :q)';
-            $params['q'] = '%' . $f['q'] . '%';
-        }
+       if (!empty($f['q'])) {
+    $where[] = '(d.title LIKE :q OR d.original_name LIKE :q)';
+    $params['q'] = '%' . $f['q'] . '%';
+}
 
-        $sql = 'SELECT d.*, u.full_name AS uploader_name,
+if (!empty($f['student_id'])) {
+    $where[] = 'd.student_id = :student_id';
+    $params['student_id'] = (int) $f['student_id'];
+}
+
+$sql = 'SELECT d.*, u.full_name AS uploader_name,
                        (SELECT COUNT(*) FROM indicator_evidence ie WHERE ie.document_id = d.id) AS indicator_count
                 FROM documents d
                 LEFT JOIN users u ON u.id = d.uploaded_by
