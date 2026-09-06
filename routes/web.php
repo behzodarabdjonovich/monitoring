@@ -60,6 +60,11 @@ $router->post('/doktorant/login', [
     'login'
 ]);
 
+$router->get('/doktorant/logout', [
+    DoctoralAuthController::class,
+    'logout'
+]);
+
 // --- Asosiy dashboard ---
 $router->get('/dashboard', [
     DashboardController::class,
