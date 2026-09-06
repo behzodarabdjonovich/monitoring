@@ -75,6 +75,15 @@ $router->get('/doktorant/dashboard', [
     new RbacMiddleware('dashboard.view'),
 ]);
 
+// Doktorant individual rejasi
+$router->get('/doktorant/reja', [
+    PlanController::class,
+    'doctoral'
+], [
+    new AuthMiddleware(),
+    new RbacMiddleware('individual_plans.view'),
+]);
+
 /**
  * Modul marshrutlari uchun yordamchi: har biri Auth + RBAC middleware bilan.
  */
