@@ -37,11 +37,9 @@ $institute = config('app.institute', '');
             'active' => $active ?? ''
         ]) ?>
 
-    <?php endif; ?>
+  <?php endif; ?>
 
-<?php endif; ?>
-
-    <div class="app-main">
+<div class="app-main">
         <?= $this->partial('partials.topbar', ['user' => $user]) ?>
 
         <main class="app-content" id="app-content">
