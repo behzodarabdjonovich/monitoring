@@ -152,9 +152,22 @@ $id = DB::insert('documents', [
         }
         $id = (int) $request->param('id');
         $doc = Document::find($id);
+        
         if ($doc === null) {
             return $this->notFound();
         }
+
+        if (Auth::role() === 'doctoral_student') {
+    $student = DoctoralStudent::findByUser((int) Auth::id());
+
+    if (
+        $student === null ||
+        (int) ($doc['student_id'] ?? 0) !== (int) $student['id']
+    ) {
+        return Response::html(\App\Core\View::render('errors.403'), 403);
+    }
+}
+        
         $contents = FileStorage::read((string) $doc['file_path']);
         if ($contents === null) {
             return $this->notFound();
