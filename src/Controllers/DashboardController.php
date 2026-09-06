@@ -17,19 +17,22 @@ use App\Models\DashboardStats;
 final class DashboardController extends Controller
 {
     public function index(Request $request): Response
-    {
-        $filters = DashboardStats::sanitizeFilters($request->all());
-        $data = DashboardStats::compute($filters);
-
-        return $this->view('dashboard.index', [
-            'user' => Auth::user(),
-            'title' => 'Dashboard',
-            'kpis' => $data['kpis'],
-            'hero' => $data['hero'],
-            'charts' => $data['charts'],
-            'progress' => $data['progress'],
-            'filters' => $filters,
-            'filterOptions' => DashboardStats::filterOptions(),
-        ]);
+{
+    if (Auth::role() === 'doctoral_student') {
+        return $this->redirect('/doktorant/dashboard');
     }
+
+    $filters = DashboardStats::sanitizeFilters($request->all());
+    $data = DashboardStats::compute($filters);
+
+    return $this->view('dashboard.index', [
+        'user' => Auth::user(),
+        'title' => 'Dashboard',
+        'kpis' => $data['kpis'],
+        'hero' => $data['hero'],
+        'charts' => $data['charts'],
+        'progress' => $data['progress'],
+        'filters' => $filters,
+        'filterOptions' => DashboardStats::filterOptions(),
+    ]);
 }
