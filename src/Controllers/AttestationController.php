@@ -9,7 +9,7 @@ use App\Core\Request;
 use App\Core\Response;
 use App\Core\Session;
 use App\Core\Validator;
-use App\Models\Attestation;.
+use App\Models\Attestation;
 use App\Models\DoctoralStudent;
 
 /**
