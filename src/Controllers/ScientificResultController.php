@@ -61,6 +61,11 @@ final class ScientificResultController extends Controller
         'canCreate' => Auth::can('scientific_results.create'),
     ]);
 }
+
+    public function create(Request $request): Response
+{
+    return $this->form(null);
+}
     
 public function store(Request $request): Response
 {
