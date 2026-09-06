@@ -34,6 +34,7 @@ use App\Core\Router;
 use App\Controllers\DoctoralAuthController;
 use App\Controllers\DoctoralDashboardController;
 use App\Controllers\SupervisorRequestController;
+use App\Controllers\ScientificResultController;
 
 /** @var Router $router */
 
@@ -136,6 +137,15 @@ $router->post('/ilmiy-bolim/rahbar-sorovlari/{id}/reject', [
  */
 $auth = static fn () => new AuthMiddleware();
 $rbac = static fn (string $perm) => new RbacMiddleware($perm);
+
+// Ilmiy natijani tasdiqlash
+$router->post('/results/{id}/verify', [
+    ScientificResultController::class,
+    'verify'
+], [
+    $auth(),
+    $rbac('scientific_results.view'),
+]);
 
 // --- Doktorantlar (item 4) ---
 $router->get('/students', [StudentController::class, 'index'], [$auth(), $rbac('doctoral_students.view')]);
