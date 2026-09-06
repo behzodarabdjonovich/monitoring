@@ -200,52 +200,73 @@ $this->layout('layouts.app');
 
 
                         <!-- TASDIQ -->
-                        <td>
+<td>
 
-                            <?php if (!empty($r['verified'])): ?>
+    <?php $status = $r['status'] ?? (!empty($r['verified']) ? 'approved' : 'pending'); ?>
 
-                                <span class="badge badge-green">
-                                    Tasdiqlangan
-                                </span>
+    <?php if ($status === 'approved'): ?>
 
+        <span class="badge badge-green">
+            Tasdiqlangan
+        </span>
 
-                            <?php elseif (in_array(
-                                \App\Core\Auth::role(),
-                                [
-                                    'doctorate_office',
-                                    'research_vice_head',
-                                    'super_admin'
-                                ],
-                                true
-                            )): ?>
+    <?php elseif ($status === 'rejected'): ?>
 
-                                <form
-                                    method="post"
-                                    action="/results/<?= e($r['id']) ?>/verify"
-                                >
+        <span class="badge badge-red">
+            Rad etilgan
+        </span>
 
-                                    <?= Csrf::field() ?>
+    <?php elseif (in_array(
+        \App\Core\Auth::role(),
+        [
+            'doctorate_office',
+            'research_vice_head',
+            'super_admin'
+        ],
+        true
+    )): ?>
 
-                                    <button
-                                        type="submit"
-                                        class="btn btn-primary"
-                                    >
-                                        Tasdiqlash
-                                    </button>
+        <div style="display:flex;gap:0.4rem;flex-wrap:wrap;">
 
-                                </form>
+            <form
+                method="post"
+                action="/results/<?= e($r['id']) ?>/verify"
+            >
+                <?= Csrf::field() ?>
 
+                <button
+                    type="submit"
+                    class="btn btn-primary"
+                >
+                    Tasdiqlash
+                </button>
+            </form>
 
-                            <?php else: ?>
+            <form
+                method="post"
+                action="/results/<?= e($r['id']) ?>/reject"
+            >
+                <?= Csrf::field() ?>
 
-                                <span class="badge badge-yellow">
-                                    Kutilmoqda
-                                </span>
+                <button
+                    type="submit"
+                    class="btn"
+                >
+                    Rad etish
+                </button>
+            </form>
 
-                            <?php endif; ?>
+        </div>
 
-                        </td>
+    <?php else: ?>
 
+        <span class="badge badge-yellow">
+            Kutilmoqda
+        </span>
+
+    <?php endif; ?>
+
+</td>
                     </tr>
 
                 <?php endforeach; ?>
