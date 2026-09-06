@@ -1,4 +1,6 @@
 <?php
+
+$this->layout('layouts.app');
 /**
  * Doktorant uchun alohida kabinet.
  *
