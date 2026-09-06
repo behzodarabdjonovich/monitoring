@@ -221,17 +221,44 @@ $documentId = null;
     }
 
     private function form(?array $result): Response
-    {
-        return $this->view('results.form', [
-            'user' => Auth::user(),
-            'title' => 'Yangi ilmiy natija',
-            'active' => 'results',
-            'result' => $result,
-            'types' => ScientificResult::TYPES,
-            'students' => DB::select('SELECT id, full_name FROM doctoral_students ORDER BY full_name'),
-            'supervisors' => DB::select('SELECT id, full_name FROM supervisors ORDER BY full_name'),
-        ]);
+{
+    $students = DB::select(
+        'SELECT id, full_name FROM doctoral_students ORDER BY full_name'
+    );
+
+    $supervisors = DB::select(
+        'SELECT id, full_name FROM supervisors ORDER BY full_name'
+    );
+
+    if (Auth::role() === 'doctoral_student') {
+        $student = DoctoralStudent::findByUser((int) Auth::id());
+
+        if ($student === null) {
+            return $this->redirect('/doktorant/dashboard');
+        }
+
+        $students = [$student];
+
+        if (!empty($student['supervisor_id'])) {
+            $supervisors = DB::select(
+                'SELECT id, full_name FROM supervisors WHERE id = :id',
+                ['id' => (int) $student['supervisor_id']]
+            );
+        } else {
+            $supervisors = [];
+        }
     }
+
+    return $this->view('results.form', [
+        'user' => Auth::user(),
+        'title' => 'Yangi ilmiy natija',
+        'active' => 'results',
+        'result' => $result,
+        'types' => ScientificResult::TYPES,
+        'students' => $students,
+        'supervisors' => $supervisors,
+    ]);
+}
 
     private function back(Request $request, string $error): Response
     {
