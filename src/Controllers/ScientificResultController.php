@@ -12,6 +12,7 @@ use App\Core\Session;
 use App\Core\Validator;
 use App\Models\Document;
 use App\Models\ScientificResult;
+use App\Models\DoctoralStudent;
 
 /**
  * Ilmiy natijalar moduli (item 6).
@@ -26,36 +27,59 @@ final class ScientificResultController extends Controller
 {
     public function index(Request $request): Response
     {
-        $filters = [
-            'q' => trim((string) $request->query('q', '')),
-            'type' => (string) $request->query('type', ''),
-            'student' => (string) $request->query('student', ''),
-        ];
-        return $this->view('results.index', [
-            'user' => Auth::user(),
-            'title' => 'Ilmiy natijalar',
-            'active' => 'results',
-            'results' => ScientificResult::search($filters),
-            'filters' => $filters,
-            'types' => ScientificResult::TYPES,
-            'students' => DB::select('SELECT id, full_name FROM doctoral_students ORDER BY full_name'),
-            'canCreate' => Auth::can('scientific_results.create'),
-        ]);
-    }
+    
+    $filters = [
+        'q' => trim((string) $request->query('q', '')),
+        'type' => (string) $request->query('type', ''),
+        'student' => (string) $request->query('student', ''),
+    ];
 
-    public function create(Request $request): Response
-    {
-        return $this->form(null);
-    }
+    $students = DB::select(
+        'SELECT id, full_name FROM doctoral_students ORDER BY full_name'
+    );
 
-    public function store(Request $request): Response
-    {
-        $data = $this->validated($request);
-        if ($data instanceof Response) {
-            return $data;
+    // Doktorant faqat o'z ilmiy natijalarini ko'radi.
+    if (Auth::role() === 'doctoral_student') {
+        $student = DoctoralStudent::findByUser((int) Auth::id());
+
+        if ($student === null) {
+            return $this->redirect('/doktorant/dashboard');
         }
 
-        // Tasdiqlovchi fayl (ixtiyoriy) — documents jadvaliga yoziladi.
+        $filters['student'] = (string) $student['id'];
+        $students = [$student];
+    }
+
+    return $this->view('results.index', [
+        'user' => Auth::user(),
+        'title' => 'Ilmiy natijalar',
+        'active' => 'results',
+        'results' => ScientificResult::search($filters),
+        'filters' => $filters,
+        'types' => ScientificResult::TYPES,
+        'students' => $students,
+        'canCreate' => Auth::can('scientific_results.create'),
+    ]);
+}
+    
+public function store(Request $request): Response
+{
+    $data = $this->validated($request);
+
+    if ($data instanceof Response) {
+        return $data;
+    }
+    
+    if (Auth::role() === 'doctoral_student') {
+    $student = DoctoralStudent::findByUser((int) Auth::id());
+
+    if ($student === null) {
+        return $this->redirect('/doktorant/dashboard');
+    }
+
+    $data['student_id'] = (int) $student['id'];
+}
+    // Tasdiqlovchi fayl (ixtiyoriy) — documents jadvaliga yoziladi.
         $documentId = null;
         $file = $request->file('evidence_file');
         if ($file !== null && ($file['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_OK) {
