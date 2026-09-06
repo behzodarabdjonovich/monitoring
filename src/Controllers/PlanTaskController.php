@@ -12,6 +12,7 @@ use App\Core\Session;
 use App\Core\Validator;
 use App\Models\IndividualPlan;
 use App\Models\PlanTask;
+use App\Models\DoctoralStudent;
 
 /**
  * Individual reja vazifalari (item 5) — qo'shish, maydonlarni yangilash,
@@ -67,7 +68,30 @@ final class PlanTaskController extends Controller
         if ($task === null) {
             return Response::html(\App\Core\View::render('errors.404'), 404);
         }
+        
+if (Auth::role() === 'doctoral_student') {
+    $student = DoctoralStudent::findByUser((int) Auth::id());
 
+    if ($student === null) {
+        return Response::html(
+            \App\Core\View::render('errors.403'),
+            403
+        );
+    }
+
+    $plan = IndividualPlan::find((int) $task['plan_id']);
+
+    if (
+        $plan === null ||
+        (int) ($plan['student_id'] ?? 0) !== (int) $student['id']
+    ) {
+        return Response::html(
+            \App\Core\View::render('errors.403'),
+            403
+        );
+    }
+}
+        
         $input = $request->all();
         $now = date('Y-m-d H:i:s');
         $updates = [];
