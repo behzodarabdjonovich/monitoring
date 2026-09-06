@@ -11,6 +11,7 @@ use App\Core\Session;
 use App\Core\Validator;
 use App\Models\IndividualPlan;
 use App\Models\PlanTask;
+use App\Models\DoctoralStudent;
 
 /**
  * Individual rejalar (item 5) — CRUD + tasdiqlash.
@@ -54,13 +55,27 @@ public function doctoral(Request $request): Response
     return $this->redirect('/plans/' . (int) $plans[0]['id']);
 }
     
-    public function show(Request $request): Response
-    {
-        $id = (int) $request->param('id');
-        $plan = IndividualPlan::findWithRelations($id);
-        if ($plan === null) {
-            return Response::html(\App\Core\View::render('errors.404'), 404);
+   public function show(Request $request): Response
+{
+    $id = (int) $request->param('id');
+    $plan = IndividualPlan::findWithRelations($id);
+
+    if ($plan === null) {
+        return Response::html(\App\Core\View::render('errors.404'), 404);
+    }
+
+    if (Auth::role() === 'doctoral_student') {
+        $student = DoctoralStudent::findByUser((int) Auth::id());
+
+        if (
+            $student === null ||
+            (int) ($plan['student_id'] ?? 0) !== (int) $student['id']
+        ) {
+            return Response::html(\App\Core\View::render('errors.403'), 403);
         }
+    }
+
+    $tasks = PlanTask::forPlan($id);
         $tasks = PlanTask::forPlan($id);
         // Har vazifa uchun overdue va navbatdagi mumkin bo'lgan o'tishlarni hisoblaymiz.
         $role = Auth::role();
