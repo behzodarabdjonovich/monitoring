@@ -332,14 +332,19 @@ final class DashboardStats
      * @param int[] $studentIds
      */
     private static function countResultType(array $studentIds, string $type): int
-    {
-        [$in, $p] = self::inClause($studentIds, 'sid');
-        $p['rt'] = $type;
-        return (int) DB::scalar(
-            "SELECT COUNT(*) FROM scientific_results WHERE student_id IN $in AND result_type = :rt",
-            $p
-        );
-    }
+{
+    [$in, $p] = self::inClause($studentIds, 'sid');
+    $p['rt'] = $type;
+
+    return (int) DB::scalar(
+        "SELECT COUNT(*)
+         FROM scientific_results
+         WHERE student_id IN $in
+           AND result_type = :rt
+           AND status = 'approved'",
+        $p
+    );
+}
 
     /**
      * Akkreditatsiyaga tayyor ixtisosliklar soni (namunaviy mezon: umumiy
