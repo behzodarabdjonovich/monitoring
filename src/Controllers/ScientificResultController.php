@@ -139,6 +139,7 @@ $documentId = null;
 $stored = null;
 
 $file = $request->file('evidence_file');
+$stored = null;
 
 if (
     $file !== null
@@ -159,6 +160,36 @@ DB::beginTransaction();
 try {
     if ($stored !== null) {
         $documentId = DB::insert('documents', [
+            'title' => $data['title'] !== ''
+                ? $data['title']
+                : $stored['original_name'],
+
+            'category' => 'maqolalar',
+            'file_path' => $stored['path'],
+            'original_name' => $stored['original_name'],
+            'mime_type' => $stored['mime'],
+            'file_size' => $stored['size'],
+            'doc_type' => 'ilmiy_natija',
+            'uploaded_by' => Auth::id(),
+            'student_id' => (int) $student['id'],
+            'scientific_result_id' => $id,
+            'created_at' => date('Y-m-d H:i:s'),
+        ]);
+
+        AuditLogger::log(
+            'upload',
+            'documents',
+            $documentId,
+            null,
+            [
+                'category' => 'maqolalar',
+                'scientific_result_id' => $id,
+            ]
+        );
+    }
+
+    DB::run(
+        "UPDATE scientific_results
                 'title' => $data['title'] !== '' ? $data['title'] : $stored['original_name'],
                 'category' => 'maqolalar',
                 'file_path' => $stored['path'],
