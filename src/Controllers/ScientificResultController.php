@@ -97,8 +97,10 @@ final class ScientificResultController extends Controller
         }
     }
 
-    return $this->form($result);
+        return $this->form($result);
 }
+
+public function store(Request $request): Response
 {
     $data = $this->validated($request);
 
@@ -164,7 +166,111 @@ $documentId = null;
         Session::flash('success', 'Ilmiy natija qo\'shildi.');
         return $this->redirect('/results');
     }
+public function update(Request $request): Response
+{
+    if (!Auth::check()) {
+        return $this->redirect('/login');
+    }
 
+    $id = (int) $request->param('id');
+    $result = ScientificResult::find($id);
+
+    if ($result === null) {
+        return $this->notFound();
+    }
+
+    // Hozircha qayta yuborishni faqat doktorant bajaradi.
+    if (Auth::role() !== 'doctoral_student') {
+        return $this->forbidden();
+    }
+
+    $student = DoctoralStudent::findByUser((int) Auth::id());
+
+    // Doktorant faqat o'z ilmiy natijasini o'zgartira oladi.
+    if (
+        $student === null
+        || (int) ($result['student_id'] ?? 0) !== (int) $student['id']
+    ) {
+        return $this->forbidden();
+    }
+
+    // Faqat rad etilgan natija qayta yuboriladi.
+    if (($result['status'] ?? 'pending') !== 'rejected') {
+        Session::flash(
+            'error',
+            'Faqat rad etilgan ilmiy natijani qayta yuborish mumkin.'
+        );
+
+        return $this->redirect('/results');
+    }
+
+    $data = $this->validated($request);
+
+    if ($data instanceof Response) {
+        return $data;
+    }
+
+    // POST orqali boshqa doktorant yoki rahbar ID sini soxtalashtirishga yo'l qo'ymaymiz.
+    $data['student_id'] = (int) $student['id'];
+    $data['supervisor_id'] = !empty($student['supervisor_id'])
+        ? (int) $student['supervisor_id']
+        : null;
+
+    $old = $result;
+
+    DB::run(
+        "UPDATE scientific_results
+         SET student_id = :student_id,
+             supervisor_id = :supervisor_id,
+             result_type = :result_type,
+             title = :title,
+             description = :description,
+             achieved_at = :achieved_at,
+             url = :url,
+             status = 'pending',
+             verified = 0,
+             rejection_reason = NULL,
+             updated_at = :updated_at
+         WHERE id = :id",
+        [
+            'student_id' => $data['student_id'],
+            'supervisor_id' => $data['supervisor_id'],
+            'result_type' => $data['result_type'],
+            'title' => $data['title'],
+            'description' => $data['description'],
+            'achieved_at' => $data['achieved_at'],
+            'url' => $data['url'],
+            'updated_at' => date('Y-m-d H:i:s'),
+            'id' => $id,
+        ]
+    );
+
+    AuditLogger::log(
+        'resubmit',
+        'scientific_results',
+        $id,
+        $old,
+        [
+            'student_id' => $data['student_id'],
+            'supervisor_id' => $data['supervisor_id'],
+            'result_type' => $data['result_type'],
+            'title' => $data['title'],
+            'description' => $data['description'],
+            'achieved_at' => $data['achieved_at'],
+            'url' => $data['url'],
+            'status' => 'pending',
+            'verified' => 0,
+            'rejection_reason' => null,
+        ]
+    );
+
+    Session::flash(
+        'success',
+        'Ilmiy natija tuzatildi va qayta tasdiqlashga yuborildi.'
+    );
+
+    return $this->redirect('/results');
+}
     // -----------------------------------------------------------------
 
     /**
