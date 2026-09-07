@@ -62,10 +62,15 @@ final class ScientificResultController extends Controller
     ]);
 }
 
-    public function edit(Request $request): Response
+  public function edit(Request $request): Response
 {
     if (!Auth::check()) {
         return $this->redirect('/login');
+    }
+
+    // Ilmiy natijani qayta tahrirlash faqat doktorant uchun.
+    if (Auth::role() !== 'doctoral_student') {
+        return $this->forbidden();
     }
 
     $id = (int) $request->param('id');
@@ -75,29 +80,27 @@ final class ScientificResultController extends Controller
         return $this->notFound();
     }
 
+    $student = DoctoralStudent::findByUser((int) Auth::id());
+
     // Doktorant faqat o'z natijasini tahrirlay oladi.
-    if (Auth::role() === 'doctoral_student') {
-        $student = DoctoralStudent::findByUser((int) Auth::id());
-
-        if (
-            $student === null
-            || (int) ($result['student_id'] ?? 0) !== (int) $student['id']
-        ) {
-            return $this->forbidden();
-        }
-
-        // Doktorant faqat rad etilgan natijani tuzatishi mumkin.
-        if (($result['status'] ?? 'pending') !== 'rejected') {
-            Session::flash(
-                'error',
-                'Faqat rad etilgan ilmiy natijani tahrirlash mumkin.'
-            );
-
-            return $this->redirect('/results');
-        }
+    if (
+        $student === null
+        || (int) ($result['student_id'] ?? 0) !== (int) $student['id']
+    ) {
+        return $this->forbidden();
     }
 
-        return $this->form($result);
+    // Faqat rad etilgan natijani tuzatish mumkin.
+    if (($result['status'] ?? 'pending') !== 'rejected') {
+        Session::flash(
+            'error',
+            'Faqat rad etilgan ilmiy natijani tahrirlash mumkin.'
+        );
+
+        return $this->redirect('/results');
+    }
+
+    return $this->form($result);
 }
 
 public function store(Request $request): Response
