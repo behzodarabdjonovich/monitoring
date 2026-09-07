@@ -270,8 +270,8 @@ final class Notification
              FROM users u
              INNER JOIN roles r ON r.id = u.role_id
              WHERE r.name IN (' . implode(', ', $placeholders) . ')
-               AND u.is_active = 1
-               AND u.is_blocked = 0',
+             AND u.is_active = TRUE
+AND u.is_blocked = FALSE
             $params
         );
 
