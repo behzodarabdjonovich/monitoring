@@ -195,7 +195,9 @@ public function edit(Request $request): Response
         $insert = $this->attachSpecialization($insert, $data);
 
         $id = DB::insert('scientific_results', $insert);
-
+        
+throw new \RuntimeException('ROLLBACK TEST');
+        
         if ($documentId !== null) {
             DB::run(
                 'UPDATE documents
