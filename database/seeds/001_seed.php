@@ -832,7 +832,7 @@ return function (): void {
         'title' => 'Tizim ishga tushirildi',
         'body' => 'Akkreditatsiya mezonlari NAMUNA (placeholder) sifatida kiritilgan — rasmiy qiymatlar bilan almashtiring.',
         'link' => '/accreditations',
-        'is_read' => 0,
+       'is_read' => false,
         'created_at' => $now,
     ]);
 
