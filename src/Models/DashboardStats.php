@@ -167,7 +167,7 @@ final class DashboardStats
 
         // --- Ilmiy natijalar ---
         [$pubTotal, $pubIntl] = self::publicationCounts($studentIds);
-        $conferences = self::countIn('conferences', $studentIds);
+       $conferences = self::conferenceCount($studentIds);
         $defenses = self::countResultType($studentIds, 'dissertatsiya_himoyasi');
 
         // --- Akkreditatsiya KPI'lari (filtrdan mustaqil — institut darajasi) ---
@@ -268,19 +268,60 @@ final class DashboardStats
      * @return array{0:int,1:int} [jami, xalqaro (scopus/wos)]
      */
     private static function publicationCounts(array $studentIds): array
-    {
-        [$in, $p] = self::inClause($studentIds, 'sid');
-        $total = (int) DB::scalar("SELECT COUNT(*) FROM publications WHERE student_id IN $in", $p);
-        $intl = (int) DB::scalar(
-            "SELECT COUNT(*) FROM publications WHERE student_id IN $in AND publication_type IN ('scopus', 'wos')",
-            $p
-        );
-        return [$total, $intl];
-    }
+{
+    [$in, $p] = self::inClause($studentIds, 'sid');
+
+    $total = (int) DB::scalar(
+        "SELECT COUNT(*)
+         FROM publications pub
+         LEFT JOIN scientific_results r
+            ON r.publication_id = pub.id
+         WHERE pub.student_id IN $in
+           AND (
+               r.id IS NULL
+               OR r.status = 'approved'
+           )",
+        $p
+    );
+
+    $intl = (int) DB::scalar(
+        "SELECT COUNT(*)
+         FROM publications pub
+         LEFT JOIN scientific_results r
+            ON r.publication_id = pub.id
+         WHERE pub.student_id IN $in
+           AND pub.publication_type IN ('scopus', 'wos')
+           AND (
+               r.id IS NULL
+               OR r.status = 'approved'
+           )",
+        $p
+    );
+
+    return [$total, $intl];
+}
 
     /**
      * @param int[] $studentIds
      */
+   private static function conferenceCount(array $studentIds): int
+{
+    [$in, $p] = self::inClause($studentIds, 'sid');
+
+    return (int) DB::scalar(
+        "SELECT COUNT(*)
+         FROM conferences c
+         LEFT JOIN scientific_results r
+            ON r.conference_id = c.id
+         WHERE c.student_id IN $in
+           AND (
+               r.id IS NULL
+               OR r.status = 'approved'
+           )",
+        $p
+    );
+}
+    
     private static function countIn(string $table, array $studentIds): int
     {
         [$in, $p] = self::inClause($studentIds, 'sid');
