@@ -157,13 +157,8 @@ if (
 DB::beginTransaction();
 
 try {
-        if ($file !== null && ($file['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_OK) {
-            try {
-                $stored = FileStorage::store($file);
-            } catch (\RuntimeException $ex) {
-                return $this->back($request, 'Tasdiqlovchi fayl: ' . $ex->getMessage());
-            }
-            $documentId = DB::insert('documents', [
+    if ($stored !== null) {
+        $documentId = DB::insert('documents', [
                 'title' => $data['title'] !== '' ? $data['title'] : $stored['original_name'],
                 'category' => 'maqolalar',
                 'file_path' => $stored['path'],
