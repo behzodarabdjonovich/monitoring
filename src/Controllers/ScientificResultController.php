@@ -62,12 +62,43 @@ final class ScientificResultController extends Controller
     ]);
 }
 
-    public function create(Request $request): Response
+    public function edit(Request $request): Response
 {
-    return $this->form(null);
+    if (!Auth::check()) {
+        return $this->redirect('/login');
+    }
+
+    $id = (int) $request->param('id');
+    $result = ScientificResult::find($id);
+
+    if ($result === null) {
+        return $this->notFound();
+    }
+
+    // Doktorant faqat o'z natijasini tahrirlay oladi.
+    if (Auth::role() === 'doctoral_student') {
+        $student = DoctoralStudent::findByUser((int) Auth::id());
+
+        if (
+            $student === null
+            || (int) ($result['student_id'] ?? 0) !== (int) $student['id']
+        ) {
+            return $this->forbidden();
+        }
+
+        // Doktorant faqat rad etilgan natijani tuzatishi mumkin.
+        if (($result['status'] ?? 'pending') !== 'rejected') {
+            Session::flash(
+                'error',
+                'Faqat rad etilgan ilmiy natijani tahrirlash mumkin.'
+            );
+
+            return $this->redirect('/results');
+        }
+    }
+
+    return $this->form($result);
 }
-    
-public function store(Request $request): Response
 {
     $data = $this->validated($request);
 
