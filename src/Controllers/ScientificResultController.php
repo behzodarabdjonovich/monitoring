@@ -424,19 +424,20 @@ AuditLogger::log(
     }
 private function syncSpecialization(array $result, array $data): void
 {
+    $resultId = (int) $result['id'];
     $studentId = (int) $data['student_id'];
     $type = (string) $data['result_type'];
 
-    $publicationId = !empty($result['publication_id'])
+    $oldPublicationId = !empty($result['publication_id'])
         ? (int) $result['publication_id']
         : null;
 
-    $conferenceId = !empty($result['conference_id'])
+    $oldConferenceId = !empty($result['conference_id'])
         ? (int) $result['conference_id']
         : null;
 
     // ---------------------------------------------------------
-    // 1. Yangi tur PUBLICATION bo'lsa
+    // 1. Yangi tur PUBLICATION
     // ---------------------------------------------------------
     if (in_array($type, ScientificResult::PUBLICATION_TYPES, true)) {
         $publicationType = match ($type) {
@@ -446,8 +447,9 @@ private function syncSpecialization(array $result, array $data): void
             default => 'boshqa',
         };
 
-        if ($publicationId !== null) {
-            // Mavjud publication yozuvini yangilaymiz.
+        if ($oldPublicationId !== null) {
+            // Publication -> Publication:
+            // mavjud KPI yozuvini yangilaymiz.
             DB::run(
                 "UPDATE publications
                  SET student_id = :student_id,
@@ -460,11 +462,14 @@ private function syncSpecialization(array $result, array $data): void
                     'title' => $data['title'],
                     'publication_type' => $publicationType,
                     'published_at' => $data['achieved_at'],
-                    'id' => $publicationId,
+                    'id' => $oldPublicationId,
                 ]
             );
+
+            $publicationId = $oldPublicationId;
         } else {
-            // Oldin publication bo'lmagan bo'lsa, yangi yozuv yaratamiz.
+            // Conference/boshqa -> Publication:
+            // yangi KPI publication yozuvi.
             $publicationId = DB::insert('publications', [
                 'student_id' => $studentId,
                 'title' => (string) $data['title'],
@@ -476,7 +481,8 @@ private function syncSpecialization(array $result, array $data): void
             ]);
         }
 
-        // Oldingi conference bog'lanishini olib tashlaymiz.
+        // Avval scientific_result yangi publicationga o'tkaziladi
+        // va conference bog'lanishi uziladi.
         DB::run(
             "UPDATE scientific_results
              SET publication_id = :publication_id,
@@ -484,23 +490,32 @@ private function syncSpecialization(array $result, array $data): void
              WHERE id = :id",
             [
                 'publication_id' => $publicationId,
-                'id' => (int) $result['id'],
+                'id' => $resultId,
             ]
         );
+
+        // Endi eski conference KPI yozuvini xavfsiz o'chirish mumkin.
+        if ($oldConferenceId !== null) {
+            DB::run(
+                "DELETE FROM conferences WHERE id = :id",
+                ['id' => $oldConferenceId]
+            );
+        }
 
         return;
     }
 
     // ---------------------------------------------------------
-    // 2. Yangi tur CONFERENCE bo'lsa
+    // 2. Yangi tur CONFERENCE
     // ---------------------------------------------------------
     if (in_array($type, ScientificResult::CONFERENCE_TYPES, true)) {
         $level = $type === 'xalqaro_konferensiya'
             ? 'xalqaro'
             : 'respublika';
 
-        if ($conferenceId !== null) {
-            // Mavjud conference yozuvini yangilaymiz.
+        if ($oldConferenceId !== null) {
+            // Conference -> Conference:
+            // mavjud KPI yozuvini yangilaymiz.
             DB::run(
                 "UPDATE conferences
                  SET student_id = :student_id,
@@ -513,11 +528,14 @@ private function syncSpecialization(array $result, array $data): void
                     'title' => $data['title'],
                     'level' => $level,
                     'event_date' => $data['achieved_at'],
-                    'id' => $conferenceId,
+                    'id' => $oldConferenceId,
                 ]
             );
+
+            $conferenceId = $oldConferenceId;
         } else {
-            // Oldin conference bo'lmagan bo'lsa, yangi yozuv yaratamiz.
+            // Publication/boshqa -> Conference:
+            // yangi KPI conference yozuvi.
             $conferenceId = DB::insert('conferences', [
                 'student_id' => $studentId,
                 'title' => (string) $data['title'],
@@ -529,7 +547,8 @@ private function syncSpecialization(array $result, array $data): void
             ]);
         }
 
-        // Oldingi publication bog'lanishini olib tashlaymiz.
+        // Avval scientific_result yangi conferencega o'tkaziladi
+        // va publication bog'lanishi uziladi.
         DB::run(
             "UPDATE scientific_results
              SET publication_id = NULL,
@@ -537,9 +556,17 @@ private function syncSpecialization(array $result, array $data): void
              WHERE id = :id",
             [
                 'conference_id' => $conferenceId,
-                'id' => (int) $result['id'],
+                'id' => $resultId,
             ]
         );
+
+        // Endi eski publication KPI yozuvini xavfsiz o'chirish mumkin.
+        if ($oldPublicationId !== null) {
+            DB::run(
+                "DELETE FROM publications WHERE id = :id",
+                ['id' => $oldPublicationId]
+            );
+        }
 
         return;
     }
@@ -547,15 +574,32 @@ private function syncSpecialization(array $result, array $data): void
     // ---------------------------------------------------------
     // 3. Patent, grant va boshqa specialization bo'lmagan tur
     // ---------------------------------------------------------
+
+    // Avval FK bog'lanishlarini uzamiz.
     DB::run(
         "UPDATE scientific_results
          SET publication_id = NULL,
              conference_id = NULL
          WHERE id = :id",
         [
-            'id' => (int) $result['id'],
+            'id' => $resultId,
         ]
     );
+
+    // Keyin eski KPI yozuvlarini tozalaymiz.
+    if ($oldPublicationId !== null) {
+        DB::run(
+            "DELETE FROM publications WHERE id = :id",
+            ['id' => $oldPublicationId]
+        );
+    }
+
+    if ($oldConferenceId !== null) {
+        DB::run(
+            "DELETE FROM conferences WHERE id = :id",
+            ['id' => $oldConferenceId]
+        );
+    }
 }
     
     private function form(?array $result): Response
