@@ -837,15 +837,6 @@ public function reject(Request $request): Response
         return $this->notFound();
     }
 
-    if (($result['status'] ?? 'pending') !== 'pending') {
-        Session::flash(
-            'error',
-            'Bu ilmiy natija allaqachon ko‘rib chiqilgan.'
-        );
-
-        return $this->redirect('/results');
-    }
-
     $rejectionReason = trim(
         (string) $request->input('rejection_reason', '')
     );
@@ -868,35 +859,64 @@ public function reject(Request $request): Response
         return $this->redirect('/results');
     }
 
-    DB::run(
-        "UPDATE scientific_results
-         SET status = 'rejected',
-             verified = 0,
-             rejection_reason = :rejection_reason,
-             updated_at = :updated_at
-         WHERE id = :id",
-        [
-            'rejection_reason' => $rejectionReason,
-            'updated_at' => date('Y-m-d H:i:s'),
-            'id' => $id,
-        ]
-    );
+    DB::beginTransaction();
 
-    AuditLogger::log(
-        'reject',
-        'scientific_results',
-        $id,
-        [
-            'status' => $result['status'] ?? 'pending',
-            'verified' => $result['verified'] ?? 0,
-            'rejection_reason' => $result['rejection_reason'] ?? null,
-        ],
-        [
-            'status' => 'rejected',
-            'verified' => 0,
-            'rejection_reason' => $rejectionReason,
-        ]
-    );
+    try {
+        $stmt = DB::run(
+            "UPDATE scientific_results
+             SET status = 'rejected',
+                 verified = 0,
+                 rejection_reason = :rejection_reason,
+                 updated_at = :updated_at
+             WHERE id = :id
+               AND status = 'pending'",
+            [
+                'rejection_reason' => $rejectionReason,
+                'updated_at' => date('Y-m-d H:i:s'),
+                'id' => $id,
+            ]
+        );
+
+        // Natijani boshqa administrator oldin ko'rib chiqqan bo'lishi mumkin.
+        if ($stmt->rowCount() !== 1) {
+            DB::rollBack();
+
+            Session::flash(
+                'error',
+                'Bu ilmiy natija allaqachon ko‘rib chiqilgan.'
+            );
+
+            return $this->redirect('/results');
+        }
+
+        AuditLogger::log(
+            'reject',
+            'scientific_results',
+            $id,
+            [
+                'status' => $result['status'] ?? 'pending',
+                'verified' => $result['verified'] ?? 0,
+                'rejection_reason' => $result['rejection_reason'] ?? null,
+            ],
+            [
+                'status' => 'rejected',
+                'verified' => 0,
+                'rejection_reason' => $rejectionReason,
+            ]
+        );
+
+        DB::commit();
+
+    } catch (\Throwable $e) {
+        DB::rollBack();
+
+        Session::flash(
+            'error',
+            'Ilmiy natijani rad etishda xatolik yuz berdi.'
+        );
+
+        return $this->redirect('/results');
+    }
 
     Session::flash(
         'success',
@@ -904,5 +924,4 @@ public function reject(Request $request): Response
     );
 
     return $this->redirect('/results');
-}
 }
