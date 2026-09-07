@@ -119,162 +119,124 @@ public function edit(Request $request): Response
     if ($data instanceof Response) {
         return $data;
     }
-    
+
     if (Auth::role() === 'doctoral_student') {
-    $student = DoctoralStudent::findByUser((int) Auth::id());
+        $student = DoctoralStudent::findByUser((int) Auth::id());
 
-    if ($student === null) {
-        return $this->redirect('/doktorant/dashboard');
+        if ($student === null) {
+            return $this->redirect('/doktorant/dashboard');
+        }
+
+        $data['student_id'] = (int) $student['id'];
+
+        $data['supervisor_id'] = !empty($student['supervisor_id'])
+            ? (int) $student['supervisor_id']
+            : null;
     }
 
-    $data['student_id'] = (int) $student['id'];
+    $documentId = null;
+    $stored = null;
 
-    $data['supervisor_id'] = !empty($student['supervisor_id'])
-    ? (int) $student['supervisor_id']
-    : null;
-}
+    $file = $request->file('evidence_file');
 
-// Tasdiqlovchi fayl (ixtiyoriy) - documents jadvaliga yoziladi.
-$documentId = null;
-$stored = null;
+    if (
+        $file !== null
+        && ($file['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_OK
+    ) {
+        try {
+            $stored = FileStorage::store($file);
+        } catch (\RuntimeException $ex) {
+            return $this->back(
+                $request,
+                'Tasdiqlovchi fayl: ' . $ex->getMessage()
+            );
+        }
+    }
 
-$file = $request->file('evidence_file');
-$stored = null;
+    DB::beginTransaction();
 
-if (
-    $file !== null
-    && ($file['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_OK
-) {
     try {
-        $stored = FileStorage::store($file);
-    } catch (\RuntimeException $ex) {
-        return $this->back(
-            $request,
-            'Tasdiqlovchi fayl: ' . $ex->getMessage()
-        );
-    }
-}
+        if ($stored !== null) {
+            $documentId = DB::insert('documents', [
+                'title' => $data['title'] !== ''
+                    ? $data['title']
+                    : $stored['original_name'],
+                'category' => 'maqolalar',
+                'file_path' => $stored['path'],
+                'original_name' => $stored['original_name'],
+                'mime_type' => $stored['mime'],
+                'file_size' => $stored['size'],
+                'doc_type' => 'ilmiy_natija',
+                'uploaded_by' => Auth::id(),
+                'student_id' => $data['student_id'],
+                'scientific_result_id' => null,
+                'created_at' => date('Y-m-d H:i:s'),
+            ]);
 
-DB::beginTransaction();
+            AuditLogger::log(
+                'upload',
+                'documents',
+                $documentId,
+                null,
+                ['category' => 'maqolalar']
+            );
+        }
 
-try {
-    if ($stored !== null) {
-        $documentId = DB::insert('documents', [
-            'title' => $data['title'] !== ''
-                ? $data['title']
-                : $stored['original_name'],
+        $now = date('Y-m-d H:i:s');
 
-            'category' => 'maqolalar',
-            'file_path' => $stored['path'],
-            'original_name' => $stored['original_name'],
-            'mime_type' => $stored['mime'],
-            'file_size' => $stored['size'],
-            'doc_type' => 'ilmiy_natija',
-            'uploaded_by' => Auth::id(),
-            'student_id' => (int) $student['id'],
-            'scientific_result_id' => $id,
-            'created_at' => date('Y-m-d H:i:s'),
+        $insert = array_merge($data, [
+            'document_id' => $documentId,
+            'created_by' => Auth::id(),
+            'created_at' => $now,
+            'updated_at' => $now,
         ]);
 
-        AuditLogger::log(
-            'upload',
-            'documents',
-            $documentId,
-            null,
-            [
-                'category' => 'maqolalar',
-                'scientific_result_id' => $id,
-            ]
-        );
-    }
-
-   DB::run(
-    "UPDATE scientific_results
-     SET student_id = :student_id,
-         supervisor_id = :supervisor_id,
-         result_type = :result_type,
-         title = :title,
-         description = :description,
-         achieved_at = :achieved_at,
-         url = :url,
-         document_id = :document_id,
-         status = 'pending',
-         verified = 0,
-         rejection_reason = NULL,
-         updated_at = :updated_at
-     WHERE id = :id",
-    [
-        'student_id' => $data['student_id'],
-        'supervisor_id' => $data['supervisor_id'],
-        'result_type' => $data['result_type'],
-        'title' => $data['title'],
-        'description' => $data['description'],
-        'achieved_at' => $data['achieved_at'],
-        'url' => $data['url'],
-        'document_id' => $documentId,
-        'updated_at' => date('Y-m-d H:i:s'),
-        'id' => $id,
-    ]
-);
-    // KPI publication/conference ma'lumotlarini ham sinxronlaymiz.
-$this->syncSpecialization($result, $data);
-
-AuditLogger::log(
-    'resubmit',
-    'scientific_results',
-    $id,
-    $old,
-    [
-        'student_id' => $data['student_id'],
-        'supervisor_id' => $data['supervisor_id'],
-        'result_type' => $data['result_type'],
-        'title' => $data['title'],
-        'description' => $data['description'],
-        'achieved_at' => $data['achieved_at'],
-        'url' => $data['url'],
-        'document_id' => $documentId,
-        'status' => 'pending',
-        'verified' => 0,
-        'rejection_reason' => null,
-    ]
-);
-
-DB::commit();
-
-} catch (\Throwable $e) {
-    DB::rollBack();
-
-    Session::flash(
-        'error',
-        'Ilmiy natijani qayta yuborishda xatolik yuz berdi.'
-    );
-
-    return $this->redirect('/results');
-}
         // Maqola/konferensiya specializatsiyalarini to'ldiramiz (KPI).
         $insert = $this->attachSpecialization($insert, $data);
 
         $id = DB::insert('scientific_results', $insert);
+
         if ($documentId !== null) {
-            DB::run('UPDATE documents SET scientific_result_id = :r WHERE id = :d', ['r' => $id, 'd' => $documentId]);
+            DB::run(
+                'UPDATE documents
+                 SET scientific_result_id = :r
+                 WHERE id = :d',
+                [
+                    'r' => $id,
+                    'd' => $documentId,
+                ]
+            );
         }
-        AuditLogger::log('create', 'scientific_results', $id, null, $insert);
 
-    DB::commit();
+        AuditLogger::log(
+            'create',
+            'scientific_results',
+            $id,
+            null,
+            $insert
+        );
 
-} catch (\Throwable $e) {
-    DB::rollBack();
+        DB::commit();
+
+    } catch (\Throwable $e) {
+        DB::rollBack();
+
+        Session::flash(
+            'error',
+            'Ilmiy natijani yaratishda xatolik yuz berdi.'
+        );
+
+        return $this->redirect('/results');
+    }
 
     Session::flash(
-        'error',
-        'Ilmiy natijani yaratishda xatolik yuz berdi.'
+        'success',
+        'Ilmiy natija qo\'shildi.'
     );
 
     return $this->redirect('/results');
 }
-        Session::flash('success', 'Ilmiy natija qo\'shildi.');
-        return $this->redirect('/results');
-    }
+    
 public function update(Request $request): Response
 {
     if (!Auth::check()) {
