@@ -381,29 +381,27 @@ public function update(Request $request): Response
         // KPI publication/conference ma'lumotlarini ham sinxronlaymiz.
 $this->syncSpecialization($result, $data);
 
-throw new \RuntimeException('UPDATE ROLLBACK TEST');
-
 AuditLogger::log(
-            'resubmit',
-            'scientific_results',
-            $id,
-            $old,
-            [
-                'student_id' => $data['student_id'],
-                'supervisor_id' => $data['supervisor_id'],
-                'result_type' => $data['result_type'],
-                'title' => $data['title'],
-                'description' => $data['description'],
-                'achieved_at' => $data['achieved_at'],
-                'url' => $data['url'],
-                'document_id' => $documentId,
-                'status' => 'pending',
-                'verified' => 0,
-                'rejection_reason' => null,
-            ]
-        );
+    'resubmit',
+    'scientific_results',
+    $id,
+    $old,
+    [
+        'student_id' => $data['student_id'],
+        'supervisor_id' => $data['supervisor_id'],
+        'result_type' => $data['result_type'],
+        'title' => $data['title'],
+        'description' => $data['description'],
+        'achieved_at' => $data['achieved_at'],
+        'url' => $data['url'],
+        'document_id' => $documentId,
+        'status' => 'pending',
+        'verified' => 0,
+        'rejection_reason' => null,
+    ]
+);
 
-        DB::commit();
+DB::commit();
 
     } catch (\Throwable $e) {
         DB::rollBack();
