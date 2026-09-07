@@ -379,9 +379,11 @@ public function update(Request $request): Response
         );
 
         // KPI publication/conference ma'lumotlarini ham sinxronlaymiz.
-        $this->syncSpecialization($result, $data);
+$this->syncSpecialization($result, $data);
 
-        AuditLogger::log(
+throw new \RuntimeException('UPDATE ROLLBACK TEST');
+
+AuditLogger::log(
             'resubmit',
             'scientific_results',
             $id,
