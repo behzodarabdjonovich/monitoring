@@ -498,8 +498,9 @@ return function (): void {
             'conference_id' => null,
             'title' => 'Maqola natijasi',
             'achieved_at' => date('Y-m-d'),
-            'verified' => 1,
-            'created_at' => $now,
+           'verified' => 1,
+'status' => 'approved',
+'created_at' => $now,
         ]);
     }
     foreach ($confIds as $c) {
@@ -512,7 +513,8 @@ return function (): void {
             'title' => 'Konferensiya natijasi',
             'achieved_at' => date('Y-m-d'),
             'verified' => 1,
-            'created_at' => $now,
+'status' => 'approved',
+'created_at' => $now,
         ]);
     }
     // Dissertatsiya himoyalari — bitiruvchi (graduated) doktorantlar uchun.
@@ -527,7 +529,8 @@ return function (): void {
                 'title' => 'Dissertatsiya himoyasi',
                 'achieved_at' => date('Y-m-d', strtotime('-' . ($i * 10) . ' days')),
                 'verified' => 1,
-                'created_at' => $now,
+'status' => 'approved',
+'created_at' => $now,
             ]);
         }
     }
