@@ -415,9 +415,8 @@ final class DashboardStats
 
         // 2) Natijalar turi bo'yicha (bar): maqola / xalqaro / konferensiya / himoya.
         [$in, $p] = self::inClause($studentIds, 'sid');
-        $pubTotal = (int) DB::scalar("SELECT COUNT(*) FROM publications WHERE student_id IN $in", $p);
-        $pubIntl = (int) DB::scalar("SELECT COUNT(*) FROM publications WHERE student_id IN $in AND publication_type IN ('scopus', 'wos')", $p);
-        $conf = (int) DB::scalar("SELECT COUNT(*) FROM conferences WHERE student_id IN $in", $p);
+        [$pubTotal, $pubIntl] = self::publicationCounts($studentIds);
+$conf = self::conferenceCount($studentIds);
         $def = self::countResultType($studentIds, 'dissertatsiya_himoyasi');
         $byResult = [
             ['label' => 'Maqolalar', 'value' => (float) $pubTotal, 'color' => '#2E75B6'],
