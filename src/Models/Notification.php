@@ -34,7 +34,7 @@ final class Notification
     {
         $sql = 'SELECT * FROM notifications WHERE user_id = :uid';
         if ($onlyUnread) {
-            $sql .= ' AND is_read = 0';
+          $sql .= ' AND is_read = FALSE';
         }
         $sql .= ' ORDER BY is_read, created_at DESC, id DESC';
         return DB::select($sql, ['uid' => $userId]);
@@ -43,7 +43,7 @@ final class Notification
     public static function unreadCount(int $userId): int
     {
         return (int) DB::scalar(
-            'SELECT COUNT(*) FROM notifications WHERE user_id = :uid AND is_read = 0',
+           'SELECT COUNT(*) FROM notifications WHERE user_id = :uid AND is_read = FALSE',
             ['uid' => $userId]
         );
     }
@@ -51,7 +51,7 @@ final class Notification
     public static function markRead(int $id, int $userId): bool
     {
         DB::run(
-            'UPDATE notifications SET is_read = 1 WHERE id = :id AND user_id = :uid',
+          'UPDATE notifications SET is_read = TRUE WHERE id = :id AND user_id = :uid',
             ['id' => $id, 'uid' => $userId]
         );
         return true;
@@ -59,7 +59,7 @@ final class Notification
 
     public static function markAllRead(int $userId): void
     {
-        DB::run('UPDATE notifications SET is_read = 1 WHERE user_id = :uid', ['uid' => $userId]);
+       DB::run('UPDATE notifications SET is_read = TRUE WHERE user_id = :uid', ['uid' => $userId]);
     }
 
     /**
@@ -69,7 +69,7 @@ final class Notification
     public static function create(int $userId, string $type, string $title, ?string $body, ?string $link): bool
     {
         $exists = (int) DB::scalar(
-            'SELECT COUNT(*) FROM notifications WHERE user_id = :uid AND type = :t AND link = :l AND is_read = 0',
+            'SELECT COUNT(*) FROM notifications WHERE user_id = :uid AND type = :t AND link = :l AND is_read = FALSE
             ['uid' => $userId, 't' => $type, 'l' => (string) $link]
         );
         if ($exists > 0) {
