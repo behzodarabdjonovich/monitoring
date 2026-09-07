@@ -278,7 +278,10 @@ if (
         ]
     );
 }
-   DB::run(
+   DB::beginTransaction();
+
+try {
+    DB::run(
     "UPDATE scientific_results
      SET student_id = :student_id,
          supervisor_id = :supervisor_id,
@@ -327,15 +330,28 @@ AuditLogger::log(
         'status' => 'pending',
         'verified' => 0,
         'rejection_reason' => null,
-    ]
+        ]
 );
-    
+
+DB::commit();
+
+} catch (\Throwable $e) {
+    DB::rollBack();
+
     Session::flash(
-        'success',
-        'Ilmiy natija tuzatildi va qayta tasdiqlashga yuborildi.'
+        'error',
+        'Ilmiy natijani qayta yuborishda xatolik yuz berdi.'
     );
 
     return $this->redirect('/results');
+}
+
+Session::flash(
+    'success',
+    'Ilmiy natija tuzatildi va qayta tasdiqlashga yuborildi.'
+);
+
+return $this->redirect('/results');
 }
     // -----------------------------------------------------------------
 
