@@ -188,30 +188,69 @@ try {
         );
     }
 
-    DB::run(
-        "UPDATE scientific_results
-                'title' => $data['title'] !== '' ? $data['title'] : $stored['original_name'],
-                'category' => 'maqolalar',
-                'file_path' => $stored['path'],
-                'original_name' => $stored['original_name'],
-                'mime_type' => $stored['mime'],
-                'file_size' => $stored['size'],
-                'doc_type' => 'ilmiy_natija',
-                'uploaded_by' => Auth::id(),
-                'student_id' => $data['student_id'],
-                'scientific_result_id' => null,
-                'created_at' => date('Y-m-d H:i:s'),
-            ]);
-            AuditLogger::log('upload', 'documents', $documentId, null, ['category' => 'maqolalar']);
-        }
+   DB::run(
+    "UPDATE scientific_results
+     SET student_id = :student_id,
+         supervisor_id = :supervisor_id,
+         result_type = :result_type,
+         title = :title,
+         description = :description,
+         achieved_at = :achieved_at,
+         url = :url,
+         document_id = :document_id,
+         status = 'pending',
+         verified = 0,
+         rejection_reason = NULL,
+         updated_at = :updated_at
+     WHERE id = :id",
+    [
+        'student_id' => $data['student_id'],
+        'supervisor_id' => $data['supervisor_id'],
+        'result_type' => $data['result_type'],
+        'title' => $data['title'],
+        'description' => $data['description'],
+        'achieved_at' => $data['achieved_at'],
+        'url' => $data['url'],
+        'document_id' => $documentId,
+        'updated_at' => date('Y-m-d H:i:s'),
+        'id' => $id,
+    ]
+);
+    // KPI publication/conference ma'lumotlarini ham sinxronlaymiz.
+$this->syncSpecialization($result, $data);
 
-        $now = date('Y-m-d H:i:s');
-        $insert = array_merge($data, [
-            'document_id' => $documentId,
-            'created_by' => Auth::id(),
-            'created_at' => $now,
-            'updated_at' => $now,
-        ]);
+AuditLogger::log(
+    'resubmit',
+    'scientific_results',
+    $id,
+    $old,
+    [
+        'student_id' => $data['student_id'],
+        'supervisor_id' => $data['supervisor_id'],
+        'result_type' => $data['result_type'],
+        'title' => $data['title'],
+        'description' => $data['description'],
+        'achieved_at' => $data['achieved_at'],
+        'url' => $data['url'],
+        'document_id' => $documentId,
+        'status' => 'pending',
+        'verified' => 0,
+        'rejection_reason' => null,
+    ]
+);
+
+DB::commit();
+
+} catch (\Throwable $e) {
+    DB::rollBack();
+
+    Session::flash(
+        'error',
+        'Ilmiy natijani qayta yuborishda xatolik yuz berdi.'
+    );
+
+    return $this->redirect('/results');
+}
         // Maqola/konferensiya specializatsiyalarini to'ldiramiz (KPI).
         $insert = $this->attachSpecialization($insert, $data);
 
