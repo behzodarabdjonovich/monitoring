@@ -288,7 +288,7 @@ public function update(Request $request): Response
         return $this->notFound();
     }
 
-    // Hozircha qayta yuborishni faqat doktorant bajaradi.
+    // Qayta yuborishni faqat doktorant bajaradi.
     if (Auth::role() !== 'doctoral_student') {
         return $this->forbidden();
     }
@@ -319,142 +319,146 @@ public function update(Request $request): Response
         return $data;
     }
 
-    // POST orqali boshqa doktorant yoki rahbar ID sini soxtalashtirishga yo'l qo'ymaymiz.
+    // POST orqali boshqa doktorant yoki rahbar ID sini
+    // soxtalashtirishga yo'l qo'ymaymiz.
     $data['student_id'] = (int) $student['id'];
     $data['supervisor_id'] = !empty($student['supervisor_id'])
         ? (int) $student['supervisor_id']
         : null;
 
     $old = $result;
-// Eski dalil faylini saqlab qolamiz.
-$documentId = !empty($result['document_id'])
-    ? (int) $result['document_id']
-    : null;
 
-// Agar doktorant yangi fayl yuklasa, yangi document yaratamiz.
-$file = $request->file('evidence_file');
+    // Eski dalil faylini saqlab qolamiz.
+    $documentId = !empty($result['document_id'])
+        ? (int) $result['document_id']
+        : null;
 
-if (
-    $file !== null
-    && ($file['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_OK
-) {
-    try {
-        $stored = FileStorage::store($file);
-    } catch (\RuntimeException $ex) {
-        return $this->back(
-            $request,
-            'Tasdiqlovchi fayl: ' . $ex->getMessage()
-        );
+    // Yangi fayl bo'lsa, avval diskka saqlaymiz.
+    // Fayl tizimi DB transaction bilan rollback bo'lmaydi.
+    $file = $request->file('evidence_file');
+    $stored = null;
+
+    if (
+        $file !== null
+        && ($file['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_OK
+    ) {
+        try {
+            $stored = FileStorage::store($file);
+        } catch (\RuntimeException $ex) {
+            return $this->back(
+                $request,
+                'Tasdiqlovchi fayl: ' . $ex->getMessage()
+            );
+        }
     }
 
-    $documentId = DB::insert('documents', [
-        'title' => $data['title'] !== ''
-            ? $data['title']
-            : $stored['original_name'],
+    DB::beginTransaction();
 
-        'category' => 'maqolalar',
-        'file_path' => $stored['path'],
-        'original_name' => $stored['original_name'],
-        'mime_type' => $stored['mime'],
-        'file_size' => $stored['size'],
-        'doc_type' => 'ilmiy_natija',
-        'uploaded_by' => Auth::id(),
-        'student_id' => (int) $student['id'],
-        'scientific_result_id' => $id,
-        'created_at' => date('Y-m-d H:i:s'),
-    ]);
+    try {
+        // Yangi fayl yuklangan bo'lsa, documents yozuvini yaratamiz.
+        if ($stored !== null) {
+            $documentId = DB::insert('documents', [
+                'title' => $data['title'] !== ''
+                    ? $data['title']
+                    : $stored['original_name'],
+                'category' => 'maqolalar',
+                'file_path' => $stored['path'],
+                'original_name' => $stored['original_name'],
+                'mime_type' => $stored['mime'],
+                'file_size' => $stored['size'],
+                'doc_type' => 'ilmiy_natija',
+                'uploaded_by' => Auth::id(),
+                'student_id' => (int) $student['id'],
+                'scientific_result_id' => $id,
+                'created_at' => date('Y-m-d H:i:s'),
+            ]);
 
-    AuditLogger::log(
-        'upload',
-        'documents',
-        $documentId,
-        null,
-        [
-            'category' => 'maqolalar',
-            'scientific_result_id' => $id,
-        ]
-    );
-}
-   DB::beginTransaction();
+            AuditLogger::log(
+                'upload',
+                'documents',
+                $documentId,
+                null,
+                [
+                    'category' => 'maqolalar',
+                    'scientific_result_id' => $id,
+                ]
+            );
+        }
 
-try {
-    DB::run(
-    "UPDATE scientific_results
-     SET student_id = :student_id,
-         supervisor_id = :supervisor_id,
-         result_type = :result_type,
-         title = :title,
-         description = :description,
-         achieved_at = :achieved_at,
-         url = :url,
-         document_id = :document_id,
-         status = 'pending',
-         verified = 0,
-         rejection_reason = NULL,
-         updated_at = :updated_at
-     WHERE id = :id",
-    [
-        'student_id' => $data['student_id'],
-        'supervisor_id' => $data['supervisor_id'],
-        'result_type' => $data['result_type'],
-        'title' => $data['title'],
-        'description' => $data['description'],
-        'achieved_at' => $data['achieved_at'],
-        'url' => $data['url'],
-        'document_id' => $documentId,
-        'updated_at' => date('Y-m-d H:i:s'),
-        'id' => $id,
-    ]
-);
+        // Asosiy ilmiy natijani yangilaymiz va qayta
+        // tasdiqlash uchun pending holatiga o'tkazamiz.
+        DB::run(
+            "UPDATE scientific_results
+             SET student_id = :student_id,
+                 supervisor_id = :supervisor_id,
+                 result_type = :result_type,
+                 title = :title,
+                 description = :description,
+                 achieved_at = :achieved_at,
+                 url = :url,
+                 document_id = :document_id,
+                 status = 'pending',
+                 verified = 0,
+                 rejection_reason = NULL,
+                 updated_at = :updated_at
+             WHERE id = :id",
+            [
+                'student_id' => $data['student_id'],
+                'supervisor_id' => $data['supervisor_id'],
+                'result_type' => $data['result_type'],
+                'title' => $data['title'],
+                'description' => $data['description'],
+                'achieved_at' => $data['achieved_at'],
+                'url' => $data['url'],
+                'document_id' => $documentId,
+                'updated_at' => date('Y-m-d H:i:s'),
+                'id' => $id,
+            ]
+        );
 
-// KPI publication/conference ma'lumotlarini ham sinxronlaymiz.
-$this->syncSpecialization($result, $data);
+        // KPI publication/conference ma'lumotlarini ham sinxronlaymiz.
+        $this->syncSpecialization($result, $data);
 
-AuditLogger::log(
-    'resubmit',
-    'scientific_results',
-    $id,
-    $old,
-    [
-        'student_id' => $data['student_id'],
-        'supervisor_id' => $data['supervisor_id'],
-        'result_type' => $data['result_type'],
-        'title' => $data['title'],
-        'description' => $data['description'],
-        'achieved_at' => $data['achieved_at'],
-        'url' => $data['url'],
-        'document_id' => $documentId,
-        'status' => 'pending',
-        'verified' => 0,
-        'rejection_reason' => null,
-        ]
-);
+        AuditLogger::log(
+            'resubmit',
+            'scientific_results',
+            $id,
+            $old,
+            [
+                'student_id' => $data['student_id'],
+                'supervisor_id' => $data['supervisor_id'],
+                'result_type' => $data['result_type'],
+                'title' => $data['title'],
+                'description' => $data['description'],
+                'achieved_at' => $data['achieved_at'],
+                'url' => $data['url'],
+                'document_id' => $documentId,
+                'status' => 'pending',
+                'verified' => 0,
+                'rejection_reason' => null,
+            ]
+        );
 
-DB::commit();
+        DB::commit();
 
-} catch (\Throwable $e) {
-    DB::rollBack();
+    } catch (\Throwable $e) {
+        DB::rollBack();
+
+        Session::flash(
+            'error',
+            'Ilmiy natijani qayta yuborishda xatolik yuz berdi.'
+        );
+
+        return $this->redirect('/results');
+    }
 
     Session::flash(
-        'error',
-        'Ilmiy natijani qayta yuborishda xatolik yuz berdi.'
+        'success',
+        'Ilmiy natija tuzatildi va qayta tasdiqlashga yuborildi.'
     );
 
     return $this->redirect('/results');
 }
-
-Session::flash(
-    'success',
-    'Ilmiy natija tuzatildi va qayta tasdiqlashga yuborildi.'
-);
-
-return $this->redirect('/results');
-}
-    // -----------------------------------------------------------------
-
-    /**
-     * @return array<string,mixed>|Response
-     */
     private function validated(Request $request): array|Response
     {
         $input = $request->all();
