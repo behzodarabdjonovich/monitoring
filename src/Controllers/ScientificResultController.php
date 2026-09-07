@@ -278,55 +278,58 @@ if (
         ]
     );
 }
-    DB::run(
-        "UPDATE scientific_results
-         SET student_id = :student_id,
-             supervisor_id = :supervisor_id,
-             result_type = :result_type,
-             title = :title,
-             description = :description,
-             achieved_at = :achieved_at,
-             url = :url,
-document_id = :document_id,
-status = 'pending',
-             verified = 0,
-             rejection_reason = NULL,
-             updated_at = :updated_at
-         WHERE id = :id",
-        [
-            'student_id' => $data['student_id'],
-            'supervisor_id' => $data['supervisor_id'],
-            'result_type' => $data['result_type'],
-            'title' => $data['title'],
-            'description' => $data['description'],
-            'achieved_at' => $data['achieved_at'],
-            'url' => $data['url'],
-'document_id' => $documentId,
-'updated_at' => date('Y-m-d H:i:s'),
-            'id' => $id,
-        ]
-    );
+   DB::run(
+    "UPDATE scientific_results
+     SET student_id = :student_id,
+         supervisor_id = :supervisor_id,
+         result_type = :result_type,
+         title = :title,
+         description = :description,
+         achieved_at = :achieved_at,
+         url = :url,
+         document_id = :document_id,
+         status = 'pending',
+         verified = 0,
+         rejection_reason = NULL,
+         updated_at = :updated_at
+     WHERE id = :id",
+    [
+        'student_id' => $data['student_id'],
+        'supervisor_id' => $data['supervisor_id'],
+        'result_type' => $data['result_type'],
+        'title' => $data['title'],
+        'description' => $data['description'],
+        'achieved_at' => $data['achieved_at'],
+        'url' => $data['url'],
+        'document_id' => $documentId,
+        'updated_at' => date('Y-m-d H:i:s'),
+        'id' => $id,
+    ]
+);
 
-    AuditLogger::log(
-        'resubmit',
-        'scientific_results',
-        $id,
-        $old,
-        [
-            'student_id' => $data['student_id'],
-            'supervisor_id' => $data['supervisor_id'],
-            'result_type' => $data['result_type'],
-            'title' => $data['title'],
-            'description' => $data['description'],
-            'achieved_at' => $data['achieved_at'],
-            'url' => $data['url'],
-'document_id' => $documentId,
-'status' => 'pending',
-            'verified' => 0,
-            'rejection_reason' => null,
-        ]
-    );
+// KPI publication/conference ma'lumotlarini ham sinxronlaymiz.
+$this->syncSpecialization($result, $data);
 
+AuditLogger::log(
+    'resubmit',
+    'scientific_results',
+    $id,
+    $old,
+    [
+        'student_id' => $data['student_id'],
+        'supervisor_id' => $data['supervisor_id'],
+        'result_type' => $data['result_type'],
+        'title' => $data['title'],
+        'description' => $data['description'],
+        'achieved_at' => $data['achieved_at'],
+        'url' => $data['url'],
+        'document_id' => $documentId,
+        'status' => 'pending',
+        'verified' => 0,
+        'rejection_reason' => null,
+    ]
+);
+    
     Session::flash(
         'success',
         'Ilmiy natija tuzatildi va qayta tasdiqlashga yuborildi.'
