@@ -196,11 +196,30 @@ $router->post('/plans/{id}/tasks', [PlanTaskController::class, 'store'], [$auth(
 $router->post('/tasks/{id}', [PlanTaskController::class, 'update'], [$auth(), $rbac('individual_plans.view')]);
 
 // --- Ilmiy natijalar (item 6) ---
-$router->get('/results', [ScientificResultController::class, 'index'], [$auth(), $rbac('scientific_results.view')]);
 
-$router->get('/results/create', [ScientificResultController::class, 'create'], [$auth(), $rbac('scientific_results.create')]);
+$router->get('/results', [
+    ScientificResultController::class,
+    'index'
+], [
+    $auth(),
+    $rbac('scientific_results.view')
+]);
 
-$router->post('/results', [ScientificResultController::class, 'store'], [$auth(), $rbac('scientific_results.create')]);
+$router->get('/results/create', [
+    ScientificResultController::class,
+    'create'
+], [
+    $auth(),
+    $rbac('scientific_results.create')
+]);
+
+$router->post('/results', [
+    ScientificResultController::class,
+    'store'
+], [
+    $auth(),
+    $rbac('scientific_results.create')
+]);
 
 // Rad etilgan natijani doktorant tahrirlashi
 $router->get('/results/{id}/edit', [
@@ -208,16 +227,34 @@ $router->get('/results/{id}/edit', [
     'edit'
 ], [
     $auth(),
-    $rbac('scientific_results.view'),
+    $rbac('scientific_results.view')
 ]);
 
-// Tuzatilgan natijani qayta tasdiqlashga yuborish
+// Tuzatilgan natijani qayta yuborish
 $router->post('/results/{id}/update', [
     ScientificResultController::class,
     'update'
 ], [
     $auth(),
-    $rbac('scientific_results.view'),
+    $rbac('scientific_results.view')
+]);
+
+// Ilmiy natijani tasdiqlash
+$router->post('/results/{id}/verify', [
+    ScientificResultController::class,
+    'verify'
+], [
+    $auth(),
+    $rbac('scientific_results.view')
+]);
+
+// Ilmiy natijani rad etish
+$router->post('/results/{id}/reject', [
+    ScientificResultController::class,
+    'reject'
+], [
+    $auth(),
+    $rbac('scientific_results.view')
 ]);
 // --- Dalillar bazasi (item 11) + M:N indikator bog'lash ---
 $router->get('/documents', [DocumentController::class, 'index'], [$auth(), $rbac('documents.view')]);
