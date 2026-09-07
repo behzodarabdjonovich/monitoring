@@ -255,7 +255,7 @@ final class DashboardStats
                   AND (
                         t.status = 'overdue'
                      OR (
-                            t.due_date IS NOT NULL AND t.due_date <> ''
+                          t.due_date IS NOT NULL
                         AND t.due_date < :today
                         AND t.status NOT IN ('completed', 'supervisor_approved', 'finalized')
                      )
