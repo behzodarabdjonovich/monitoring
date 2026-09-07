@@ -17,6 +17,22 @@ use App\Core\Auth;
 use App\Core\DB;
 
 return function (): void {
+     $seedComplete =
+        (int) DB::scalar("SELECT COUNT(*) FROM roles") >= 9
+        && (int) DB::scalar(
+            "SELECT COUNT(*) FROM users WHERE username = 'admin'"
+        ) >= 1
+        && (int) DB::scalar(
+            "SELECT COUNT(*) FROM doctoral_students WHERE national_id LIKE 'DEMO-%'"
+        ) >= 24
+        && (int) DB::scalar(
+            "SELECT COUNT(*) FROM settings WHERE \"key\" = 'app.placeholder_notice'"
+        ) >= 1;
+
+    if ($seedComplete) {
+        return;
+    }   
+    
     DB::beginTransaction();
 
     try {
