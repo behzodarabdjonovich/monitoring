@@ -66,33 +66,43 @@ final class Notification
      * Takroriy oldini olib bitta bildirishnoma yaratadi (o'qilmagan holatda
      * bir xil type+link mavjud bo'lsa yaratilmaydi).
      */
-    public static function create(int $userId, string $type, string $title, ?string $body, ?string $link): bool
-    {
-        $exists = (int) DB::scalar(
-            'SELECT COUNT(*) FROM notifications WHERE user_id = :uid AND type = :t AND link = :l AND is_read = FALSE
-            ['uid' => $userId, 't' => $type, 'l' => (string) $link]
-        );
-        if ($exists > 0) {
-            return false;
-        }
-        DB::insert('notifications', [
-            'user_id' => $userId,
-            'type' => $type,
-            'title' => $title,
-            'body' => $body,
-            'link' => $link,
-            'is_read' => 0,
-            'created_at' => date('Y-m-d H:i:s'),
-        ]);
-        return true;
+    public static function create(
+    int $userId,
+    string $type,
+    string $title,
+    ?string $body,
+    ?string $link
+): bool {
+    $exists = (int) DB::scalar(
+        'SELECT COUNT(*)
+         FROM notifications
+         WHERE user_id = :uid
+           AND type = :t
+           AND link = :l
+           AND is_read = FALSE',
+        [
+            'uid' => $userId,
+            't' => $type,
+            'l' => (string) $link,
+        ]
+    );
+
+    if ($exists > 0) {
+        return false;
     }
 
-    /**
-     * Joriy ma'lumotlardan bildirishnomalarni hisoblaydi va yaratadi.
-     * Console (bin/console notify) yoki controller orqali chaqirilishi mumkin.
-     *
-     * @return int Yaratilgan bildirishnomalar soni
-     */
+    DB::insert('notifications', [
+        'user_id' => $userId,
+        'type' => $type,
+        'title' => $title,
+        'body' => $body,
+        'link' => $link,
+        'is_read' => false,
+        'created_at' => date('Y-m-d H:i:s'),
+    ]);
+
+    return true;
+}
     public static function generate(): int
     {
         $created = 0;
