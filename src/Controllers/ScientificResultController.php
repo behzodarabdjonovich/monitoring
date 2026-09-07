@@ -190,6 +190,18 @@ try {
         }
         AuditLogger::log('create', 'scientific_results', $id, null, $insert);
 
+    DB::commit();
+
+} catch (\Throwable $e) {
+    DB::rollBack();
+
+    Session::flash(
+        'error',
+        'Ilmiy natijani yaratishda xatolik yuz berdi.'
+    );
+
+    return $this->redirect('/results');
+}
         Session::flash('success', 'Ilmiy natija qo\'shildi.');
         return $this->redirect('/results');
     }
