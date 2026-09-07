@@ -265,15 +265,15 @@ final class Notification
             $params['r' . $i] = $name;
         }
 
-        $users = DB::select(
-            'SELECT u.id
-             FROM users u
-             INNER JOIN roles r ON r.id = u.role_id
-             WHERE r.name IN (' . implode(', ', $placeholders) . ')
-             AND u.is_active = TRUE
-AND u.is_blocked = FALSE
-            $params
-        );
+       $users = DB::select(
+    'SELECT u.id
+     FROM users u
+     INNER JOIN roles r ON r.id = u.role_id
+     WHERE r.name IN (' . implode(', ', $placeholders) . ')
+       AND u.is_active = TRUE
+       AND u.is_blocked = FALSE',
+    $params
+);
 
         $created = 0;
 
