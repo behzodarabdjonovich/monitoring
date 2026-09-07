@@ -923,5 +923,8 @@ public function reject(Request $request): Response
         'Ilmiy natija rad etildi.'
     );
 
-    return $this->redirect('/results');
+      return $this->redirect('/results');
+}
+
+// ScientificResultController class tugashi
 }
