@@ -35,7 +35,44 @@ return function (): void {
     
     DB::beginTransaction();
 
-    try {
+        try {
+        // VAQTINCHA: oldingi yarimta DEMO seed ma'lumotlarini tozalash.
+        // Seed muvaffaqiyatli tugagach, bu blokni olib tashlaymiz.
+        if (DB::driver() === 'pgsql') {
+            DB::connection()->exec(
+                'TRUNCATE TABLE
+                    supervisor_requests,
+                    indicator_evidence,
+                    action_plans,
+                    deficiencies,
+                    internal_audits,
+                    documents,
+                    accreditation_indicators,
+                    accreditation_criteria,
+                    attestations,
+                    scientific_results,
+                    conferences,
+                    publications,
+                    plan_tasks,
+                    individual_plans,
+                    doctoral_students,
+                    supervisors,
+                    doctoral_programs,
+                    specialties,
+                    departments,
+                    accreditations,
+                    notifications,
+                    audit_logs,
+                    password_resets,
+                    role_permission,
+                    permissions,
+                    users,
+                    settings,
+                    roles
+                 RESTART IDENTITY CASCADE'
+            );
+        }
+
         $now = date('Y-m-d H:i:s');
 
     // ---------------------------------------------------------------
