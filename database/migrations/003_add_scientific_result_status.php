@@ -3,17 +3,57 @@
 use App\Core\DB;
 
 return function (): void {
-    DB::connection()->exec(
-        "ALTER TABLE scientific_results
-         ADD COLUMN status VARCHAR(32) NOT NULL DEFAULT 'pending'"
-    );
+    $driver = DB::driver();
 
-    // Eski verified ma'lumotlarini yangi statusga o'tkazamiz.
-    DB::connection()->exec(
-        "UPDATE scientific_results
-         SET status = CASE
-             WHEN verified = 1 THEN 'approved'
-             ELSE 'pending'
-         END"
-    );
+    if ($driver === 'pgsql') {
+        $columnExists = (int) DB::scalar(
+            "SELECT COUNT(*)
+             FROM information_schema.columns
+             WHERE table_schema = current_schema()
+               AND table_name = 'scientific_results'
+               AND column_name = 'status'"
+        ) > 0;
+    } elseif ($driver === 'mysql') {
+        $columnExists = (int) DB::scalar(
+            "SELECT COUNT(*)
+             FROM information_schema.columns
+             WHERE table_schema = DATABASE()
+               AND table_name = 'scientific_results'
+               AND column_name = 'status'"
+        ) > 0;
+    } else {
+        $columns = DB::select("PRAGMA table_info(scientific_results)");
+
+        $columnExists = false;
+
+        foreach ($columns as $column) {
+            if (($column['name'] ?? '') === 'status') {
+                $columnExists = true;
+                break;
+            }
+        }
+    }
+
+    if (!$columnExists) {
+        DB::connection()->exec(
+            "ALTER TABLE scientific_results
+             ADD COLUMN status VARCHAR(32) NOT NULL DEFAULT 'pending'"
+        );
+    }
+
+    if ($driver === 'pgsql') {
+        DB::connection()->exec(
+            "UPDATE scientific_results
+             SET status = 'approved'
+             WHERE status = 'pending'
+               AND verified = TRUE"
+        );
+    } else {
+        DB::connection()->exec(
+            "UPDATE scientific_results
+             SET status = 'approved'
+             WHERE status = 'pending'
+               AND verified = 1"
+        );
+    }
 };
