@@ -584,7 +584,7 @@ return function (): void {
         'scope' => $placeholderNote,
         'status' => 'planning',
         'readiness_index' => null,
-        'is_placeholder' => 1,
+      'is_placeholder' => true,
         'created_at' => $now,
         'updated_at' => $now,
     ]);
@@ -632,7 +632,7 @@ return function (): void {
             'name' => $name,
             'weight' => $weight,
             'display_order' => $order,
-            'is_placeholder' => 1,
+          'is_placeholder' => true,
             'created_at' => $now,
         ]);
         $critIds[] = $critId;
@@ -655,7 +655,7 @@ return function (): void {
                 'responsible_role_id' => $roleIds['research_vice_head'],
                 'responsible_dept' => null,
                 'responsible_person' => null,
-                'is_placeholder' => 1,
+               'is_placeholder' => true,
                 'created_at' => $now,
                 'updated_at' => $now,
             ]);
