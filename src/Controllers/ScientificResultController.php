@@ -62,12 +62,7 @@ final class ScientificResultController extends Controller
     ]);
 }
 
-  public function index(Request $request): Response
-{
-    // index ichidagi mavjud kod
-}
-
-public function create(Request $request): Response
+    public function create(Request $request): Response
 {
     if (!Auth::check()) {
         return $this->redirect('/login');
@@ -78,18 +73,9 @@ public function create(Request $request): Response
 
 public function edit(Request $request): Response
 {
-    // edit ichidagi mavjud kod
-}
-
-public function store(Request $request): Response
-{
-    // store ichidagi mavjud kod
-}
-
-public function update(Request $request): Response
-{
-    // update ichidagi mavjud kod
-}
+    if (!Auth::check()) {
+        return $this->redirect('/login');
+    }
 
     // Ilmiy natijani qayta tahrirlash faqat doktorant uchun.
     if (Auth::role() !== 'doctoral_student') {
@@ -125,8 +111,8 @@ public function update(Request $request): Response
 
     return $this->form($result);
 }
-
-public function store(Request $request): Response
+    
+    public function store(Request $request): Response
 {
     $data = $this->validated($request);
 
