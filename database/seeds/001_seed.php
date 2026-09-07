@@ -517,7 +517,7 @@ return function (): void {
             'conference_id' => null,
             'title' => 'Maqola natijasi',
             'achieved_at' => date('Y-m-d'),
-           'verified' => 1,
+           'verified' => true,
 'status' => 'approved',
 'created_at' => $now,
         ]);
@@ -531,7 +531,7 @@ return function (): void {
             'conference_id' => $c['id'],
             'title' => 'Konferensiya natijasi',
             'achieved_at' => date('Y-m-d'),
-            'verified' => 1,
+            'verified' => true,
 'status' => 'approved',
 'created_at' => $now,
         ]);
@@ -547,7 +547,7 @@ return function (): void {
                 'conference_id' => null,
                 'title' => 'Dissertatsiya himoyasi',
                 'achieved_at' => date('Y-m-d', strtotime('-' . ($i * 10) . ' days')),
-                'verified' => 1,
+                'verified' => true,
 'status' => 'approved',
 'created_at' => $now,
             ]);
