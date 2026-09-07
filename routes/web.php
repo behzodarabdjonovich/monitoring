@@ -197,9 +197,28 @@ $router->post('/tasks/{id}', [PlanTaskController::class, 'update'], [$auth(), $r
 
 // --- Ilmiy natijalar (item 6) ---
 $router->get('/results', [ScientificResultController::class, 'index'], [$auth(), $rbac('scientific_results.view')]);
+
 $router->get('/results/create', [ScientificResultController::class, 'create'], [$auth(), $rbac('scientific_results.create')]);
+
 $router->post('/results', [ScientificResultController::class, 'store'], [$auth(), $rbac('scientific_results.create')]);
 
+// Rad etilgan natijani doktorant tahrirlashi
+$router->get('/results/{id}/edit', [
+    ScientificResultController::class,
+    'edit'
+], [
+    $auth(),
+    $rbac('scientific_results.view'),
+]);
+
+// Tuzatilgan natijani qayta tasdiqlashga yuborish
+$router->post('/results/{id}/update', [
+    ScientificResultController::class,
+    'update'
+], [
+    $auth(),
+    $rbac('scientific_results.view'),
+]);
 // --- Dalillar bazasi (item 11) + M:N indikator bog'lash ---
 $router->get('/documents', [DocumentController::class, 'index'], [$auth(), $rbac('documents.view')]);
 $router->post('/documents', [DocumentController::class, 'store'], [$auth(), $rbac('documents.upload')]);
