@@ -136,7 +136,27 @@ public function edit(Request $request): Response
 
 // Tasdiqlovchi fayl (ixtiyoriy) - documents jadvaliga yoziladi.
 $documentId = null;
-        $file = $request->file('evidence_file');
+$stored = null;
+
+$file = $request->file('evidence_file');
+
+if (
+    $file !== null
+    && ($file['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_OK
+) {
+    try {
+        $stored = FileStorage::store($file);
+    } catch (\RuntimeException $ex) {
+        return $this->back(
+            $request,
+            'Tasdiqlovchi fayl: ' . $ex->getMessage()
+        );
+    }
+}
+
+DB::beginTransaction();
+
+try {
         if ($file !== null && ($file['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_OK) {
             try {
                 $stored = FileStorage::store($file);
