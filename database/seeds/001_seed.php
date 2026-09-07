@@ -17,7 +17,10 @@ use App\Core\Auth;
 use App\Core\DB;
 
 return function (): void {
-    $now = date('Y-m-d H:i:s');
+    DB::beginTransaction();
+
+    try {
+        $now = date('Y-m-d H:i:s');
 
     // ---------------------------------------------------------------
     // 1) Rollar (9 ta) — docs/03 bo'yicha.
@@ -807,7 +810,7 @@ return function (): void {
     }
 
     // Demo bildirishnoma (super_admin uchun).
-    DB::insert('notifications', [
+        DB::insert('notifications', [
         'user_id' => $userIds['super_admin'],
         'type' => 'info',
         'title' => 'Tizim ishga tushirildi',
@@ -816,4 +819,11 @@ return function (): void {
         'is_read' => 0,
         'created_at' => $now,
     ]);
+
+        DB::commit();
+
+    } catch (\Throwable $e) {
+        DB::rollBack();
+        throw $e;
+    }
 };
