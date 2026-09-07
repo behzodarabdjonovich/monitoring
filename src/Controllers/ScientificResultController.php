@@ -419,7 +419,142 @@ status = 'pending',
         }
         return $insert;
     }
+private function syncSpecialization(array $result, array $data): void
+{
+    $studentId = (int) $data['student_id'];
+    $type = (string) $data['result_type'];
 
+    $publicationId = !empty($result['publication_id'])
+        ? (int) $result['publication_id']
+        : null;
+
+    $conferenceId = !empty($result['conference_id'])
+        ? (int) $result['conference_id']
+        : null;
+
+    // ---------------------------------------------------------
+    // 1. Yangi tur PUBLICATION bo'lsa
+    // ---------------------------------------------------------
+    if (in_array($type, ScientificResult::PUBLICATION_TYPES, true)) {
+        $publicationType = match ($type) {
+            'scopus_maqola' => 'scopus',
+            'wos_maqola' => 'wos',
+            'oak_maqola' => 'milliy',
+            default => 'boshqa',
+        };
+
+        if ($publicationId !== null) {
+            // Mavjud publication yozuvini yangilaymiz.
+            DB::run(
+                "UPDATE publications
+                 SET student_id = :student_id,
+                     title = :title,
+                     publication_type = :publication_type,
+                     published_at = :published_at
+                 WHERE id = :id",
+                [
+                    'student_id' => $studentId,
+                    'title' => $data['title'],
+                    'publication_type' => $publicationType,
+                    'published_at' => $data['achieved_at'],
+                    'id' => $publicationId,
+                ]
+            );
+        } else {
+            // Oldin publication bo'lmagan bo'lsa, yangi yozuv yaratamiz.
+            $publicationId = DB::insert('publications', [
+                'student_id' => $studentId,
+                'title' => (string) $data['title'],
+                'journal' => null,
+                'publication_type' => $publicationType,
+                'published_at' => $data['achieved_at'],
+                'doi' => null,
+                'created_at' => date('Y-m-d H:i:s'),
+            ]);
+        }
+
+        // Oldingi conference bog'lanishini olib tashlaymiz.
+        DB::run(
+            "UPDATE scientific_results
+             SET publication_id = :publication_id,
+                 conference_id = NULL
+             WHERE id = :id",
+            [
+                'publication_id' => $publicationId,
+                'id' => (int) $result['id'],
+            ]
+        );
+
+        return;
+    }
+
+    // ---------------------------------------------------------
+    // 2. Yangi tur CONFERENCE bo'lsa
+    // ---------------------------------------------------------
+    if (in_array($type, ScientificResult::CONFERENCE_TYPES, true)) {
+        $level = $type === 'xalqaro_konferensiya'
+            ? 'xalqaro'
+            : 'respublika';
+
+        if ($conferenceId !== null) {
+            // Mavjud conference yozuvini yangilaymiz.
+            DB::run(
+                "UPDATE conferences
+                 SET student_id = :student_id,
+                     title = :title,
+                     level = :level,
+                     event_date = :event_date
+                 WHERE id = :id",
+                [
+                    'student_id' => $studentId,
+                    'title' => $data['title'],
+                    'level' => $level,
+                    'event_date' => $data['achieved_at'],
+                    'id' => $conferenceId,
+                ]
+            );
+        } else {
+            // Oldin conference bo'lmagan bo'lsa, yangi yozuv yaratamiz.
+            $conferenceId = DB::insert('conferences', [
+                'student_id' => $studentId,
+                'title' => (string) $data['title'],
+                'conference_name' => null,
+                'level' => $level,
+                'location' => null,
+                'event_date' => $data['achieved_at'],
+                'created_at' => date('Y-m-d H:i:s'),
+            ]);
+        }
+
+        // Oldingi publication bog'lanishini olib tashlaymiz.
+        DB::run(
+            "UPDATE scientific_results
+             SET publication_id = NULL,
+                 conference_id = :conference_id
+             WHERE id = :id",
+            [
+                'conference_id' => $conferenceId,
+                'id' => (int) $result['id'],
+            ]
+        );
+
+        return;
+    }
+
+    // ---------------------------------------------------------
+    // 3. Patent, grant va boshqa specialization bo'lmagan tur
+    // ---------------------------------------------------------
+    DB::run(
+        "UPDATE scientific_results
+         SET publication_id = NULL,
+             conference_id = NULL
+         WHERE id = :id",
+        [
+            'id' => (int) $result['id'],
+        ]
+    );
+}
+    
     private function form(?array $result): Response
 {
     $students = DB::select(
