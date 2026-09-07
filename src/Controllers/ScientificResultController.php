@@ -750,40 +750,63 @@ private function syncSpecialization(array $result, array $data): void
         return $this->notFound();
     }
 
-    if (($result['status'] ?? 'pending') !== 'pending') {
+    DB::beginTransaction();
+
+    try {
+        $stmt = DB::run(
+            "UPDATE scientific_results
+             SET status = 'approved',
+                 verified = 1,
+                 rejection_reason = NULL,
+                 updated_at = :updated_at
+             WHERE id = :id
+               AND status = 'pending'",
+            [
+                'updated_at' => date('Y-m-d H:i:s'),
+                'id' => $id,
+            ]
+        );
+
+        // Boshqa administrator oldin ko'rib chiqqan bo'lishi mumkin.
+        if ($stmt->rowCount() !== 1) {
+            DB::rollBack();
+
+            Session::flash(
+                'error',
+                'Bu ilmiy natija allaqachon ko‘rib chiqilgan.'
+            );
+
+            return $this->redirect('/results');
+        }
+
+        AuditLogger::log(
+            'approve',
+            'scientific_results',
+            $id,
+            [
+                'status' => $result['status'] ?? 'pending',
+                'verified' => $result['verified'] ?? 0,
+                'rejection_reason' => $result['rejection_reason'] ?? null,
+            ],
+            [
+                'status' => 'approved',
+                'verified' => 1,
+                'rejection_reason' => null,
+            ]
+        );
+
+        DB::commit();
+
+    } catch (\Throwable $e) {
+        DB::rollBack();
+
         Session::flash(
             'error',
-            'Bu ilmiy natija allaqachon ko‘rib chiqilgan.'
+            'Ilmiy natijani tasdiqlashda xatolik yuz berdi.'
         );
 
         return $this->redirect('/results');
     }
-
-    DB::run(
-        "UPDATE scientific_results
-         SET status = 'approved',
-             verified = 1,
-             updated_at = :updated_at
-         WHERE id = :id",
-        [
-            'updated_at' => date('Y-m-d H:i:s'),
-            'id' => $id,
-        ]
-    );
-
-    AuditLogger::log(
-        'approve',
-        'scientific_results',
-        $id,
-        [
-            'status' => $result['status'] ?? 'pending',
-            'verified' => $result['verified'] ?? 0,
-        ],
-        [
-            'status' => 'approved',
-            'verified' => 1,
-        ]
-    );
 
     Session::flash(
         'success',
