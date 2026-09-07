@@ -199,10 +199,13 @@ $this->layout('layouts.app');
                         </td>
 
 
-                        <!-- TASDIQ -->
+                       <!-- TASDIQ -->
 <td>
 
-    <?php $status = $r['status'] ?? (!empty($r['verified']) ? 'approved' : 'pending'); ?>
+    <?php
+    $status = $r['status']
+        ?? (!empty($r['verified']) ? 'approved' : 'pending');
+    ?>
 
     <?php if ($status === 'approved'): ?>
 
@@ -216,6 +219,12 @@ $this->layout('layouts.app');
             Rad etilgan
         </span>
 
+        <?php if (!empty($r['rejection_reason'])): ?>
+            <div class="text-muted" style="margin-top:0.3rem;">
+                Sabab: <?= e($r['rejection_reason']) ?>
+            </div>
+        <?php endif; ?>
+
     <?php elseif (in_array(
         \App\Core\Auth::role(),
         [
@@ -226,37 +235,37 @@ $this->layout('layouts.app');
         true
     )): ?>
 
-        <div style="display:flex;gap:0.4rem;flex-wrap:wrap;">
+        <div style="display:flex;gap:0.4rem;flex-wrap:wrap;align-items:center;">
 
-           <form
-    method="post"
-    action="/results/<?= e($r['id']) ?>/reject"
-    style="display:flex;gap:0.4rem;align-items:center;"
->
-    <?= Csrf::field() ?>
+            <form
+                method="post"
+                action="/results/<?= e($r['id']) ?>/verify"
+            >
+                <?= Csrf::field() ?>
 
-    <input
-        type="text"
-        name="rejection_reason"
-        placeholder="Rad etish sababi"
-        required
-        maxlength="500"
-        style="min-width:180px;"
-    >
-
-    <button
-        type="submit"
-        class="btn"
-    >
-        Rad etish
-    </button>
-</form>
+                <button
+                    type="submit"
+                    class="btn btn-primary"
+                >
+                    Tasdiqlash
+                </button>
+            </form>
 
             <form
                 method="post"
                 action="/results/<?= e($r['id']) ?>/reject"
+                style="display:flex;gap:0.4rem;align-items:center;"
             >
                 <?= Csrf::field() ?>
+
+                <input
+                    type="text"
+                    name="rejection_reason"
+                    placeholder="Rad etish sababi"
+                    required
+                    maxlength="500"
+                    style="min-width:180px;"
+                >
 
                 <button
                     type="submit"
