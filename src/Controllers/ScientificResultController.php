@@ -236,7 +236,7 @@ public function edit(Request $request): Response
 
     return $this->redirect('/results');
 }
-    
+   
 public function update(Request $request): Response
 {
     if (!Auth::check()) {
