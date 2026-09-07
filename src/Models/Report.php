@@ -209,11 +209,14 @@ final class Report
     }
 
     private static function ilmiyNatijalar(): array
-    {
-        $rows = DB::select(
-            "SELECT r.result_type, COUNT(*) AS cnt
-             FROM scientific_results r GROUP BY r.result_type ORDER BY cnt DESC"
-        );
+{
+    $rows = DB::select(
+        "SELECT r.result_type, COUNT(*) AS cnt
+         FROM scientific_results r
+         WHERE r.status = 'approved'
+         GROUP BY r.result_type
+         ORDER BY cnt DESC"
+    );
         $types = ScientificResult::TYPES;
         $out = [];
         foreach ($rows as $r) {
@@ -225,11 +228,20 @@ final class Report
     private static function maqolalar(): array
     {
         $rows = DB::select(
-            "SELECT p.title, p.journal, p.publication_type, p.published_at, s.full_name AS author
-             FROM publications p
-             LEFT JOIN doctoral_students s ON s.id = p.student_id
-             ORDER BY p.published_at DESC, p.id DESC"
-        );
+    "SELECT p.title,
+            p.journal,
+            p.publication_type,
+            p.published_at,
+            s.full_name AS author
+     FROM publications p
+     LEFT JOIN doctoral_students s
+            ON s.id = p.student_id
+     LEFT JOIN scientific_results r
+            ON r.publication_id = p.id
+     WHERE r.id IS NULL
+        OR r.status = 'approved'
+     ORDER BY p.published_at DESC, p.id DESC"
+);
         $out = [];
         foreach ($rows as $r) {
             $out[] = [
