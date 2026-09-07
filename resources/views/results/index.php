@@ -215,25 +215,45 @@ $this->layout('layouts.app');
 
     <?php elseif ($status === 'rejected'): ?>
 
-        <span class="badge badge-red">
-            Rad etilgan
-        </span>
+    <span class="badge badge-red">
+        Rad etilgan
+    </span>
 
-        <?php if (!empty($r['rejection_reason'])): ?>
-            <div class="text-muted" style="margin-top:0.3rem;">
-                Sabab: <?= e($r['rejection_reason']) ?>
-            </div>
-        <?php endif; ?>
+    <?php if (!empty($r['rejection_reason'])): ?>
 
-    <?php elseif (in_array(
-        \App\Core\Auth::role(),
-        [
-            'doctorate_office',
-            'research_vice_head',
-            'super_admin'
-        ],
-        true
-    )): ?>
+        <div
+            class="text-muted"
+            style="margin-top:0.3rem;"
+        >
+            Sabab: <?= e($r['rejection_reason']) ?>
+        </div>
+
+    <?php endif; ?>
+
+    <?php if (\App\Core\Auth::role() === 'doctoral_student'): ?>
+
+        <div style="margin-top:0.5rem;">
+
+            <a
+                class="btn btn-primary"
+                href="/results/<?= e($r['id']) ?>/edit"
+            >
+                Tahrirlash
+            </a>
+
+        </div>
+
+    <?php endif; ?>
+
+<?php elseif (in_array(
+    \App\Core\Auth::role(),
+    [
+        'doctorate_office',
+        'research_vice_head',
+        'super_admin'
+    ],
+    true
+)): ?>
 
         <div style="display:flex;gap:0.4rem;flex-wrap:wrap;align-items:center;">
 
