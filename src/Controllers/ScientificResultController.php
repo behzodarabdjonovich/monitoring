@@ -217,7 +217,55 @@ public function update(Request $request): Response
         : null;
 
     $old = $result;
+// Eski dalil faylini saqlab qolamiz.
+$documentId = !empty($result['document_id'])
+    ? (int) $result['document_id']
+    : null;
 
+// Agar doktorant yangi fayl yuklasa, yangi document yaratamiz.
+$file = $request->file('evidence_file');
+
+if (
+    $file !== null
+    && ($file['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_OK
+) {
+    try {
+        $stored = FileStorage::store($file);
+    } catch (\RuntimeException $ex) {
+        return $this->back(
+            $request,
+            'Tasdiqlovchi fayl: ' . $ex->getMessage()
+        );
+    }
+
+    $documentId = DB::insert('documents', [
+        'title' => $data['title'] !== ''
+            ? $data['title']
+            : $stored['original_name'],
+
+        'category' => 'maqolalar',
+        'file_path' => $stored['path'],
+        'original_name' => $stored['original_name'],
+        'mime_type' => $stored['mime'],
+        'file_size' => $stored['size'],
+        'doc_type' => 'ilmiy_natija',
+        'uploaded_by' => Auth::id(),
+        'student_id' => (int) $student['id'],
+        'scientific_result_id' => $id,
+        'created_at' => date('Y-m-d H:i:s'),
+    ]);
+
+    AuditLogger::log(
+        'upload',
+        'documents',
+        $documentId,
+        null,
+        [
+            'category' => 'maqolalar',
+            'scientific_result_id' => $id,
+        ]
+    );
+}
     DB::run(
         "UPDATE scientific_results
          SET student_id = :student_id,
@@ -227,7 +275,8 @@ public function update(Request $request): Response
              description = :description,
              achieved_at = :achieved_at,
              url = :url,
-             status = 'pending',
+document_id = :document_id,
+status = 'pending',
              verified = 0,
              rejection_reason = NULL,
              updated_at = :updated_at
@@ -240,7 +289,8 @@ public function update(Request $request): Response
             'description' => $data['description'],
             'achieved_at' => $data['achieved_at'],
             'url' => $data['url'],
-            'updated_at' => date('Y-m-d H:i:s'),
+'document_id' => $documentId,
+'updated_at' => date('Y-m-d H:i:s'),
             'id' => $id,
         ]
     );
@@ -258,7 +308,8 @@ public function update(Request $request): Response
             'description' => $data['description'],
             'achieved_at' => $data['achieved_at'],
             'url' => $data['url'],
-            'status' => 'pending',
+'document_id' => $documentId,
+'status' => 'pending',
             'verified' => 0,
             'rejection_reason' => null,
         ]
