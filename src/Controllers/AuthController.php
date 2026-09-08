@@ -130,41 +130,56 @@ return $this->redirect('/dashboard');
      * har doim bir xil xabar qaytaradi. Token password_resets'ga yoziladi.
      */
     public function sendReset(Request $request): Response
-    {
-        $validator = Validator::make($request->all(), [
-            'email' => 'required|email|max:191',
+{
+    $validator = Validator::make($request->all(), [
+        'email' => 'required|email|max:191',
+    ]);
+
+    if ($validator->fails()) {
+        return $this->view('auth.forgot-password', [
+            'error' => $validator->firstError(),
+            'success' => null,
+        ], 422);
+    }
+
+    $email = (string) $request->input('email');
+    $user = DB::selectOne(
+        'SELECT id FROM users WHERE email = :e LIMIT 1',
+        ['e' => $email]
+    );
+
+    if ($user !== null) {
+        $token = bin2hex(random_bytes(32));
+
+        DB::insert('password_resets', [
+            'user_id' => (int) $user['id'],
+            'token' => hash('sha256', $token),
+            'expires_at' => date('Y-m-d H:i:s', time() + 3600),
+            'used' => false,
+            'created_at' => date('Y-m-d H:i:s'),
         ]);
 
-      if ($validator->fails()) {
-    return $this->view('auth.login', [
-        'error' => $validator->firstError(),
-        'old_username' => (string) $request->input('username', ''),
-        'doctoral_login' => true,
-        'login_action' => '/doktorant/login',
-        'portal_title' => 'Doktorant kabinetiga kirish',
-    ], 422);
-}
+        AuditLogger::log(
+            'password_reset_requested',
+            'users',
+            (int) $user['id'],
+            null,
+            null,
+            (int) $user['id'],
+            $request->ip()
+        );
 
-        $email = (string) $request->input('email');
-        $user = DB::selectOne('SELECT id FROM users WHERE email = :e LIMIT 1', ['e' => $email]);
-
-        if ($user !== null) {
-            $token = bin2hex(random_bytes(32));
-            DB::insert('password_resets', [
-                'user_id' => (int) $user['id'],
-                'token' => hash('sha256', $token),
-                'expires_at' => date('Y-m-d H:i:s', time() + 3600),
-              'used' => false,
-                'created_at' => date('Y-m-d H:i:s'),
-            ]);
-            AuditLogger::log('password_reset_requested', 'users', (int) $user['id'], null, null, (int) $user['id'], $request->ip());
-            // Ishlab chiqarishda bu token email orqali yuboriladi. Oflayn
-            // demo muhitida email xizmati yo'q.
-        }
-
-        Session::flash('success', 'Agar bunday email mavjud bo\'lsa, tiklash bo\'yicha ko\'rsatma yuborildi.');
-        return $this->redirect('/forgot-password');
+        // Ishlab chiqarishda bu token email orqali yuboriladi.
+        // Demo muhitida email xizmati yo'q.
     }
+
+    Session::flash(
+        'success',
+        'Agar bunday email mavjud bo‘lsa, tiklash bo‘yicha ko‘rsatma yuborildi.'
+    );
+
+    return $this->redirect('/forgot-password');
+}
 
     public function showReset(Request $request): Response
     {
