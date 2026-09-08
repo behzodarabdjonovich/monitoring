@@ -102,6 +102,23 @@ $id = DB::insert('documents', [
     'scientific_result_id' => null,
     'created_at' => date('Y-m-d H:i:s'),
 ]);
+
+$fileContents = FileStorage::read($stored['path']);
+
+if ($fileContents === null) {
+    return $this->back($request, 'Yuklangan faylni o‘qib bo‘lmadi.', '/documents');
+}
+
+DB::run(
+    "UPDATE documents
+     SET file_data = decode(:file_data, 'base64')
+     WHERE id = :id",
+    [
+        'file_data' => base64_encode($fileContents),
+        'id' => $id,
+    ]
+);
+
         AuditLogger::log('upload', 'documents', $id, null, ['category' => (string) $input['category']]);
 
         Session::flash('success', 'Dalil hujjati yuklandi.');
@@ -168,10 +185,34 @@ $id = DB::insert('documents', [
     }
 }
         
-        $contents = FileStorage::read((string) $doc['file_path']);
-        if ($contents === null) {
-            return $this->notFound();
-        }
+        $fileRow = DB::selectOne(
+    "SELECT encode(file_data, 'base64') AS file_data_b64
+     FROM documents
+     WHERE id = :id",
+    ['id' => $id]
+);
+
+$contents = null;
+
+if (!empty($fileRow['file_data_b64'])) {
+    $decoded = base64_decode((string) $fileRow['file_data_b64'], true);
+
+    if ($decoded !== false) {
+        $contents = $decoded;
+    }
+}
+
+if ($contents === null) {
+    $contents = FileStorage::read((string) $doc['file_path']);
+}
+
+if ($contents === null) {
+    return $this->notFound();
+}
+
+if ($contents === null) {
+    return $this->notFound();
+}
         AuditLogger::log('view', 'documents', $id, null, ['action' => 'download']);
 
         $name = (string) ($doc['original_name'] ?? 'document');
