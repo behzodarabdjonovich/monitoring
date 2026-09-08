@@ -125,6 +125,28 @@ DB::run(
         return $this->redirect('/documents/' . $id);
     }
 
+    public function delete(Request $request): Response
+{
+    if (!Auth::can('documents.edit')) {
+        return $this->forbidden();
+    }
+
+    $id = (int) $request->param('id');
+    $doc = Document::find($id);
+
+    if ($doc === null) {
+        return $this->notFound();
+    }
+
+    DB::delete('documents', 'id = :id', [
+        'id' => $id,
+    ]);
+
+    Session::flash('success', 'Hujjat o‘chirildi.');
+
+    return $this->redirect('/documents');
+}
+    
     public function show(Request $request): Response
     {
         $id = (int) $request->param('id');
