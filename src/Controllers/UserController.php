@@ -54,7 +54,7 @@ final class UserController extends Controller
             Session::flash('error', 'O\'zingizni bloklab bo\'lmaydi.');
             return $this->redirect('/users');
         }
-        DB::run('UPDATE users SET is_blocked = 1, updated_at = :u WHERE id = :id', [
+      DB::run('UPDATE users SET is_blocked = TRUE, updated_at = :u WHERE id = :id', [
             'u' => date('Y-m-d H:i:s'), 'id' => $id,
         ]);
         AuditLogger::log('block', 'users', $id, ['is_blocked' => (int) $target['is_blocked']], ['is_blocked' => 1]);
