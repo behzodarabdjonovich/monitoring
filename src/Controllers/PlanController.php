@@ -178,7 +178,7 @@ public function doctoral(Request $request): Response
         $input = $request->all();
         $validator = Validator::make($input, [
             'student_id' => 'required|integer',
-            'academic_year' => 'required|string|max:32',
+           'academic_year' => 'required|integer',
         ]);
         if ($validator->fails()) {
             Session::flash('error', $validator->firstError() ?? 'Kiritishda xatolik.');
@@ -188,7 +188,7 @@ public function doctoral(Request $request): Response
         return [
             'student_id' => (int) $input['student_id'],
             'supervisor_id' => ($input['supervisor_id'] ?? '') === '' ? null : (int) $input['supervisor_id'],
-            'academic_year' => (string) $input['academic_year'],
+            'academic_year' => (int) $input['academic_year'],
             'start_date' => $strOrNull($input['start_date'] ?? null),
             'end_date' => $strOrNull($input['end_date'] ?? null),
             'status' => in_array($input['status'] ?? '', array_keys(IndividualPlan::STATUSES), true) ? (string) $input['status'] : 'draft',
