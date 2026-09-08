@@ -13,10 +13,12 @@ return function (): void {
     }
 
     $permissionNames = [
-        'deficiencies.view',
-        'action_plans.view',
-        'internal_audits.view',
-    ];
+    'deficiencies.view',
+    'action_plans.view',
+    'action_plans.create',
+    'action_plans.edit',
+    'internal_audits.view',
+];
 
     foreach ($permissionNames as $permissionName) {
        $permissionId = DB::scalar(
