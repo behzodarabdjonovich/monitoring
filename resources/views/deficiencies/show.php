@@ -93,14 +93,27 @@ $dueLabels = ['done' => 'Bajarilgan', 'overdue' => 'Muddati o\'tgan', 'due_soon'
                         <td><?php if ($ap['document_id'] !== null): ?><a href="/documents/<?= e($ap['document_id']) ?>"><?= e($ap['document_title'] ?? 'Hujjat') ?></a><?php else: ?>—<?php endif; ?></td>
                         <td><?= e($ap['result'] ?? '—') ?></td>
                         <td><?= e($ap['status']) ?></td>
-                  <td>
+                            <td>
     <?php if ($canPlan): ?>
-        <a class="btn" href="/action-plans/<?= e($ap['id']) ?>/edit">Tahrirlash</a>
+        <form method="post" action="/action-plans/<?= e($ap['id']) ?>">
+            <?= Csrf::field() ?>
+
+            <input type="hidden" name="title" value="<?= e($ap['title']) ?>">
+            <input type="hidden" name="description" value="<?= e($ap['description'] ?? '') ?>">
+            <input type="hidden" name="responsible_user_id" value="<?= e($ap['responsible_user_id'] ?? '') ?>">
+            <input type="hidden" name="start_date" value="<?= e($ap['start_date'] ?? '') ?>">
+            <input type="hidden" name="due_date" value="<?= e($ap['due_date'] ?? '') ?>">
+            <input type="hidden" name="document_id" value="<?= e($ap['document_id'] ?? '') ?>">
+            <input type="hidden" name="status" value="completed">
+
+            <button type="submit" class="btn">Bajarildi</button>
+        </form>
+                                <a class="btn" href="/action-plans/<?= e($ap['id']) ?>/edit">Tahrirlash</a>
     <?php else: ?>
         —
     <?php endif; ?>
 </td>
-                        </tr>
+                                         </tr>
                 <?php endforeach; ?>
             </tbody>
         </table>
