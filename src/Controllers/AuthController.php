@@ -15,25 +15,22 @@ use App\Core\Validator;
  */
 final class AuthController extends Controller
 {
-    public function showLogin(Request $request): Response
-    {
-        if (Auth::check()) {
-            if (Auth::role() === 'doctoral_student') {
-    return $this->redirect('/doktorant/dashboard');
-}
-
-if (Auth::role() === 'doctoral_student') {
-    return $this->redirect('/doktorant/dashboard');
-}
-
-return $this->redirect('/dashboard');
+   public function showLogin(Request $request): Response
+{
+    if (Auth::check()) {
+        if (Auth::role() === 'doctoral_student') {
+            return $this->redirect('/doktorant/dashboard');
         }
-        return $this->view('auth.login', [
-            'error' => Session::flash('error'),
-            'success' => Session::flash('success'),
-            'old_username' => '',
-        ]);
+
+        return $this->redirect('/dashboard');
     }
+
+    return $this->view('auth.login', [
+        'error' => Session::flash('error'),
+        'success' => Session::flash('success'),
+        'old_username' => '',
+    ]);
+}
 
     public function login(Request $request): Response
     {
