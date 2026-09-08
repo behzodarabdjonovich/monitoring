@@ -95,12 +95,27 @@ final class DB
     /**
      * Tayyorlangan so'rovni bajaradi va statement qaytaradi.
      */
-    public static function run(string $sql, array $params = []): PDOStatement
-    {
-        $stmt = self::connection()->prepare($sql);
-        $stmt->execute($params);
-        return $stmt;
+   public static function run(string $sql, array $params = []): PDOStatement
+{
+    $stmt = self::connection()->prepare($sql);
+
+    foreach ($params as $key => $value) {
+        $param = is_int($key) ? $key + 1 : ':' . ltrim((string) $key, ':');
+
+        $type = match (true) {
+            is_bool($value) => PDO::PARAM_BOOL,
+            is_int($value) => PDO::PARAM_INT,
+            $value === null => PDO::PARAM_NULL,
+            default => PDO::PARAM_STR,
+        };
+
+        $stmt->bindValue($param, $value, $type);
     }
+
+    $stmt->execute();
+
+    return $stmt;
+}
 
     public static function select(string $sql, array $params = []): array
     {
