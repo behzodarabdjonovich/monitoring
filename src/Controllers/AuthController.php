@@ -198,7 +198,7 @@ return $this->redirect('/dashboard');
         }
 
         $hash = Auth::hash((string) $request->input('password'));
-        DB::run('UPDATE users SET password_hash = :h, must_reset = 0, updated_at = :u WHERE id = :id', [
+        DB::run('UPDATE users SET password_hash = :h, must_reset = FALSE, updated_at = :u WHERE id = :id', [
             'h' => $hash,
             'u' => date('Y-m-d H:i:s'),
             'id' => (int) $row['user_id'],
