@@ -126,7 +126,7 @@ final class Report
                 (int) $r['done_count'],
             ];
         }
-        return ['headers' => ['F.I.Sh.', 'O\'quv yili', 'Reja holati', 'Vazifalar', 'Bajarilgan'], 'rows' => $out];
+        return ['headers' => ['F.I.Sh.', 'Kalendar yil', 'Reja holati', 'Vazifalar', 'Bajarilgan'], 'rows' => $out];
     }
 
     private static function individualReja(): array
