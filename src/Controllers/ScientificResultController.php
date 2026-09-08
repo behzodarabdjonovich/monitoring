@@ -219,8 +219,10 @@ public function edit(Request $request): Response
         DB::commit();
 
     } catch (\Throwable $e) {
-        DB::rollBack();
+    DB::rollBack();
+    error_log($e->getMessage());
 
+    Session::flash(
         Session::flash(
             'error',
             'Ilmiy natijani yaratishda xatolik yuz berdi.'
