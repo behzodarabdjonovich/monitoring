@@ -137,24 +137,6 @@ $router->post('/ilmiy-bolim/rahbar-sorovlari/{id}/reject', [
 $auth = static fn () => new AuthMiddleware();
 $rbac = static fn (string $perm) => new RbacMiddleware($perm);
 
-// Ilmiy natijani tasdiqlash
-$router->post('/results/{id}/verify', [
-    ScientificResultController::class,
-    'verify'
-], [
-    $auth(),
-    $rbac('scientific_results.view'),
-]);
-
-// Ilmiy natijani rad etish
-$router->post('/results/{id}/reject', [
-    ScientificResultController::class,
-    'reject'
-], [
-    $auth(),
-    $rbac('scientific_results.view'),
-]);
-
 // --- Doktorantlar (item 4) ---
 $router->get('/students', [StudentController::class, 'index'], [$auth(), $rbac('doctoral_students.view')]);
 $router->get('/students/create', [StudentController::class, 'create'], [$auth(), $rbac('doctoral_students.create')]);
