@@ -189,40 +189,73 @@ return $this->redirect('/dashboard');
         ]);
     }
 
-    public function reset(Request $request): Response
-    {
-        $validator = Validator::make($request->all(), [
-            'token' => 'required|string',
-            'password' => 'required|string|min:8|confirmed',
-        ]);
+   public function reset(Request $request): Response
+{
+    $validator = Validator::make($request->all(), [
+        'token' => 'required|string',
+        'password' => 'required|string|min:8|confirmed',
+    ]);
 
-        if ($validator->fails()) {
-            Session::flash('error', $validator->firstError());
-            return $this->redirect('/reset-password?token=' . urlencode((string) $request->input('token', '')));
-        }
-
-        $tokenHash = hash('sha256', (string) $request->input('token'));
-        $row = DB::selectOne(
-          SELECT * FROM password_resets WHERE token = :t AND used = FALSE AND expires_at > :now LIMIT 1
-            ['t' => $tokenHash, 'now' => date('Y-m-d H:i:s')]
+    if ($validator->fails()) {
+        Session::flash('error', $validator->firstError());
+        return $this->redirect(
+            '/reset-password?token=' . urlencode((string) $request->input('token', ''))
         );
+    }
 
-        if ($row === null) {
-            Session::flash('error', 'Tiklash havolasi yaroqsiz yoki muddati o\'tgan.');
-            return $this->redirect('/forgot-password');
-        }
+    $tokenHash = hash('sha256', (string) $request->input('token'));
 
-        $hash = Auth::hash((string) $request->input('password'));
-        DB::run('UPDATE users SET password_hash = :h, must_reset = FALSE, updated_at = :u WHERE id = :id', [
+    $row = DB::selectOne(
+        'SELECT * FROM password_resets
+         WHERE token = :t
+           AND used = FALSE
+           AND expires_at > :now
+         LIMIT 1',
+        [
+            't' => $tokenHash,
+            'now' => date('Y-m-d H:i:s'),
+        ]
+    );
+
+    if ($row === null) {
+        Session::flash('error', 'Tiklash havolasi yaroqsiz yoki muddati o\'tgan.');
+        return $this->redirect('/forgot-password');
+    }
+
+    $hash = Auth::hash((string) $request->input('password'));
+
+    DB::run(
+        'UPDATE users
+         SET password_hash = :h,
+             must_reset = FALSE,
+             updated_at = :u
+         WHERE id = :id',
+        [
             'h' => $hash,
             'u' => date('Y-m-d H:i:s'),
             'id' => (int) $row['user_id'],
-        ]);
-       DB::run('UPDATE password_resets SET used = TRUE WHERE id = :id', [
-        AuditLogger::log('password_reset', 'users', (int) $row['user_id'], null, null, (int) $row['user_id'], $request->ip());
+        ]
+    );
 
-        Session::flash('success', 'Parol yangilandi. Endi tizimga kiring.');
-        return $this->redirect('/login');
-    }
+    DB::run(
+        'UPDATE password_resets
+         SET used = TRUE
+         WHERE id = :id',
+        [
+            'id' => (int) $row['id'],
+        ]
+    );
 
+    AuditLogger::log(
+        'password_reset',
+        'users',
+        (int) $row['user_id'],
+        null,
+        null,
+        (int) $row['user_id'],
+        $request->ip()
+    );
+
+    Session::flash('success', 'Parol yangilandi. Endi tizimga kiring.');
+    return $this->redirect('/login');
 }
