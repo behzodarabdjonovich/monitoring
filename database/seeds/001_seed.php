@@ -597,6 +597,7 @@ return function (): void {
     // Namuna mezonlar (tarkib namunaviy, rasmiy emas).
     $criteria = [
         $criteria = [
+   $criteria = [
     ['MEZON-1', 'Ta\'lim dasturi va o\'quv jarayoni', 1.0, 1],
     ['MEZON-2', 'Ilmiy-tadqiqot faoliyati va natijadorlik', 1.0, 2],
     ['MEZON-3', 'Professor-o\'qituvchilar salohiyati', 1.0, 3],
