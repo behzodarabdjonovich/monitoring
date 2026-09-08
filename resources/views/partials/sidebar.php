@@ -24,10 +24,16 @@ $sections = [
     ['audits', 'Ichki audit', '/audits'],
     ['reports', 'Hisobotlar', '/reports'],
     ['notifications', 'Bildirishnomalar', '/notifications'],
-    ['users', 'Foydalanuvchilar', '/users'],
-    ['settings', 'Sozlamalar', '/settings'],
-];
+    ];
 
+// Ruxsatga bog‘liq menyular.
+if (\App\Core\Auth::can('users.view')) {
+    $sections[] = ['users', 'Foydalanuvchilar', '/users'];
+}
+
+if (\App\Core\Auth::can('settings.view')) {
+    $sections[] = ['settings', 'Sozlamalar', '/settings'];
+}
 // Audit jurnali faqat Super Admin uchun (item 17).
 if (\App\Core\Auth::role() === 'super_admin') {
     $sections[] = ['audit-logs', 'Audit jurnali', '/audit-logs'];
