@@ -49,4 +49,34 @@ return function (): void {
          SET name = REPLACE(name, '[NAMUNA] ', '')
          WHERE name LIKE '%[NAMUNA]%'"
     );
+    // 6. Kamchiliklar, chora-tadbirlar va ichki audit matnlaridan [NAMUNA] ni olib tashlash
+    DB::run(
+        "UPDATE deficiencies
+         SET title = REPLACE(title, '[NAMUNA] ', ''),
+             description = REPLACE(description, '[NAMUNA] ', ''),
+             updated_at = :updated_at
+         WHERE title LIKE '%[NAMUNA]%'
+            OR description LIKE '%[NAMUNA]%'",
+        ['updated_at' => $now]
+    );
+
+    DB::run(
+        "UPDATE action_plans
+         SET title = REPLACE(title, '[NAMUNA] ', ''),
+             description = REPLACE(description, '[NAMUNA] ', ''),
+             updated_at = :updated_at
+         WHERE title LIKE '%[NAMUNA]%'
+            OR description LIKE '%[NAMUNA]%'",
+        ['updated_at' => $now]
+    );
+
+    DB::run(
+        "UPDATE internal_audits
+         SET title = REPLACE(title, '[NAMUNA] ', ''),
+             scope = REPLACE(scope, '[NAMUNA] ', ''),
+             summary = REPLACE(summary, '[NAMUNA] ', '')
+         WHERE title LIKE '%[NAMUNA]%'
+            OR scope LIKE '%[NAMUNA]%'
+            OR summary LIKE '%[NAMUNA]%'"
+    );
 };
