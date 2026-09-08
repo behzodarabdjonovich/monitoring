@@ -93,7 +93,7 @@ final class UserController extends Controller
         if ($target === null) {
             return $this->notFound();
         }
-        DB::run('UPDATE users SET must_reset = 1, updated_at = :u WHERE id = :id', [
+       DB::run('UPDATE users SET must_reset = TRUE, updated_at = :u WHERE id = :id', [
             'u' => date('Y-m-d H:i:s'), 'id' => $id,
         ]);
         AuditLogger::log('update', 'users', $id, ['must_reset' => (int) $target['must_reset']], ['must_reset' => 1]);
