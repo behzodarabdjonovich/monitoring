@@ -150,7 +150,9 @@ return function (): void {
             'attestations.view', 'attestations.create', 'attestations.edit',
             'accreditation.view',
             'documents.view', 'documents.upload', 'documents.edit',
-            'reports.view',
+            'deficiencies.view',
+'action_plans.view',
+'internal_audits.view','reports.view',
             'notifications.view',
         ],
 
