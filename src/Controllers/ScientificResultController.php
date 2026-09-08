@@ -360,7 +360,7 @@ public function update(Request $request): Response
                  url = :url,
                  document_id = :document_id,
                  status = 'pending',
-                 verified = 0,
+                 verified = FALSE,
                  rejection_reason = NULL,
                  updated_at = :updated_at
              WHERE id = :id",
@@ -396,7 +396,7 @@ AuditLogger::log(
         'url' => $data['url'],
         'document_id' => $documentId,
         'status' => 'pending',
-        'verified' => 0,
+        'verified' => false,
         'rejection_reason' => null,
     ]
 );
@@ -449,7 +449,7 @@ DB::commit();
             'description' => $strOrNull($input['description'] ?? null),
             'achieved_at' => $strOrNull($input['achieved_at'] ?? null),
             'url' => $url === '' ? null : $url,
-            'verified' => 0,
+            'verified' => false,
         ];
     }
 
@@ -756,7 +756,7 @@ private function syncSpecialization(array $result, array $data): void
         $stmt = DB::run(
             "UPDATE scientific_results
              SET status = 'approved',
-                 verified = 1,
+                verified = TRUE,
                  rejection_reason = NULL,
                  updated_at = :updated_at
              WHERE id = :id
@@ -790,7 +790,7 @@ private function syncSpecialization(array $result, array $data): void
             ],
             [
                 'status' => 'approved',
-                'verified' => 1,
+               'verified' => true,
                 'rejection_reason' => null,
             ]
         );
@@ -865,7 +865,7 @@ public function reject(Request $request): Response
         $stmt = DB::run(
             "UPDATE scientific_results
              SET status = 'rejected',
-                 verified = 0,
+                 verified = FALSE,
                  rejection_reason = :rejection_reason,
                  updated_at = :updated_at
              WHERE id = :id
@@ -900,7 +900,7 @@ public function reject(Request $request): Response
             ],
             [
                 'status' => 'rejected',
-                'verified' => 0,
+                'verified' => false,
                 'rejection_reason' => $rejectionReason,
             ]
         );
