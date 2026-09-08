@@ -434,7 +434,7 @@ return function (): void {
             'updated_at' => $now,
         ]);
 
-        // Har rejaga 4 ta vazifa. Bajarilish darajasi i bo'yicha o'zgaradi:
+                 // Har rejaga 4 ta vazifa. Bajarilish darajasi i bo'yicha o'zgaradi:
         //   completedCount 0..4 => to'liq bajargan (=4) yoki ortda (muddati o'tgan bor).
         $completedCount = $i % 5; // 0,1,2,3,4 aylanadi
         for ($t = 0; $t < 4; $t++) {
