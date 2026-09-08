@@ -151,7 +151,7 @@ return function (): void {
             'accreditation.view',
             'documents.view', 'documents.upload', 'documents.edit',
             'deficiencies.view',
-'action_plans.view',
+'action_plans.view', 'action_plans.create', 'action_plans.edit',
 'internal_audits.view','reports.view',
             'notifications.view',
         ],
