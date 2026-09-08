@@ -102,14 +102,23 @@ final class DB
     foreach ($params as $key => $value) {
         $param = is_int($key) ? $key + 1 : ':' . ltrim((string) $key, ':');
 
-        $type = match (true) {
-            is_bool($value) => PDO::PARAM_BOOL,
-            is_int($value) => PDO::PARAM_INT,
-            $value === null => PDO::PARAM_NULL,
-            default => PDO::PARAM_STR,
-        };
+       if (is_bool($value) && self::driver() === 'pgsql') {
+    $stmt->bindValue(
+        $param,
+        $value ? 'true' : 'false',
+        PDO::PARAM_STR
+    );
+    continue;
+}
 
-        $stmt->bindValue($param, $value, $type);
+$type = match (true) {
+    is_bool($value) => PDO::PARAM_BOOL,
+    is_int($value) => PDO::PARAM_INT,
+    $value === null => PDO::PARAM_NULL,
+    default => PDO::PARAM_STR,
+};
+
+$stmt->bindValue($param, $value, $type);
     }
 
     $stmt->execute();
