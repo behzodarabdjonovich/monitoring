@@ -45,8 +45,8 @@ $v = fn (string $k) => e($plan[$k] ?? '');
             </select>
         </div>
         <div class="form-group">
-            <label for="academic_year">O'quv yili *</label>
-            <input type="text" id="academic_year" name="academic_year" value="<?= $v('academic_year') ?>" placeholder="2024/2025" required>
+          <label for="academic_year">Kalendar yil *</label>
+<input type="number" id="academic_year" name="academic_year" value="<?= $v('academic_year') ?>" placeholder="2026" min="2000" max="2100" required>
         </div>
         <div class="form-group">
             <label for="start_date">Boshlanish sanasi</label>
