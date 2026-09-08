@@ -10,7 +10,7 @@
  *   ALMASHTIRILISHI SHART (uydirma emas, namunaviy tuzilma).
  *
  * DIQQAT: bu yerda REAL SHAXSIY MA'LUMOTLAR yo'q — barcha ismlar aniq
- * ko'rinib turuvchi demo/namuna ismlardir.
+ * ko'rinib turuvchi demo/ismlardir.
  */
 
 use App\Core\Auth;
@@ -294,12 +294,12 @@ return function (): void {
         return [
             'responsible_department_id' => $depId,
             'program_lead_supervisor_id' => null,
-            'scientific_potential' => 'Namuna: professor-o\'qituvchilar salohiyati va ilmiy darajalar.',
-            'normative_docs' => 'Namuna: davlat ta\'lim standarti, o\'quv reja, nizomlar.',
-            'material_base' => 'Namuna: laboratoriyalar, kutubxona, jihozlar.',
-            'research_infrastructure' => 'Namuna: ilmiy markazlar va tadqiqot guruhlari.',
-            'international_cooperation' => 'Namuna: xorijiy universitetlar bilan hamkorlik.',
-            'scientific_results' => 'Namuna: nashrlar, patentlar, grantlar.',
+            'scientific_potential' => 'professor-o\'qituvchilar salohiyati va ilmiy darajalar.',
+            'normative_docs' => 'davlat ta\'lim standarti, o\'quv reja, nizomlar.',
+            'material_base' => 'laboratoriyalar, kutubxona, jihozlar.',
+            'research_infrastructure' => 'ilmiy markazlar va tadqiqot guruhlari.',
+            'international_cooperation' => 'xorijiy universitetlar bilan hamkorlik.',
+            'scientific_results' => 'nashrlar, patentlar, grantlar.',
             'created_at' => $now,
             'updated_at' => $now,
         ];
@@ -342,10 +342,10 @@ return function (): void {
             'academic_title' => $title,
             'department_id' => $depId,
             'specialty_id' => $specId,
-            'research_field' => 'Namuna ilmiy yo\'nalish',
-            'meetings_note' => 'Namuna: oylik uchrashuvlar o\'tkazildi.',
-            'assignments_note' => 'Namuna: reja vazifalari topshirildi.',
-            'approvals_note' => 'Namuna: bajarilgan vazifalar tasdiqlandi.',
+            'research_field' => 'Ilmiy yo\'nalish',
+            'meetings_note' => 'oylik uchrashuvlar o\'tkazildi.',
+            'assignments_note' => 'reja vazifalari topshirildi.',
+            'approvals_note' => 'bajarilgan vazifalar tasdiqlandi.',
             'created_at' => $now,
             'updated_at' => $now,
         ]);
@@ -395,13 +395,13 @@ return function (): void {
             'status' => $status,
             'national_id' => 'DEMO-' . str_pad((string) ($i + 1), 5, '0', STR_PAD_LEFT),
             'photo_path' => null,
-            'dissertation_topic' => 'Namuna dissertatsiya mavzusi ' . ($i + 1),
+            'dissertation_topic' => 'Dissertatsiya mavzusi ' . ($i + 1),
             'advisor_name' => null,
-            'admission_order' => 'NAMUNA-BUYRUQ ' . $enroll . '/' . ($i + 1),
+            'admission_order' => 'BUYRUQ ' . $enroll . '/' . ($i + 1),
             'study_start_date' => $enroll . '-09-01',
             'study_end_date' => ($enroll + 3) . '-08-31',
             'dissertation_percent' => $dissPct,
-            'scientific_results_summary' => 'Namuna: maqolalar va konferensiya materiallari.',
+            'scientific_results_summary' => 'maqolalar va konferensiya materiallari.',
             'defense_readiness' => $readiness,
             'created_at' => $now,
             'updated_at' => $now,
@@ -446,13 +446,13 @@ return function (): void {
             DB::insert('plan_tasks', [
                 'plan_id' => $planId,
                 'title' => 'Demo vazifa ' . ($t + 1),
-                'description' => 'Namuna reja vazifasi.',
+                'description' => 'reja vazifasi.',
                 'task_type' => ['maqola', 'konferensiya', 'bob', 'tajriba'][$t],
                 'due_date' => $due,
                 'completed_date' => $done ? date('Y-m-d') : null,
                 'progress_percent' => $done ? 100 : ($tstatus === 'overdue' ? 30 : 0),
                 'evidence_path' => null,
-                'student_comment' => $done ? 'Namuna: vazifa bajarildi.' : null,
+                'student_comment' => $done ? 'vazifa bajarildi.' : null,
                 'supervisor_conclusion' => null,
                 'office_note' => null,
                 'status' => $tstatus,
@@ -566,7 +566,7 @@ return function (): void {
                 'period' => $academicYears[$i % 4],
                 'attestation_date' => date('Y-m-d', strtotime('-' . (($i % 6) * 30) . ' days')),
                 'result' => $i % 5 === 0 ? 'ijobiy' : ($i % 7 === 0 ? 'salbiy' : 'ijobiy'),
-                'commission_notes' => 'Namuna attestatsiya izohi.',
+                'commission_notes' => 'attestatsiya izohi.',
                 'created_by' => $userIds['doctorate_office'],
                 'created_at' => $now,
             ]);
@@ -578,7 +578,7 @@ return function (): void {
     //    OGOHLANTIRISH: bular NAMUNA tuzilma. Ishga tushirishdan oldin
     //    RASMIY tasdiqlangan mezon/indikator/og'irliklar bilan almashtiring.
     // ---------------------------------------------------------------
-    $placeholderNote = 'NAMUNA (placeholder) — rasmiy tasdiqlangan qiymatlar bilan almashtirilishi SHART.';
+    $placeholderNote = '(placeholder) — rasmiy tasdiqlangan qiymatlar bilan almashtirilishi SHART.';
 
     $accId = DB::insert('accreditations', [
         'title' => 'Maxsus davlat akkreditatsiyasiga tayyorgarlik sikli',
@@ -594,7 +594,7 @@ return function (): void {
     // Ixtisosliklarni akkreditatsiya sikliga bog'laymiz (item 8: indikatorlar linki).
     DB::run('UPDATE specialties SET accreditation_id = :aid', ['aid' => $accId]);
 
-    // Namuna mezonlar (tarkib namunaviy, rasmiy emas).
+    // Mezonlar (tarkib namunaviy, rasmiy emas).
     $criteria = [
         $criteria = [
    $criteria = [
@@ -641,13 +641,13 @@ return function (): void {
         ]);
         $critIds[] = $critId;
 
-        // Har mezon uchun 3 ta namuna indikator (ball va RAG bilan).
+        // Har mezon uchun 3 ta indikator (ball va RAG bilan).
         foreach ($demoScores[$ci] as $k => $score) {
             $rag = $ragFor($score === null ? null : (float) $score);
             DB::insert('accreditation_indicators', [
                 'criteria_id' => $critId,
                 'code' => $code . '.' . ($k + 1),
-                'name' => "[NAMUNA] Indikator $indicatorNum",
+               'name' => "Indikator $indicatorNum",
                 'requirement' => $placeholderNote,
                 'description' => $placeholderNote,
                 'self_assessment' => null,
@@ -674,12 +674,12 @@ return function (): void {
     $auditId = DB::insert('internal_audits', [
         'accreditation_id' => $accId,
         'specialty_id' => $spec1,
-        'title' => '[NAMUNA] Ichki audit — tayyorgarlik bahosi',
+      'title' => 'Ichki audit — tayyorgarlik bahosi',
         'audit_date' => date('Y-m-d', strtotime('-20 days')),
         'auditor_id' => $userIds['quality_control'],
         'scope' => $placeholderNote,
         'status' => 'completed',
-        'summary' => 'Namuna audit xulosasi.',
+        'summary' => 'audit xulosasi.',
         'readiness_index' => null,
         'risk_level' => null,
         'strengths' => null,
@@ -692,12 +692,14 @@ return function (): void {
 
     // Bir nechta kamchilik — turli jiddiylik va holat.
     $defs = [
-        ['[NAMUNA] Yetishmayotgan dalil hujjati', 'high', 'open'],
-        ['[NAMUNA] Indikator bo\'yicha izoh yetishmaydi', 'medium', 'open'],
-        ['[NAMUNA] Reja vazifasi bajarilmagan', 'medium', 'in_progress'],
-        ['[NAMUNA] Nashr bazasi tasdiqlanmagan', 'low', 'resolved'],
-        ['[NAMUNA] O\'quv dasturi hujjati eskirgan', 'high', 'open'],
-    ];
+       $defs = [
+   $defs = [
+    ['Yetishmayotgan dalil hujjati', 'high', 'open'],
+    ['Indikator bo\'yicha izoh yetishmaydi', 'medium', 'open'],
+    ['Reja vazifasi bajarilmagan', 'medium', 'in_progress'],
+    ['Nashr nazari talablariga', 'low', 'resolved'],
+    ['O\'quv dasturi hujjati eskirgan', 'high', 'open'],
+];
     $seededDefIds = [];
     foreach ($defs as $di => [$dtitle, $severity, $dstatus]) {
         $seededDefIds[] = DB::insert('deficiencies', [
@@ -705,8 +707,8 @@ return function (): void {
             'internal_audit_id' => $auditId,
             'title' => $dtitle,
             'description' => $placeholderNote,
-            'cause' => 'Namuna: sabab tavsifi.',
-            'result' => $dstatus === 'resolved' ? 'Namuna: kamchilik bartaraf etildi.' : null,
+            'cause' => ' sabab tavsifi.',
+            'result' => $dstatus === 'resolved' ? 'Kamchilik bartaraf etildi.' : null,
             'severity' => $severity,
             'status' => $dstatus,
             'identified_by' => $userIds['quality_control'],
@@ -716,12 +718,12 @@ return function (): void {
         ]);
     }
 
-    // Namuna chora-tadbirlar (action plans) — biri muddati yaqin (sariq),
+    // Chora-tadbirlar (action plans) — biri muddati yaqin (sariq),
     // biri muddati o'tgan (qizil), biri bajarilgan. Item 12 to'liq zanjir.
     DB::insert('action_plans', [
         'deficiency_id' => $seededDefIds[0],
-        'title' => '[NAMUNA] Yetishmayotgan dalil hujjatini yuklash',
-        'description' => 'Namuna chora-tadbir tavsifi.',
+        'title' => ' Yetishmayotgan dalil hujjatini yuklash',
+        'description' => ' chora-tadbir tavsifi.',
         'responsible_user_id' => $userIds['doctorate_office'],
         'start_date' => date('Y-m-d', strtotime('-10 days')),
         'due_date' => date('Y-m-d', strtotime('+3 days')),  // muddati yaqin => sariq
@@ -734,8 +736,8 @@ return function (): void {
     ]);
     DB::insert('action_plans', [
         'deficiency_id' => $seededDefIds[4],
-        'title' => '[NAMUNA] O\'quv dasturi hujjatini yangilash',
-        'description' => 'Namuna chora-tadbir tavsifi.',
+        'title' => ' O\'quv dasturi hujjatini yangilash',
+        'description' => ' chora-tadbir tavsifi.',
         'responsible_user_id' => $userIds['doctorate_office'],
         'start_date' => date('Y-m-d', strtotime('-30 days')),
         'due_date' => date('Y-m-d', strtotime('-5 days')),  // muddati o'tgan => qizil
@@ -748,13 +750,13 @@ return function (): void {
     ]);
     DB::insert('action_plans', [
         'deficiency_id' => $seededDefIds[3],
-        'title' => '[NAMUNA] Nashr bazasini tasdiqlash',
-        'description' => 'Namuna chora-tadbir tavsifi.',
+        'title' => ' Nashr bazasini tasdiqlash',
+        'description' => ' chora-tadbir tavsifi.',
         'responsible_user_id' => $userIds['research_vice_head'],
         'start_date' => date('Y-m-d', strtotime('-40 days')),
         'due_date' => date('Y-m-d', strtotime('-20 days')),
         'document_id' => null,
-        'result' => 'Namuna: nashr bazasi tasdiqlandi.',
+        'result' => 'nashr bazasi tasdiqlandi.',
         'status' => 'done',
         'completed_at' => $now,
         'created_at' => $now,
@@ -786,7 +788,7 @@ return function (): void {
             DB::insert('indicator_evidence', [
                 'indicator_id' => $indRow['id'],
                 'document_id' => $docId,
-                'note' => 'Namuna dalil.',
+                'note' => 'dalil.',
                 'linked_by' => $userIds['doctorate_office'],
                 'linked_at' => $now,
             ]);
@@ -817,7 +819,7 @@ return function (): void {
         ['scoring.score_red', '20', 'number', '"Talabga mos emas" bahosi bali (0..100).'],
         ['scoring.grey_policy', 'exclude', 'string', 'Baholanmagan (kulrang) indikator siyosati: exclude/zero.'],
         ['scoring.default_indicator_weight', '1.0', 'number', 'Indikatorning standart og\'irligi.'],
-        ['app.placeholder_notice', '1', 'boolean', 'Namuna (placeholder) ma\'lumot ogohlantirishini ko\'rsatish.'],
+        ['app.placeholder_notice', '1', 'boolean', '(placeholder) ma\'lumot ogohlantirishini ko\'rsatish.'],
     ];
     foreach ($settings as [$key, $value, $type, $desc]) {
         DB::insert('settings', [
@@ -834,7 +836,7 @@ return function (): void {
         'user_id' => $userIds['super_admin'],
         'type' => 'info',
         'title' => 'Tizim ishga tushirildi',
-        'body' => 'Akkreditatsiya mezonlari NAMUNA (placeholder) sifatida kiritilgan — rasmiy qiymatlar bilan almashtiring.',
+        'body' => 'Akkreditatsiya mezonlari (placeholder) sifatida kiritilgan — rasmiy qiymatlar bilan almashtiring.',
         'link' => '/accreditations',
        'is_read' => false,
         'created_at' => $now,
