@@ -222,8 +222,7 @@ public function edit(Request $request): Response
     DB::rollBack();
     error_log($e->getMessage());
 
-    Session::flash(
-        Session::flash(
+            Session::flash(
             'error',
             'Ilmiy natijani yaratishda xatolik yuz berdi.'
         );
