@@ -154,7 +154,7 @@ return $this->redirect('/dashboard');
                 'user_id' => (int) $user['id'],
                 'token' => hash('sha256', $token),
                 'expires_at' => date('Y-m-d H:i:s', time() + 3600),
-                'used' => 0,
+              'used' => false,
                 'created_at' => date('Y-m-d H:i:s'),
             ]);
             AuditLogger::log('password_reset_requested', 'users', (int) $user['id'], null, null, (int) $user['id'], $request->ip());
@@ -188,7 +188,7 @@ return $this->redirect('/dashboard');
 
         $tokenHash = hash('sha256', (string) $request->input('token'));
         $row = DB::selectOne(
-            'SELECT * FROM password_resets WHERE token = :t AND used = 0 AND expires_at > :now LIMIT 1',
+          SELECT * FROM password_resets WHERE token = :t AND used = FALSE AND expires_at > :now LIMIT 1
             ['t' => $tokenHash, 'now' => date('Y-m-d H:i:s')]
         );
 
@@ -203,7 +203,7 @@ return $this->redirect('/dashboard');
             'u' => date('Y-m-d H:i:s'),
             'id' => (int) $row['user_id'],
         ]);
-        DB::run('UPDATE password_resets SET used = 1 WHERE id = :id', ['id' => (int) $row['id']]);
+       DB::run('UPDATE password_resets SET used = TRUE WHERE id = :id', [
         AuditLogger::log('password_reset', 'users', (int) $row['user_id'], null, null, (int) $row['user_id'], $request->ip());
 
         Session::flash('success', 'Parol yangilandi. Endi tizimga kiring.');
