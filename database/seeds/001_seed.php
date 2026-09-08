@@ -586,7 +586,7 @@ return function (): void {
         'scope' => $placeholderNote,
         'status' => 'planning',
         'readiness_index' => null,
-      'is_placeholder' => true,
+      'is_placeholder' => false,
         'created_at' => $now,
         'updated_at' => $now,
     ]);
@@ -595,8 +595,6 @@ return function (): void {
     DB::run('UPDATE specialties SET accreditation_id = :aid', ['aid' => $accId]);
 
     // Mezonlar (tarkib namunaviy, rasmiy emas).
-    $criteria = [
-        $criteria = [
    $criteria = [
     ['MEZON-1', 'Ta\'lim dasturi va o\'quv jarayoni', 1.0, 1],
     ['MEZON-2', 'Ilmiy-tadqiqot faoliyati va natijadorlik', 1.0, 2],
@@ -636,7 +634,7 @@ return function (): void {
             'name' => $name,
             'weight' => $weight,
             'display_order' => $order,
-          'is_placeholder' => true,
+          'is_placeholder' => false,
             'created_at' => $now,
         ]);
         $critIds[] = $critId;
@@ -659,7 +657,7 @@ return function (): void {
                 'responsible_role_id' => $roleIds['research_vice_head'],
                 'responsible_dept' => null,
                 'responsible_person' => null,
-               'is_placeholder' => true,
+               'is_placeholder' => false,
                 'created_at' => $now,
                 'updated_at' => $now,
             ]);
