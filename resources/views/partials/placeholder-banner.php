@@ -7,7 +7,7 @@
 $hasPlaceholder = false;
 try {
     $hasPlaceholder = (int) \App\Core\DB::scalar(
-        'SELECT COUNT(*) FROM accreditations WHERE is_placeholder = 1'
+       'SELECT COUNT(*) FROM accreditations WHERE is_placeholder = TRUE'
     ) > 0;
 } catch (\Throwable) {
     $hasPlaceholder = false;
