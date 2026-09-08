@@ -72,7 +72,7 @@ final class UserController extends Controller
         if ($target === null) {
             return $this->notFound();
         }
-        DB::run('UPDATE users SET is_blocked = 0, updated_at = :u WHERE id = :id', [
+       DB::run('UPDATE users SET is_blocked = FALSE, updated_at = :u WHERE id = :id', [
             'u' => date('Y-m-d H:i:s'), 'id' => $id,
         ]);
         AuditLogger::log('unblock', 'users', $id, ['is_blocked' => (int) $target['is_blocked']], ['is_blocked' => 0]);
