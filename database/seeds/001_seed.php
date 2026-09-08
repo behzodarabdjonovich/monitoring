@@ -690,8 +690,6 @@ return function (): void {
 
     // Bir nechta kamchilik — turli jiddiylik va holat.
     $defs = [
-       $defs = [
-   $defs = [
     ['Yetishmayotgan dalil hujjati', 'high', 'open'],
     ['Indikator bo\'yicha izoh yetishmaydi', 'medium', 'open'],
     ['Reja vazifasi bajarilmagan', 'medium', 'in_progress'],
