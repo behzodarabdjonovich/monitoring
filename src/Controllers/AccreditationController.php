@@ -301,7 +301,7 @@ final class AccreditationController extends Controller
         return $this->redirect('/indicators/' . $id);
     }
 
-    /**
+        /**
      * is_placeholder bayrog'ini tozalaydi (rasmiy qiymatlar tasdiqlangach).
      * Akkreditatsiya + uning barcha mezon/indikatorlari tozalanadi.
      */
