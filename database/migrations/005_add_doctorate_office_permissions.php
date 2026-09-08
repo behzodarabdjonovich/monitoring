@@ -4,9 +4,9 @@ use App\Core\DB;
 
 return function (): void {
     $roleId = DB::scalar(
-        "SELECT id FROM roles WHERE name = :name",
-        ['name' => 'doctorate_office']
-    );
+    "SELECT id FROM roles WHERE name = :name",
+    ['name' => 'doctorate_office']
+);
 
     if (!$roleId) {
         return;
@@ -19,10 +19,10 @@ return function (): void {
     ];
 
     foreach ($permissionNames as $permissionName) {
-        $permissionId = DB::scalar(
-            "SELECT id FROM permissions WHERE name = :name",
-            ['name' => $permissionName]
-        );
+       $permissionId = DB::scalar(
+    "SELECT id FROM permissions WHERE code = :code",
+    ['code' => $permissionName]
+);
 
         if (!$permissionId) {
             continue;
