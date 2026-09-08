@@ -73,11 +73,12 @@ $dueLabels = ['done' => 'Bajarilgan', 'overdue' => 'Muddati o\'tgan', 'due_soon'
                     <th>Dalil</th>
                     <th>Natija</th>
                     <th>Holat</th>
+                    <th>Amal</th>
                 </tr>
             </thead>
             <tbody>
                 <?php if ($actionPlans === []): ?>
-                    <tr><td colspan="7" class="text-muted">Chora-tadbir biriktirilmagan.</td></tr>
+                   <tr><td colspan="8" class="text-muted">Chora-tadbir biriktirilmagan.</td></tr>
                 <?php endif; ?>
                 <?php foreach ($actionPlans as $ap): ?>
                     <?php $rag = Deficiency::dueRag($ap['due_state']); ?>
@@ -92,7 +93,14 @@ $dueLabels = ['done' => 'Bajarilgan', 'overdue' => 'Muddati o\'tgan', 'due_soon'
                         <td><?php if ($ap['document_id'] !== null): ?><a href="/documents/<?= e($ap['document_id']) ?>"><?= e($ap['document_title'] ?? 'Hujjat') ?></a><?php else: ?>—<?php endif; ?></td>
                         <td><?= e($ap['result'] ?? '—') ?></td>
                         <td><?= e($ap['status']) ?></td>
-                    </tr>
+                  <td>
+    <?php if ($canPlan): ?>
+        <a class="btn" href="/action-plans/<?= e($ap['id']) ?>/edit">Tahrirlash</a>
+    <?php else: ?>
+        —
+    <?php endif; ?>
+</td>
+                        </tr>
                 <?php endforeach; ?>
             </tbody>
         </table>
