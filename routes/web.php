@@ -300,7 +300,7 @@ $router->post('/deficiencies', [DeficiencyController::class, 'store'], [$auth(),
 $router->get('/deficiencies/{id}', [DeficiencyController::class, 'show'], [$auth(), $rbac('deficiencies.view')]);
 $router->post('/deficiencies/{id}', [DeficiencyController::class, 'update'], [$auth(), $rbac('deficiencies.edit')]);
 $router->post('/deficiencies/{id}/close', [DeficiencyController::class, 'close'], [$auth(), $rbac('deficiencies.edit')]);
-$router->post('/deficiencies/{id}/plans', [DeficiencyController::class, 'storePlan'], [$auth(), $rbac('action_plans.view')]);
+$router->post('/deficiencies/{id}/plans', [DeficiencyController::class, 'storePlan'], [$auth(), $rbac('action_plans.create')]);
 // Action Plan bo'limi (muddat holatlari bilan barcha chora-tadbirlar).
 $router->get('/action-plans', [DeficiencyController::class, 'plans'], [$auth(), $rbac('action_plans.view')]);
 $router->post('/action-plans/{id}', [DeficiencyController::class, 'updatePlan'], [$auth(), $rbac('action_plans.edit')]);
