@@ -97,7 +97,17 @@ $fmtSize = static function ($bytes): string {
                         <td><?= e($fmtSize($d['file_size'] ?? 0)) ?></td>
                         <td><?= e($d['mime_type'] ?? '—') ?></td>
                         <td><span class="badge badge-grey"><?= e((int) ($d['indicator_count'] ?? 0)) ?></span></td>
-                        <td><a href="/documents/<?= e($d['id']) ?>/download">Yuklab olish</a></td>
+                        <td>
+    <a href="/documents/<?= e($d['id']) ?>/download">Yuklab olish</a>
+
+    <form method="post"
+          action="/documents/<?= e($d['id']) ?>/delete"
+          style="display:inline;margin-left:10px;"
+          onsubmit="return confirm('Hujjatni o‘chirishga ishonchingiz komilmi?');">
+        <?= Csrf::field() ?>
+        <button type="submit" class="btn btn-danger btn-sm">O‘chirish</button>
+    </form>
+</td>
                     </tr>
                 <?php endforeach; ?>
             </tbody>
