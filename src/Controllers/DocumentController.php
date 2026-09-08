@@ -138,9 +138,10 @@ DB::run(
         return $this->notFound();
     }
 
-    DB::delete('documents', 'id = :id', [
-        'id' => $id,
-    ]);
+    DB::run(
+    'DELETE FROM documents WHERE id = :id',
+    ['id' => $id]
+);
 
     Session::flash('success', 'Hujjat o‘chirildi.');
 
