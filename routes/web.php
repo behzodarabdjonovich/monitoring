@@ -261,6 +261,7 @@ $router->get('/documents', [DocumentController::class, 'index'], [$auth(), $rbac
 $router->post('/documents', [DocumentController::class, 'store'], [$auth(), $rbac('documents.upload')]);
 $router->get('/documents/{id}', [DocumentController::class, 'show'], [$auth(), $rbac('documents.view')]);
 $router->get('/documents/{id}/download', [DocumentController::class, 'download'], [$auth(), $rbac('documents.view')]);
+$router->post('/documents/{id}/delete', [DocumentController::class, 'delete'], [$auth(), $rbac('documents.edit')]);
 // Bog'lash/uzish marshrut guard'i kontroller ichidagi qat'iyroq tekshiruvga
 // (documents.edit YOKI accreditation.edit) moslashtirildi.
 $router->post('/documents/{id}/link', [DocumentController::class, 'link'], [$auth(), new RbacMiddleware('documents.edit', 'accreditation.edit')]);
