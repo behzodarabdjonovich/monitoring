@@ -29,12 +29,16 @@ $v = fn (string $k) => e($specialty[$k] ?? '');
         <div class="form-group"><label for="code">Ixtisoslik shifri</label><input type="text" id="code" name="code" value="<?= $v('code') ?>"></div>
         <div class="form-group"><label for="name">Nomi *</label><input type="text" id="name" name="name" value="<?= $v('name') ?>" required></div>
         <div class="form-group"><label for="branch">Soha</label><input type="text" id="branch" name="branch" value="<?= $v('branch') ?>"></div>
-        <div class="form-group">
-            <label for="responsible_department_id">Mas'ul kafedra</label>
-            <select id="responsible_department_id" name="responsible_department_id"><option value="">—</option>
-                <?php foreach ($departments as $d): ?><option value="<?= e($d['id']) ?>" <?= (string) ($specialty['responsible_department_id'] ?? '') === (string) $d['id'] ? 'selected' : '' ?>><?= e($d['name']) ?></option><?php endforeach; ?>
-            </select>
-        </div>
+       <div class="form-group">
+    <label for="responsible_department_name">Mas'ul kafedra</label>
+    <input
+        type="text"
+        id="responsible_department_name"
+        name="responsible_department_name"
+        value="<?= e($specialty['department_name'] ?? '') ?>"
+        placeholder="Masalan: Genetika va biotexnologiya kafedrasi"
+    >
+</div>
         <div class="form-group">
             <label for="program_lead_supervisor_id">Dastur rahbari</label>
             <select id="program_lead_supervisor_id" name="program_lead_supervisor_id"><option value="">—</option>
