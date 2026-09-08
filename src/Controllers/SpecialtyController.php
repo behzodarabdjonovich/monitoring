@@ -117,11 +117,30 @@ final class SpecialtyController extends Controller
         }
         $strOrNull = static fn ($v) => ($v === null || $v === '') ? null : (string) $v;
         $intOrNull = static fn ($v) => ($v === null || $v === '') ? null : (int) $v;
-        return [
+      $departmentId = null;
+$departmentName = trim((string) ($input['responsible_department_name'] ?? ''));
+
+if ($departmentName !== '') {
+    $department = DB::selectOne(
+        'SELECT id FROM departments WHERE LOWER(name) = LOWER(:name) LIMIT 1',
+        ['name' => $departmentName]
+    );
+
+    if ($department !== null) {
+        $departmentId = (int) $department['id'];
+    } else {
+        $departmentId = DB::insert('departments', [
+            'name' => $departmentName,
+            'code' => null,
+            'head_supervisor_id' => null,
+            'created_at' => date('Y-m-d H:i:s'),
+        ]);
+    }
+}  return [
             'code' => $strOrNull($input['code'] ?? null),
             'name' => (string) $input['name'],
             'branch' => $strOrNull($input['branch'] ?? null),
-            'responsible_department_id' => $intOrNull($input['responsible_department_id'] ?? null),
+           'responsible_department_id' => $departmentId,
             'program_lead_supervisor_id' => $intOrNull($input['program_lead_supervisor_id'] ?? null),
             'scientific_potential' => $strOrNull($input['scientific_potential'] ?? null),
             'normative_docs' => $strOrNull($input['normative_docs'] ?? null),
