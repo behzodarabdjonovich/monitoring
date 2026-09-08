@@ -315,10 +315,10 @@ final class AccreditationController extends Controller
         if ($acc === null) {
             return $this->notFound();
         }
-        DB::run('UPDATE accreditations SET is_placeholder = 0, updated_at = :u WHERE id = :id', ['u' => date('Y-m-d H:i:s'), 'id' => $id]);
-        DB::run('UPDATE accreditation_criteria SET is_placeholder = 0 WHERE accreditation_id = :aid', ['aid' => $id]);
+        DB::run('UPDATE accreditations SET is_placeholder = FALSE, updated_at = :u WHERE id = :id', ['u' => date('Y-m-d H:i:s'), 'id' => $id]);
+        DB::run('UPDATE accreditation_criteria SET is_placeholder = FALSE WHERE accreditation_id = :aid', ['aid' => $id]);
         DB::run(
-            'UPDATE accreditation_indicators SET is_placeholder = 0
+            'UPDATE accreditation_indicators SET is_placeholder = FALSE
              WHERE criteria_id IN (SELECT id FROM accreditation_criteria WHERE accreditation_id = :aid)',
             ['aid' => $id]
         );
