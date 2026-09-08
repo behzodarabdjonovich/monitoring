@@ -60,7 +60,7 @@ final class DeficiencyController extends Controller
             'actionPlans' => Deficiency::actionPlans($id),
             'statusLabels' => Deficiency::STATUS_LABELS,
             'severityLabels' => Deficiency::SEVERITY_LABELS,
-            'users' => DB::select('SELECT id, full_name FROM users WHERE is_active = 1 ORDER BY full_name'),
+            'users' => DB::select('SELECT id, full_name FROM users WHERE is_active = TRUE ORDER BY full_name'),
             'documents' => DB::select('SELECT id, title FROM documents ORDER BY id DESC'),
             'canEdit' => Auth::can('deficiencies.edit'),
             'canPlan' => Auth::can('action_plans.create') || Auth::can('action_plans.edit'),
