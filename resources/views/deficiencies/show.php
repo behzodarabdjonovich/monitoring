@@ -104,12 +104,11 @@ $dueLabels = ['done' => 'Bajarilgan', 'overdue' => 'Muddati o\'tgan', 'due_soon'
             <input type="hidden" name="start_date" value="<?= e($ap['start_date'] ?? '') ?>">
             <input type="hidden" name="due_date" value="<?= e($ap['due_date'] ?? '') ?>">
             <input type="hidden" name="document_id" value="<?= e($ap['document_id'] ?? '') ?>">
-            <input type="hidden" name="status" value="completed">
+          <input type="hidden" name="status" value="done">
 
             <button type="submit" class="btn">Bajarildi</button>
         </form>
-                                <a class="btn" href="/action-plans/<?= e($ap['id']) ?>/edit">Tahrirlash</a>
-    <?php else: ?>
+                                  <?php else: ?>
         —
     <?php endif; ?>
 </td>
