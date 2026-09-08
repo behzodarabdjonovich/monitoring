@@ -581,7 +581,7 @@ return function (): void {
     $placeholderNote = 'NAMUNA (placeholder) — rasmiy tasdiqlangan qiymatlar bilan almashtirilishi SHART.';
 
     $accId = DB::insert('accreditations', [
-        'title' => '[NAMUNA] Maxsus davlat akkreditatsiyasiga tayyorgarlik sikli',
+        'title' => 'Maxsus davlat akkreditatsiyasiga tayyorgarlik sikli',
         'cycle_year' => date('Y'),
         'scope' => $placeholderNote,
         'status' => 'planning',
@@ -596,9 +596,9 @@ return function (): void {
 
     // Namuna mezonlar (tarkib namunaviy, rasmiy emas).
     $criteria = [
-        ['NAMUNA-1', '[NAMUNA] Ta\'lim dasturi va o\'quv jarayoni', 1.0, 1],
-        ['NAMUNA-2', '[NAMUNA] Ilmiy-tadqiqot faoliyati va natijadorlik', 1.0, 2],
-        ['NAMUNA-3', '[NAMUNA] Professor-o\'qituvchilar salohiyati', 1.0, 3],
+        ['NAMUNA-1', ' Ta\'lim dasturi va o\'quv jarayoni', 1.0, 1],
+        ['NAMUNA-2', ' Ilmiy-tadqiqot faoliyati va natijadorlik', 1.0, 2],
+        ['NAMUNA-3', ' Professor-o\'qituvchilar salohiyati', 1.0, 3],
     ];
 
     $indicatorNum = 1;
