@@ -125,14 +125,23 @@ public function doctoral(Request $request): Response
     }
 
     public function edit(Request $request): Response
-    {
-        $id = (int) $request->param('id');
-        $plan = IndividualPlan::find($id);
-        if ($plan === null) {
-            return Response::html(\App\Core\View::render('errors.404'), 404);
-        }
-        return $this->form($plan);
+{
+    $id = (int) $request->param('id');
+    $plan = IndividualPlan::find($id);
+
+    if ($plan === null) {
+        return Response::html(\App\Core\View::render('errors.404'), 404);
     }
+
+    if (!$this->canAccessPlan($plan)) {
+        return Response::html(
+            \App\Core\View::render('errors.403'),
+            403
+        );
+    }
+
+    return $this->form($plan);
+}
 
     public function store(Request $request): Response
     {
