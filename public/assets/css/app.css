@@ -212,7 +212,7 @@ h3 { font-size: 1.05rem; }
 }
 .kpi-card { display: flex; flex-direction: column; gap: 0.4rem; margin-bottom: 0; }
 .kpi-label { font-size: 0.8rem; color: var(--color-text-muted); }
-.kpi-value { font-size: 1.8rem; font-weight: 700; color: var(--color-primary); }
+.kpi-value { font-size: 2rem; font-weight: 700; line-height: 1.15; color: var(--color-primary); }
 
 /* ---------------- Badges (RAG + status) ---------------- */
 .badge {
