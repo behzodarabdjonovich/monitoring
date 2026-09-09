@@ -282,6 +282,7 @@ h3 { font-size: 1.05rem; }
     align-items: center;
     gap: 1.5rem;
     flex-wrap: wrap;
+   padding: 1.5rem;
     border-left: 6px solid var(--rag-grey);
 }
 .hero-green { border-left-color: var(--rag-green); }
