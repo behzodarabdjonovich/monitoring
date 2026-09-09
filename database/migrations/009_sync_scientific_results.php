@@ -12,7 +12,7 @@ return function (): void {
         );
 
       if ($exists) {
-    DB::execute(
+   DB::run(
         'UPDATE scientific_results SET result_type = :type WHERE publication_id = :id',
         ['type' => $resultType, 'id' => $pub['id']]
     );
