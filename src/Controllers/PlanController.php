@@ -230,26 +230,63 @@ public function doctoral(Request $request): Response
      * @return array<string,mixed>|Response
      */
     private function validated(Request $request): array|Response
-    {
-        $input = $request->all();
-        $validator = Validator::make($input, [
-            'student_id' => 'required|integer',
-           'academic_year' => 'required|integer',
-        ]);
-        if ($validator->fails()) {
-            Session::flash('error', $validator->firstError() ?? 'Kiritishda xatolik.');
-            return $this->redirect($request->header('Referer') ?? '/plans/create');
-        }
-        $strOrNull = static fn ($v) => ($v === null || $v === '') ? null : (string) $v;
-        return [
-            'student_id' => (int) $input['student_id'],
-            'supervisor_id' => ($input['supervisor_id'] ?? '') === '' ? null : (int) $input['supervisor_id'],
-            'academic_year' => (int) $input['academic_year'],
-            'start_date' => $strOrNull($input['start_date'] ?? null),
-            'end_date' => $strOrNull($input['end_date'] ?? null),
-            'status' => in_array($input['status'] ?? '', array_keys(IndividualPlan::STATUSES), true) ? (string) $input['status'] : 'draft',
-        ];
+{
+    $input = $request->all();
+
+    $validator = Validator::make($input, [
+        'student_id' => 'required|integer',
+        'academic_year' => 'required|integer',
+    ]);
+
+    if ($validator->fails()) {
+        Session::flash(
+            'error',
+            $validator->firstError() ?? 'Kiritishda xatolik.'
+        );
+
+        return $this->redirect(
+            $request->header('Referer') ?? '/plans/create'
+        );
     }
+
+    // Doktorant uchun student_id hech qachon POSTdan olinmaydi.
+    if (Auth::role() === 'doctoral_student') {
+        $student = DoctoralStudent::findByUser((int) Auth::id());
+
+        if ($student === null) {
+            return $this->redirect('/doktorant/dashboard');
+        }
+
+        $studentId = (int) $student['id'];
+        $supervisorId = !empty($student['supervisor_id'])
+            ? (int) $student['supervisor_id']
+            : null;
+    } else {
+        $studentId = (int) $input['student_id'];
+
+        $supervisorId = ($input['supervisor_id'] ?? '') === ''
+            ? null
+            : (int) $input['supervisor_id'];
+    }
+
+    $strOrNull = static fn ($v) =>
+        ($v === null || $v === '') ? null : (string) $v;
+
+    return [
+        'student_id' => $studentId,
+        'supervisor_id' => $supervisorId,
+        'academic_year' => (int) $input['academic_year'],
+        'start_date' => $strOrNull($input['start_date'] ?? null),
+        'end_date' => $strOrNull($input['end_date'] ?? null),
+        'status' => in_array(
+            $input['status'] ?? '',
+            array_keys(IndividualPlan::STATUSES),
+            true
+        )
+            ? (string) $input['status']
+            : 'draft',
+    ];
+}
 
     private function form(?array $plan): Response
     {
