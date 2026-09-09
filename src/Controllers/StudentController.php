@@ -30,7 +30,31 @@ final class StudentController extends Controller
             'department' => (string) $request->query('department', ''),
             'status' => (string) $request->query('status', ''),
         ];
-        $students = DoctoralStudent::search($filters);
+       if (Auth::role() === 'doctoral_student') {
+    $ownStudent = DB::selectOne(
+        'SELECT id FROM doctoral_students WHERE user_id = :user_id LIMIT 1',
+        ['user_id' => Auth::id()]
+    );
+
+    $students = [];
+
+    if ($ownStudent !== null) {
+        $student = DoctoralStudent::findWithRelations((int) $ownStudent['id']);
+
+        if ($student !== null) {
+            $student['activity_percent'] = DoctoralStudent::activityPercent((int) $student['id']);
+            $students[] = $student;
+        }
+    }
+} else {
+    $students = DoctoralStudent::search($filters);
+
+    // Ro'yxatdagi har bir doktorant uchun faoliyat foizi.
+    foreach ($students as &$s) {
+        $s['activity_percent'] = DoctoralStudent::activityPercent((int) $s['id']);
+    }
+    unset($s);
+}
 
         // Ro'yxatdagi har bir doktorant uchun faoliyat foizi.
         foreach ($students as &$s) {
