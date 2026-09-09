@@ -18,7 +18,7 @@ use App\Models\DoctoralStudent;
  */
 final class PlanController extends Controller
 {
-  public function index(Request $request): Response
+ public function index(Request $request): Response
 {
     $plans = [];
 
@@ -29,10 +29,8 @@ final class PlanController extends Controller
             return $this->redirect('/doktorant/dashboard');
         }
 
-        // Doktorant faqat O'Z rejalarini ko'radi
         $plans = IndividualPlan::forStudent((int) $student['id']);
     } else {
-        // Admin, ilmiy bo'lim va boshqa ruxsatli rollar — barcha rejalarni ko'radi
         $plans = IndividualPlan::all();
     }
 
