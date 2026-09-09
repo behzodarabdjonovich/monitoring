@@ -18,7 +18,8 @@ use App\Models\DoctoralStudent;
  */
 final class PlanController extends Controller
 {
-public function index(Request $request): Response
+
+    public function index(Request $request): Response
 {
     $plans = [];
 
