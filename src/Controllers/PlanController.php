@@ -18,7 +18,7 @@ use App\Models\DoctoralStudent;
  */
 final class PlanController extends Controller
 {
-}
+
     public function index(Request $request): Response
 {
     $plans = [];
@@ -322,7 +322,8 @@ public function doctoral(Request $request): Response
         'statuses' => IndividualPlan::STATUSES,
     ]);
 }
-  
+ }
+} 
 private function canAccessPlan(array $plan): bool
 {
     // Admin/ilmiy bo'lim va boshqa ruxsatli rollar
