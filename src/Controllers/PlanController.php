@@ -322,3 +322,21 @@ public function doctoral(Request $request): Response
         'statuses' => IndividualPlan::STATUSES,
     ]);
 }
+  
+private function canAccessPlan(array $plan): bool
+{
+    // Admin/ilmiy bo'lim va boshqa ruxsatli rollar
+    // RBAC orqali boshqariladi.
+    if (Auth::role() !== 'doctoral_student') {
+        return true;
+    }
+
+    $student = DoctoralStudent::findByUser((int) Auth::id());
+
+    if ($student === null) {
+        return false;
+    }
+
+    return (int) ($plan['student_id'] ?? 0)
+        === (int) $student['id'];
+}
