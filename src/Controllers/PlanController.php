@@ -34,14 +34,15 @@ final class PlanController extends Controller
         $plans = IndividualPlan::all();
     }
 
-    return $this->view('plans.index', [
-        'user' => Auth::user(),
-        'title' => 'Individual rejalar',
-        'active' => 'plans',
-        'plans' => $plans,
-        'statuses' => IndividualPlan::STATUSES,
-    ]);
+  return $this->view('plans.index', [
+    'user' => Auth::user(),
+    'title' => 'Individual rejalar',
+    'active' => 'plans',
+    'plans' => $plans,
+    'statuses' => IndividualPlan::STATUSES,
+]);
 }
+    
 public function doctoral(Request $request): Response
 {
     if (Auth::role() !== 'doctoral_student') {
