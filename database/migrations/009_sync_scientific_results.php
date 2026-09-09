@@ -64,4 +64,3 @@ foreach ($conferences as $conf) {
         'created_at' => $conf['created_at'] ?? date('Y-m-d H:i:s'),
     ]);
 }
-}
