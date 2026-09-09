@@ -159,23 +159,54 @@ public function doctoral(Request $request): Response
     }
 
     public function update(Request $request): Response
-    {
-        $id = (int) $request->param('id');
-        $plan = IndividualPlan::find($id);
-        if ($plan === null) {
-            return Response::html(\App\Core\View::render('errors.404'), 404);
-        }
-        $data = $this->validated($request);
-        if ($data instanceof Response) {
-            return $data;
-        }
-        $data['updated_at'] = date('Y-m-d H:i:s');
-        $sets = implode(', ', array_map(static fn ($k) => "$k = :$k", array_keys($data)));
-        DB::run("UPDATE individual_plans SET $sets WHERE id = :id", array_merge($data, ['id' => $id]));
-        AuditLogger::log('update', 'individual_plans', $id, $plan, $data);
-        Session::flash('success', 'Individual reja yangilandi.');
-        return $this->redirect('/plans/' . $id);
+{
+    $id = (int) $request->param('id');
+    $plan = IndividualPlan::find($id);
+
+    if ($plan === null) {
+        return Response::html(\App\Core\View::render('errors.404'), 404);
     }
+
+    if (!$this->canAccessPlan($plan)) {
+        return Response::html(
+            \App\Core\View::render('errors.403'),
+            403
+        );
+    }
+
+    $data = $this->validated($request);
+
+    if ($data instanceof Response) {
+        return $data;
+    }
+
+    $data['updated_at'] = date('Y-m-d H:i:s');
+
+    $sets = implode(
+        ', ',
+        array_map(
+            static fn ($k) => "$k = :$k",
+            array_keys($data)
+        )
+    );
+
+    DB::run(
+        "UPDATE individual_plans SET $sets WHERE id = :id",
+        array_merge($data, ['id' => $id])
+    );
+
+    AuditLogger::log(
+        'update',
+        'individual_plans',
+        $id,
+        $plan,
+        $data
+    );
+
+    Session::flash('success', 'Individual reja yangilandi.');
+
+    return $this->redirect('/plans/' . $id);
+}
 
     public function approve(Request $request): Response
     {
