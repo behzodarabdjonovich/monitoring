@@ -314,6 +314,14 @@ $router->get('/search', [SearchController::class, 'index'], [$auth()]);
 $router->get('/audit-logs', [AuditLogController::class, 'index'], [$auth(), new SuperAdminMiddleware()]);
 
 // --- Foydalanuvchilar boshqaruvi (item 19) — bloklash, parol majburlash, 2FA ---
+
+$router->get('/profile', [
+    UserController::class,
+    'profile'
+], [
+    $auth(),
+]);
+
 $router->get('/users', [UserController::class, 'index'], [$auth(), $rbac('users.view')]);
 $router->post('/users/{id}/block', [UserController::class, 'block'], [$auth(), $rbac('users.edit')]);
 $router->post('/users/{id}/unblock', [UserController::class, 'unblock'], [$auth(), $rbac('users.edit')]);
