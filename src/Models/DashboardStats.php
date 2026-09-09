@@ -271,30 +271,40 @@ final class DashboardStats
 {
     [$in, $p] = self::inClause($studentIds, 'sid');
 
+    $publicationTypes = [
+        'ilmiy_maqola',
+        'oak_maqola',
+        'scopus_maqola',
+        'wos_maqola',
+        'monografiya',
+        'oquv_uslubiy_nashr',
+    ];
+
+    $typePlaceholders = [];
+    foreach ($publicationTypes as $i => $type) {
+        $key = 'pt' . $i;
+        $typePlaceholders[] = ':' . $key;
+        $p[$key] = $type;
+    }
+
     $total = (int) DB::scalar(
         "SELECT COUNT(*)
-         FROM publications pub
-         LEFT JOIN scientific_results r
-            ON r.publication_id = pub.id
-         WHERE pub.student_id IN $in
-           AND (
-               r.id IS NULL
-               OR r.status = 'approved'
-           )",
+         FROM scientific_results
+         WHERE student_id IN $in
+           AND result_type IN (" . implode(', ', $typePlaceholders) . ")
+           AND status = 'approved'",
         $p
     );
 
+    $p['scopus'] = 'scopus_maqola';
+    $p['wos'] = 'wos_maqola';
+
     $intl = (int) DB::scalar(
         "SELECT COUNT(*)
-         FROM publications pub
-         LEFT JOIN scientific_results r
-            ON r.publication_id = pub.id
-         WHERE pub.student_id IN $in
-           AND pub.publication_type IN ('scopus', 'wos')
-           AND (
-               r.id IS NULL
-               OR r.status = 'approved'
-           )",
+         FROM scientific_results
+         WHERE student_id IN $in
+           AND result_type IN (:scopus, :wos)
+           AND status = 'approved'",
         $p
     );
 
