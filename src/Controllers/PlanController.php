@@ -18,7 +18,8 @@ use App\Models\DoctoralStudent;
  */
 final class PlanController extends Controller
 {
- public function index(Request $request): Response
+
+public function index(Request $request): Response
 {
     $plans = [];
 
@@ -34,15 +35,15 @@ final class PlanController extends Controller
         $plans = IndividualPlan::all();
     }
 
-  return $this->view('plans.index', [
-    'user' => Auth::user(),
-    'title' => 'Individual rejalar',
-    'active' => 'plans',
-    'plans' => $plans,
-    'statuses' => IndividualPlan::STATUSES,
-]);
-}
-    
+    return $this->view('plans.index', [
+        'user' => Auth::user(),
+        'title' => 'Individual rejalar',
+        'active' => 'plans',
+        'plans' => $plans,
+        'statuses' => IndividualPlan::STATUSES,
+    ]);
+}   // <-- MANA SHU } SHART
+
 public function doctoral(Request $request): Response
 {
     if (Auth::role() !== 'doctoral_student') {
