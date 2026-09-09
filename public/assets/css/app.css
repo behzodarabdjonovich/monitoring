@@ -435,7 +435,7 @@ h3 { font-size: 1.05rem; }
 /* Dashboard grafiklarini muvozanatli o'lchamda ko'rsatish */
 .chart-card svg {
     width: 100%;
-    max-width: 360px;
+    max-width: 420px;
     height: auto;
     display: block;
     margin-left: auto;
