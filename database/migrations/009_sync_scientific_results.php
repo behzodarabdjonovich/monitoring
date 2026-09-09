@@ -39,23 +39,28 @@ return function (): void {
             'created_at' => $pub['created_at'] ?? date('Y-m-d H:i:s'),
         ]);
     }
+    
+        $conferences = DB::select('SELECT * FROM conferences ORDER BY id');
 
-    $conferences = DB::select('SELECT * FROM conferences ORDER BY id');
+    foreach ($conferences as $conf) {
+        $resultType = match ($conf['level'] ?? '') {
+            'xalqaro' => 'xalqaro_konferensiya',
+            default => 'respublika_konferensiya',
+        };
 
-    foreach ($publications as $pub) {
-    $resultType = match ($pub['publication_type'] ?? '') {
-        'scopus' => 'scopus_maqola',
-        'wos' => 'wos_maqola',
-        'milliy' => 'oak_maqola',
-        default => 'ilmiy_maqola',
-    };
+        $exists = DB::selectOne(
+            'SELECT id FROM scientific_results WHERE conference_id = :id LIMIT 1',
+            ['id' => $conf['id']]
+        );
 
-    $exists = DB::selectOne(
-        'UPDATE scientific_results SET result_type = :type WHERE conference_id = :id',
-        ['type' => $resultType, 'id' => $conf['id']]
-    );
-    continue;
-}
+        if ($exists) {
+            DB::execute(
+                'UPDATE scientific_results SET result_type = :type WHERE conference_id = :id',
+                ['type' => $resultType, 'id' => $conf['id']]
+            );
+            continue;
+        }
+
         DB::insert('scientific_results', [
             'student_id' => $conf['student_id'],
             'plan_task_id' => null,
