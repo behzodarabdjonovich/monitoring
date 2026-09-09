@@ -432,3 +432,12 @@ h3 { font-size: 1.05rem; }
         grid-template-columns: 1fr;
     }
 }
+/* Dashboard grafiklarini muvozanatli o'lchamda ko'rsatish */
+.chart-card svg {
+    width: 100%;
+    max-width: 360px;
+    height: auto;
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+}
