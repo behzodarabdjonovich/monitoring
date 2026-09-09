@@ -18,16 +18,32 @@ use App\Models\DoctoralStudent;
  */
 final class PlanController extends Controller
 {
-    public function index(Request $request): Response
-    {
-        return $this->view('plans.index', [
-            'user' => Auth::user(),
-            'title' => 'Individual rejalar',
-            'active' => 'plans',
-            'plans' => IndividualPlan::all(),
-            'statuses' => IndividualPlan::STATUSES,
-        ]);
+  public function index(Request $request): Response
+{
+    $plans = [];
+
+    if (Auth::role() === 'doctoral_student') {
+        $student = DoctoralStudent::findByUser((int) Auth::id());
+
+        if ($student === null) {
+            return $this->redirect('/doktorant/dashboard');
+        }
+
+        // Doktorant faqat O'Z rejalarini ko'radi
+        $plans = IndividualPlan::forStudent((int) $student['id']);
+    } else {
+        // Admin, ilmiy bo'lim va boshqa ruxsatli rollar — barcha rejalarni ko'radi
+        $plans = IndividualPlan::all();
     }
+
+    return $this->view('plans.index', [
+        'user' => Auth::user(),
+        'title' => 'Individual rejalar',
+        'active' => 'plans',
+        'plans' => $plans,
+        'statuses' => IndividualPlan::STATUSES,
+    ]);
+}
 public function doctoral(Request $request): Response
 {
     if (Auth::role() !== 'doctoral_student') {
