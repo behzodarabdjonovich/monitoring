@@ -269,35 +269,28 @@ final class DashboardStats
      */
     private static function publicationCounts(array $studentIds): array
 {
-    [$in, $p] = self::inClause($studentIds, 'sid');
+    [$in, $studentParams] = self::inClause($studentIds, 'sid');
 
-    $publicationTypes = [
-        'ilmiy_maqola',
-        'oak_maqola',
-        'scopus_maqola',
-        'wos_maqola',
-        'monografiya',
-        'oquv_uslubiy_nashr',
-    ];
-
-    $typePlaceholders = [];
-    foreach ($publicationTypes as $i => $type) {
-        $key = 'pt' . $i;
-        $typePlaceholders[] = ':' . $key;
-        $p[$key] = $type;
-    }
+    $totalParams = $studentParams;
+    $totalParams['t1'] = 'ilmiy_maqola';
+    $totalParams['t2'] = 'oak_maqola';
+    $totalParams['t3'] = 'scopus_maqola';
+    $totalParams['t4'] = 'wos_maqola';
+    $totalParams['t5'] = 'monografiya';
+    $totalParams['t6'] = 'oquv_uslubiy_nashr';
 
     $total = (int) DB::scalar(
         "SELECT COUNT(*)
          FROM scientific_results
          WHERE student_id IN $in
-           AND result_type IN (" . implode(', ', $typePlaceholders) . ")
+           AND result_type IN (:t1, :t2, :t3, :t4, :t5, :t6)
            AND status = 'approved'",
-        $p
+        $totalParams
     );
 
-    $p['scopus'] = 'scopus_maqola';
-    $p['wos'] = 'wos_maqola';
+    $intlParams = $studentParams;
+    $intlParams['scopus'] = 'scopus_maqola';
+    $intlParams['wos'] = 'wos_maqola';
 
     $intl = (int) DB::scalar(
         "SELECT COUNT(*)
@@ -305,7 +298,7 @@ final class DashboardStats
          WHERE student_id IN $in
            AND result_type IN (:scopus, :wos)
            AND status = 'approved'",
-        $p
+        $intlParams
     );
 
     return [$total, $intl];
