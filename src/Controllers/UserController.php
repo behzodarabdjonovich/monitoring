@@ -40,6 +40,30 @@ final class UserController extends Controller
     /**
      * Foydalanuvchini bloklaydi (is_blocked=1) — login qila olmaydi.
      */
+    
+    public function profile(Request $request): Response
+{
+    $profile = DB::selectOne(
+        'SELECT u.*, r.title_uz AS role_title, r.name AS role_name
+         FROM users u
+         LEFT JOIN roles r ON r.id = u.role_id
+         WHERE u.id = :id',
+        ['id' => (int) Auth::id()]
+    );
+
+    if ($profile === null) {
+        return $this->notFound();
+    }
+
+    return $this->view('users.profile', [
+        'user' => Auth::user(),
+        'title' => 'Profil',
+        'active' => 'profile',
+        'profile' => $profile,
+        'twofaEnabled' => (bool) config('security.twofa.enabled', false),
+    ]);
+}
+   
     public function block(Request $request): Response
     {
         if (!Auth::can('users.edit')) {
