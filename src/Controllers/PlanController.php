@@ -224,6 +224,124 @@ public function doctoral(Request $request): Response
         return $this->redirect('/plans/' . $id);
     }
 
-    // -----------------------------------------------------------------
+       // -----------------------------------------------------------------
 
+    /**
+     * @return array<string,mixed>|Response
+     */
+    private function validated(Request $request): array|Response
+    {
+        $input = $request->all();
+
+        // Doktorant uchun student_id POSTdan olinmaydi.
+        if (Auth::role() === 'doctoral_student') {
+            $student = DoctoralStudent::findByUser((int) Auth::id());
+
+            if ($student === null) {
+                return $this->redirect('/doktorant/dashboard');
+            }
+
+            $input['student_id'] = (int) $student['id'];
+        }
+
+        $validator = Validator::make($input, [
+            'student_id' => 'required|integer',
+            'academic_year' => 'required|integer',
+        ]);
+
+        if ($validator->fails()) {
+            Session::flash(
+                'error',
+                $validator->firstError() ?? 'Kiritishda xatolik.'
+            );
+
+            return $this->redirect(
+                $request->header('Referer') ?? '/plans/create'
+            );
+        }
+
+        $strOrNull = static fn ($v) =>
+            ($v === null || $v === '') ? null : (string) $v;
+
+        if (Auth::role() === 'doctoral_student') {
+            $student = DoctoralStudent::findByUser((int) Auth::id());
+
+            $supervisorId = !empty($student['supervisor_id'])
+                ? (int) $student['supervisor_id']
+                : null;
+        } else {
+            $supervisorId = ($input['supervisor_id'] ?? '') === ''
+                ? null
+                : (int) $input['supervisor_id'];
+        }
+
+        return [
+            'student_id' => (int) $input['student_id'],
+            'supervisor_id' => $supervisorId,
+            'academic_year' => (int) $input['academic_year'],
+            'start_date' => $strOrNull($input['start_date'] ?? null),
+            'end_date' => $strOrNull($input['end_date'] ?? null),
+            'status' => in_array(
+                $input['status'] ?? '',
+                array_keys(IndividualPlan::STATUSES),
+                true
+            )
+                ? (string) $input['status']
+                : 'draft',
+        ];
     }
+
+    private function form(?array $plan): Response
+    {
+        if (Auth::role() === 'doctoral_student') {
+            $student = DoctoralStudent::findByUser((int) Auth::id());
+
+            if ($student === null) {
+                return $this->redirect('/doktorant/dashboard');
+            }
+
+            $students = [[
+                'id' => (int) $student['id'],
+                'full_name' => (string) $student['full_name'],
+            ]];
+        } else {
+            $students = DB::select(
+                'SELECT id, full_name
+                 FROM doctoral_students
+                 ORDER BY full_name'
+            );
+        }
+
+        return $this->view('plans.form', [
+            'user' => Auth::user(),
+            'title' => $plan === null
+                ? 'Yangi reja'
+                : 'Rejani tahrirlash',
+            'active' => 'plans',
+            'plan' => $plan,
+            'students' => $students,
+            'supervisors' => DB::select(
+                'SELECT id, full_name
+                 FROM supervisors
+                 ORDER BY full_name'
+            ),
+            'statuses' => IndividualPlan::STATUSES,
+        ]);
+    }
+
+    private function canAccessPlan(array $plan): bool
+    {
+        if (Auth::role() !== 'doctoral_student') {
+            return true;
+        }
+
+        $student = DoctoralStudent::findByUser((int) Auth::id());
+
+        if ($student === null) {
+            return false;
+        }
+
+        return (int) ($plan['student_id'] ?? 0)
+            === (int) $student['id'];
+    }
+}
