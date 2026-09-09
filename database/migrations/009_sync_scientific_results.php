@@ -63,4 +63,7 @@ foreach ($conferences as $conf) {
         'status' => 'approved',
         'created_at' => $conf['created_at'] ?? date('Y-m-d H:i:s'),
     ]);
-}
+
+     }
+};
+ 
