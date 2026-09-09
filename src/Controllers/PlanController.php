@@ -288,23 +288,19 @@ public function doctoral(Request $request): Response
     ];
 }
 
-    private function form(?array $plan): Response
-{
-    if (Auth::role() === 'doctoral_student') {
-        $student = DoctoralStudent::findByUser((int) Auth::id());
-
-        if ($student === null) {
-            return $this->redirect('/doktorant/dashboard');
-        }
-
-        $students = [$student];
-    } else {
-        $students = DB::select(
-            'SELECT id, full_name
-             FROM doctoral_students
-             ORDER BY full_name'
-        );
+        private function form(?array $plan): Response
+    {
+        return $this->view('plans.form', [
+            'user' => Auth::user(),
+            'title' => $plan === null ? 'Yangi reja' : 'Rejani tahrirlash',
+            'active' => 'plans',
+            'plan' => $plan,
+            'students' => DB::select('SELECT id, full_name FROM doctoral_students ORDER BY full_name'),
+            'supervisors' => DB::select('SELECT id, full_name FROM supervisors ORDER BY full_name'),
+            'statuses' => IndividualPlan::STATUSES,
+        ]);
     }
+}
 
     return $this->view('plans.form', [
         'user' => Auth::user(),
