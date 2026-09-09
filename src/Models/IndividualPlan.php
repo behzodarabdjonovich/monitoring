@@ -52,7 +52,16 @@ final class IndividualPlan
      * @return array<int,array<string,mixed>>
      */
     public static function forStudent(int $studentId): array
-    {
-        return DB::select('SELECT * FROM individual_plans WHERE student_id = :sid ORDER BY id DESC', ['sid' => $studentId]);
-    }
+{
+    return DB::select(
+        'SELECT p.*,
+                s.full_name AS student_name,
+                sup.full_name AS supervisor_name
+         FROM individual_plans p
+         LEFT JOIN doctoral_students s ON s.id = p.student_id
+         LEFT JOIN supervisors sup ON sup.id = p.supervisor_id
+         WHERE p.student_id = :sid
+         ORDER BY p.id DESC',
+        ['sid' => $studentId]
+    );
 }
