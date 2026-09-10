@@ -737,10 +737,9 @@ private function syncSpecialization(array $result, array $data): void
     }
 
     if (!in_array(Auth::role(), [
-        'doctorate_office',
-        'research_vice_head',
-        'super_admin',
-    ], true)) {
+    'doctorate_office',
+    'super_admin',
+] true)) {
         return $this->forbidden();
     }
 
@@ -824,10 +823,9 @@ public function reject(Request $request): Response
     }
 
     if (!in_array(Auth::role(), [
-        'doctorate_office',
-        'research_vice_head',
-        'super_admin',
-    ], true)) {
+    'doctorate_office',
+    'super_admin',
+] true)) {
         return $this->forbidden();
     }
 
