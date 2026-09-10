@@ -18,7 +18,7 @@ use App\Core\DB;
 
 return function (): void {
      $seedComplete =
-        (int) DB::scalar("SELECT COUNT(*) FROM roles") >= 9
+        (int) DB::scalar("SELECT COUNT(*) FROM roles") >= 4
         && (int) DB::scalar(
             "SELECT COUNT(*) FROM users WHERE username = 'admin'"
         ) >= 1
@@ -311,7 +311,7 @@ return function (): void {
     // 5a) Ilmiy rahbarlar (demo) — 6 ta. Birinchisi seed user'ga bog'langan.
     // ---------------------------------------------------------------
     $supNames = [
-        ['Demo Ilmiy Rahbar', 'DSc', 'professor', $dep1, $spec1, $userIds['supervisor']],
+       ['Demo Ilmiy Rahbar', 'DSc', 'professor', $dep1, $spec1, $userIds['doctorate_office']],
         ['Demo Rahbar Ikki', 'PhD', 'dotsent', $dep2, $spec2, null],
         ['Demo Rahbar Uch', 'DSc', 'professor', $dep3, $spec3, null],
         ['Demo Rahbar Tort', 'PhD', 'dotsent', $dep4, $spec4, null],
@@ -397,7 +397,7 @@ return function (): void {
     // 5c) Individual rejalar + vazifalar (demo). Reja holati va vazifalar
     //     bajarilishi KPI (to'liq bajarganlar / ortda qolayotganlar) uchun.
     // ---------------------------------------------------------------
-    $planApprover = $userIds['research_vice_head'];
+   $planApprover = $userIds['super_admin'];
     foreach ($studentIds as $i => $sid) {
         $ay = $academicYears[$i % 4];
         // Reja holati: approved / draft / submitted.
@@ -639,7 +639,7 @@ return function (): void {
                 'score' => $score,
                 'target_value' => '100',
                 'actual_value' => $score === null ? null : (string) $score,
-                'responsible_role_id' => $roleIds['research_vice_head'],
+              'responsible_role_id' => $roleIds['super_admin'],
                 'responsible_dept' => null,
                 'responsible_person' => null,
                'is_placeholder' => false,
@@ -659,7 +659,7 @@ return function (): void {
         'specialty_id' => $spec1,
       'title' => 'Ichki audit — tayyorgarlik bahosi',
         'audit_date' => date('Y-m-d', strtotime('-20 days')),
-        'auditor_id' => $userIds['quality_control'],
+        'auditor_id' => $userIds['expert'],
         'scope' => $placeholderNote,
         'status' => 'completed',
         'summary' => 'audit xulosasi.',
@@ -692,7 +692,7 @@ return function (): void {
             'result' => $dstatus === 'resolved' ? 'Kamchilik bartaraf etildi.' : null,
             'severity' => $severity,
             'status' => $dstatus,
-            'identified_by' => $userIds['quality_control'],
+           'identified_by' => $userIds['expert'],
             'identified_at' => date('Y-m-d', strtotime('-' . (($di + 1) * 5) . ' days')),
             'created_at' => $now,
             'updated_at' => $now,
@@ -733,7 +733,7 @@ return function (): void {
         'deficiency_id' => $seededDefIds[3],
         'title' => ' Nashr bazasini tasdiqlash',
         'description' => ' chora-tadbir tavsifi.',
-        'responsible_user_id' => $userIds['research_vice_head'],
+      'responsible_user_id' => $userIds['super_admin'],
         'start_date' => date('Y-m-d', strtotime('-40 days')),
         'due_date' => date('Y-m-d', strtotime('-20 days')),
         'document_id' => null,
