@@ -120,7 +120,7 @@ final class PlanTask
             return false;
         }
         // To'liq nazorat rollari — istalgan yaroqli o'tish.
-        if (in_array($role, ['super_admin', 'research_vice_head'], true)) {
+        if (in_array($role, ['super_admin', 'super_admin'], true)) {
             return true;
         }
         $targets = self::roleTargets()[$role] ?? [];
