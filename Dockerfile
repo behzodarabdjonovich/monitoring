@@ -11,6 +11,8 @@ COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 COPY . .
 
+RUN printf "upload_max_filesize=10M\npost_max_size=12M\n" > /usr/local/etc/php/conf.d/uploads.ini
+
 RUN composer dump-autoload --no-dev --optimize
 
 RUN mkdir -p storage storage/backups storage/uploads \
