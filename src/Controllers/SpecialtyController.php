@@ -39,10 +39,15 @@ final class SpecialtyController extends Controller
     }
 
     foreach ($specialties as &$sp) {
-        $r = Specialty::accreditationReadiness((int) $sp['id']);
-        $sp['readiness_percent'] = $r['percent'];
-        $sp['readiness_rag'] = $r['rag'];
-    }
+    $id = (int) $sp['id'];
+
+    $r = Specialty::accreditationReadiness($id);
+
+    $sp['readiness_percent'] = $r['percent'];
+    $sp['readiness_rag'] = $r['rag'];
+    $sp['student_count'] = Specialty::studentCount($id);
+    $sp['supervisor_count'] = count(Specialty::supervisors($id));
+}
     unset($sp);
 
     return $this->view('specialties.index', [
