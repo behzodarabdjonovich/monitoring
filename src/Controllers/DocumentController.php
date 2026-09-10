@@ -67,10 +67,17 @@ final class DocumentController extends Controller
             return $this->back($request, $validator->firstError() ?? 'Kiritishda xatolik.', '/documents');
         }
 
-        $file = $request->file('file');
-        if ($file === null || ($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
-            return $this->back($request, 'Fayl tanlanmadi.', '/documents');
-        }
+        if ($file === null) {
+    return $this->back($request, 'Fayl tanlanmadi.', '/documents');
+}
+
+if (($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
+    return $this->back(
+        $request,
+        'Fayl yuklashda xatolik. Kod: ' . ($file['error'] ?? 'noma’lum'),
+        '/documents'
+    );
+}
         try {
             $stored = FileStorage::store($file);
         } catch (\RuntimeException $ex) {
