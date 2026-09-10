@@ -116,7 +116,7 @@ if (Auth::role() === 'doctoral_student') {
 
         // Maydon yozuvi (progress, izoh, xulosa, muddat, dalil) faqat
         // individual_plans.edit ruxsatiga ega rollarga ochiq. Faqat ko'rish
-        // ruxsatiga ega rollar (institute_leadership, quality_control, expert)
+        // ruxsatiga ega rollar (super_admin, expert)
         // vazifa maydonlarini o'zgartira olmaydi — holat o'tishi esa alohida,
         // holat mashinasi + rol gating orqali tekshiriladi.
         $canEditFields = Auth::can('individual_plans.edit');
