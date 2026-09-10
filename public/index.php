@@ -28,6 +28,12 @@ use App\Core\View;
 $root = dirname(__DIR__);
 
 require $root . '/vendor/autoload.php';
+if (isset($_GET['php_limits'])) {
+    header('Content-Type: text/plain; charset=utf-8');
+    echo 'upload_max_filesize=' . ini_get('upload_max_filesize') . PHP_EOL;
+    echo 'post_max_size=' . ini_get('post_max_size') . PHP_EOL;
+    exit;
+}
 
 // Konfiguratsiya va view yo'llari.
 Config::setPath($root . '/config');
