@@ -132,7 +132,7 @@ final class SupervisorRequestController extends Controller
             return $this->redirect('/login');
         }
 
-        if (!in_array(Auth::role(), ['doctorate_office', 'research_vice_head', 'super_admin'], true)) {
+        if (!in_array(Auth::role(), ['doctorate_office', 'doctorate_office', 'super_admin'], true)) {
             return $this->forbidden();
         }
 
@@ -153,7 +153,7 @@ final class SupervisorRequestController extends Controller
             return $this->redirect('/login');
         }
 
-        if (!in_array(Auth::role(), ['doctorate_office', 'research_vice_head', 'super_admin'], true)) {
+        if (!in_array(Auth::role(), ['doctorate_office', 'doctorate_office', 'super_admin'], true)) {
             return $this->forbidden();
         }
 
@@ -237,7 +237,7 @@ SupervisorRequest::approve(
             return $this->redirect('/login');
         }
 
-        if (!in_array(Auth::role(), ['doctorate_office', 'research_vice_head', 'super_admin'], true)) {
+        if (!in_array(Auth::role(), ['doctorate_office', 'doctorate_office', 'super_admin'], true)) {
             return $this->forbidden();
         }
 
