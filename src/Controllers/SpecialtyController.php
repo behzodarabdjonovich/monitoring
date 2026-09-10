@@ -17,23 +17,41 @@ use App\Models\Specialty;
  */
 final class SpecialtyController extends Controller
 {
-    public function index(Request $request): Response
-    {
-        $specialties = Specialty::all();
-        foreach ($specialties as &$sp) {
-            $r = Specialty::accreditationReadiness((int) $sp['id']);
-            $sp['readiness_percent'] = $r['percent'];
-            $sp['readiness_rag'] = $r['rag'];
-        }
-        unset($sp);
+   public function index(Request $request): Response
+{
+    if (Auth::role() === 'doctoral_student') {
+        $student = DB::selectOne(
+            'SELECT specialty_id
+             FROM doctoral_students
+             WHERE user_id = :user_id
+             LIMIT 1',
+            ['user_id' => Auth::id()]
+        );
 
-        return $this->view('specialties.index', [
-            'user' => Auth::user(),
-            'title' => 'Ixtisosliklar',
-            'active' => 'specialties',
-            'specialties' => $specialties,
-        ]);
+        if ($student === null || empty($student['specialty_id'])) {
+            $specialties = [];
+        } else {
+            $specialty = Specialty::find((int) $student['specialty_id']);
+            $specialties = $specialty !== null ? [$specialty] : [];
+        }
+    } else {
+        $specialties = Specialty::all();
     }
+
+    foreach ($specialties as &$sp) {
+        $r = Specialty::accreditationReadiness((int) $sp['id']);
+        $sp['readiness_percent'] = $r['percent'];
+        $sp['readiness_rag'] = $r['rag'];
+    }
+    unset($sp);
+
+    return $this->view('specialties.index', [
+        'user' => Auth::user(),
+        'title' => 'Ixtisosliklar',
+        'active' => 'specialties',
+        'specialties' => $specialties,
+    ]);
+}
 
     public function show(Request $request): Response
     {
@@ -42,6 +60,26 @@ final class SpecialtyController extends Controller
         if ($specialty === null) {
             return Response::html(\App\Core\View::render('errors.404'), 404);
         }
+        if (Auth::role() === 'doctoral_student') {
+    $student = DB::selectOne(
+        'SELECT specialty_id
+         FROM doctoral_students
+         WHERE user_id = :user_id
+         LIMIT 1',
+        ['user_id' => Auth::id()]
+    );
+
+    if (
+        $student === null ||
+        empty($student['specialty_id']) ||
+        (int) $student['specialty_id'] !== $id
+    ) {
+        return Response::html(
+            \App\Core\View::render('errors.403'),
+            403
+        );
+    }
+}
         return $this->view('specialties.show', [
             'user' => Auth::user(),
             'title' => $specialty['name'],
