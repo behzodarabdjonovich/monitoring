@@ -41,17 +41,27 @@ return function (): void {
     // ---------------------------------------------------------------
     // 1) Rollar (9 ta) — docs/03 bo'yicha.
     // ---------------------------------------------------------------
-    $roles = [
-        'super_admin' => ['Super Administrator', 'Tizimning to\'liq egasi.'],
-        'institute_leadership' => ['Institut rahbariyati', 'Yuqori darajadagi ko\'rinish va strategik tasdiqlash.'],
-        'research_vice_head' => ['Ilmiy ishlar bo\'yicha mas\'ul rahbar', 'Ilmiy natijalar, rejalar, attestatsiya va akkreditatsiyani boshqarish.'],
-        'doctorate_office' => ['Doktorantura bo\'limi', 'Doktorantlar, rejalar, ixtisosliklar, attestatsiya ma\'lumotlarini yuritish.'],
-        'quality_control' => ['Ta\'lim sifatini nazorat qilish bo\'limi', 'Ichki audit, kamchiliklar, chora-tadbirlar.'],
-        'department_head' => ['Kafedra mudiri', 'O\'z kafedrasi doktorantlari va natijalari.'],
-        'supervisor' => ['Ilmiy rahbar/maslahatchi', 'O\'z doktorantlarining rejalari va natijalari.'],
-        'doctoral_student' => ['Doktorant/mustaqil izlanuvchi', 'O\'z rejasi, natijalari, dalillari.'],
-        'expert' => ['Ekspert', 'Akkreditatsiya indikatorlarini baholash, dalillarni ko\'rib chiqish.'],
-    ];
+   $roles = [
+    'super_admin' => [
+        'Super Administrator',
+        'Tizim boshqaruvi, rahbariyat va ilmiy boshqaruv funksiyalari.'
+    ],
+
+    'doctorate_office' => [
+        'Doktorantura bo‘limi',
+        'Doktorantlar, ilmiy rahbarlar, kafedralar, rejalar, natijalar va attestatsiyalarni boshqarish.'
+    ],
+
+    'expert' => [
+        'Ekspert',
+        'Akkreditatsiya, sifat nazorati, ichki audit, kamchiliklar va dalillarni baholash.'
+    ],
+
+    'doctoral_student' => [
+        'Doktorant/mustaqil izlanuvchi',
+        'O‘z rejasi, ilmiy natijalari va dalillari.'
+    ],
+];
 
     $roleIds = [];
     foreach ($roles as $name => [$title, $desc]) {
@@ -102,135 +112,115 @@ return function (): void {
     // 3) role_permission matritsasi — docs/03 3.1-3.16 jadvallariga muvofiq.
     //    Har rol uchun ruxsat kodlari ro'yxati.
     // ---------------------------------------------------------------
-    $matrix = [
-        'super_admin' => array_keys($permIds), // hammasi
+  $matrix = [
+    'super_admin' => array_keys($permIds),
 
-        'institute_leadership' => [
-            'dashboard.view',
-            'doctoral_students.view',
-            'supervisors.view',
-            'specialties.view',
-            'individual_plans.view',
-            'scientific_results.view',
-            'attestations.view', 'attestations.approve',
-            'accreditation.view', 'accreditation.approve',
-            'documents.view',
-            'deficiencies.view',
-            'action_plans.view', 'action_plans.approve',
-            'internal_audits.view', 'internal_audits.audit',
-            'reports.view',
-            'notifications.view',
-            'settings.view', 'settings.audit',
-        ],
+    'doctorate_office' => [
+        'dashboard.view',
 
-        'research_vice_head' => [
-            'dashboard.view',
-            'doctoral_students.view', 'doctoral_students.edit', 'doctoral_students.approve',
-            'supervisors.view', 'supervisors.create', 'supervisors.edit',
-            'specialties.view', 'specialties.create', 'specialties.edit',
-            'individual_plans.view', 'individual_plans.edit', 'individual_plans.approve',
-            'scientific_results.view', 'scientific_results.create', 'scientific_results.edit', 'scientific_results.upload', 'scientific_results.approve',
-            'attestations.view', 'attestations.create', 'attestations.edit', 'attestations.approve',
-            'accreditation.view', 'accreditation.create', 'accreditation.edit', 'accreditation.approve', 'accreditation.configure',
-            'documents.view', 'documents.upload', 'documents.edit', 'documents.approve',
-            'deficiencies.view', 'deficiencies.create', 'deficiencies.edit', 'deficiencies.approve',
-            'action_plans.view', 'action_plans.create', 'action_plans.edit', 'action_plans.approve',
-            'internal_audits.view', 'internal_audits.audit',
-            'reports.view',
-            'notifications.view',
-        ],
+        'doctoral_students.view',
+        'doctoral_students.create',
+        'doctoral_students.edit',
+        'doctoral_students.approve',
 
-        'doctorate_office' => [
-            'dashboard.view',
-            'doctoral_students.view', 'doctoral_students.create', 'doctoral_students.edit', 'doctoral_students.approve',
-            'supervisors.view', 'supervisors.create', 'supervisors.edit',
-            'specialties.view', 'specialties.create', 'specialties.edit',
-            'individual_plans.view', 'individual_plans.create', 'individual_plans.edit', 'individual_plans.approve',
-            'scientific_results.view', 'scientific_results.create', 'scientific_results.edit', 'scientific_results.upload',
-            'attestations.view', 'attestations.create', 'attestations.edit',
-            'accreditation.view',
-            'documents.view', 'documents.upload', 'documents.edit',
-            'deficiencies.view',
-'action_plans.view', 'action_plans.create', 'action_plans.edit',
-'internal_audits.view','reports.view',
-            'notifications.view',
-        ],
+        'supervisors.view',
+        'supervisors.create',
+        'supervisors.edit',
 
-        'quality_control' => [
-            'dashboard.view',
-            'doctoral_students.view',
-            'supervisors.view',
-            'specialties.view',
-            'individual_plans.view',
-            'scientific_results.view',
-            'attestations.view',
-            'accreditation.view', 'accreditation.edit',
-            'documents.view', 'documents.upload', 'documents.edit', 'documents.approve',
-            'deficiencies.view', 'deficiencies.create', 'deficiencies.edit', 'deficiencies.approve',
-            'action_plans.view', 'action_plans.edit', 'action_plans.approve',
-            'internal_audits.view', 'internal_audits.create', 'internal_audits.edit', 'internal_audits.audit',
-            'reports.view',
-            'notifications.view',
-            'settings.audit',
-        ],
+        'specialties.view',
+        'specialties.create',
+        'specialties.edit',
 
-        'department_head' => [
-            'dashboard.view',
-            'doctoral_students.view', 'doctoral_students.edit',
-            'supervisors.view', 'supervisors.edit',
-            'specialties.view',
-            'individual_plans.view', 'individual_plans.edit', 'individual_plans.approve',
-            'scientific_results.view', 'scientific_results.approve',
-            'attestations.view',
-            'accreditation.view',
-            'documents.view', 'documents.upload',
-            'action_plans.view', 'action_plans.edit',
-            'reports.view',
-            'notifications.view',
-        ],
+        'individual_plans.view',
+        'individual_plans.create',
+        'individual_plans.edit',
+        'individual_plans.approve',
 
-        'supervisor' => [
-            'dashboard.view',
-            'doctoral_students.view',
-            'supervisors.view',
-            'specialties.view',
-            'individual_plans.view', 'individual_plans.create', 'individual_plans.edit', 'individual_plans.approve',
-            'scientific_results.view', 'scientific_results.create', 'scientific_results.edit', 'scientific_results.upload', 'scientific_results.approve',
-            'attestations.view',
-            'documents.view', 'documents.upload',
-            'reports.view',
-            'notifications.view',
-        ],
+        'scientific_results.view',
+        'scientific_results.create',
+        'scientific_results.edit',
+        'scientific_results.upload',
+        'scientific_results.approve',
 
-        'doctoral_student' => [
-            'dashboard.view',
-            // Doktorant o'z kabinetini ko'radi va tahrirlaydi (o'zi bilan
-            // cheklash kontrollerda amalga oshiriladi — item 4 RBAC).
-            'doctoral_students.view', 'doctoral_students.edit',
-            'specialties.view',
-            'individual_plans.view', 'individual_plans.create', 'individual_plans.edit',
-            'scientific_results.view', 'scientific_results.create', 'scientific_results.edit', 'scientific_results.upload',
-            'attestations.view',
-            'documents.view', 'documents.upload',
-            'notifications.view',
-        ],
+        'attestations.view',
+        'attestations.create',
+        'attestations.edit',
 
-        'expert' => [
-            'dashboard.view',
-            'doctoral_students.view',
-            'supervisors.view',
-            'specialties.view',
-            'individual_plans.view',
-            'scientific_results.view',
-            'accreditation.view', 'accreditation.approve',
-            'documents.view', 'documents.approve',
-            'deficiencies.view', 'deficiencies.create',
-            'action_plans.view',
-            'internal_audits.view', 'internal_audits.audit',
-            'reports.view',
-            'notifications.view',
-        ],
-    ];
+        'accreditation.view',
+
+        'documents.view',
+        'documents.upload',
+        'documents.edit',
+
+        'deficiencies.view',
+
+        'action_plans.view',
+        'action_plans.create',
+        'action_plans.edit',
+
+        'internal_audits.view',
+
+        'reports.view',
+        'notifications.view',
+    ],
+
+    'expert' => [
+        'dashboard.view',
+
+        'doctoral_students.view',
+        'supervisors.view',
+        'specialties.view',
+        'individual_plans.view',
+        'scientific_results.view',
+        'attestations.view',
+
+        'accreditation.view',
+        'accreditation.edit',
+        'accreditation.approve',
+
+        'documents.view',
+        'documents.upload',
+        'documents.edit',
+        'documents.approve',
+
+        'deficiencies.view',
+        'deficiencies.create',
+        'deficiencies.edit',
+        'deficiencies.approve',
+
+        'action_plans.view',
+        'action_plans.edit',
+        'action_plans.approve',
+
+        'internal_audits.view',
+        'internal_audits.create',
+        'internal_audits.edit',
+        'internal_audits.audit',
+
+        'reports.view',
+        'notifications.view',
+
+        'settings.audit',
+    ],
+
+    'doctoral_student' => [
+        'dashboard.view',
+        'doctoral_students.view',
+        'doctoral_students.edit',
+        'specialties.view',
+        'individual_plans.view',
+        'individual_plans.create',
+        'individual_plans.edit',
+        'scientific_results.view',
+        'scientific_results.create',
+        'scientific_results.edit',
+        'scientific_results.upload',
+        'attestations.view',
+        'documents.view',
+        'documents.upload',
+        'notifications.view',
+    ],
+];
 
     foreach ($matrix as $role => $codes) {
         foreach ($codes as $code) {
@@ -250,16 +240,11 @@ return function (): void {
     // ---------------------------------------------------------------
     $demoPassword = Auth::hash('Parol123!');
     $demoUsers = [
-        'super_admin' => ['Demo Super Admin', 'admin'],
-        'institute_leadership' => ['Demo Rahbariyat', 'rahbariyat'],
-        'research_vice_head' => ['Demo Ilmiy Prorektor', 'ilmiy'],
-        'doctorate_office' => ['Demo Doktorantura Bolimi', 'doktorantura'],
-        'quality_control' => ['Demo Sifat Nazorati', 'sifat'],
-        'department_head' => ['Demo Kafedra Mudiri', 'kafedra'],
-        'supervisor' => ['Demo Ilmiy Rahbar', 'rahbar'],
-        'doctoral_student' => ['Demo Doktorant', 'doktorant'],
-        'expert' => ['Demo Ekspert', 'ekspert'],
-    ];
+    'super_admin' => ['Demo Super Admin', 'admin'],
+    'doctorate_office' => ['Demo Doktorantura Bolimi', 'doktorantura'],
+    'expert' => ['Demo Ekspert', 'ekspert'],
+    'doctoral_student' => ['Demo Doktorant', 'doktorant'],
+];
 
     $userIds = [];
     foreach ($demoUsers as $role => [$fullName, $username]) {
