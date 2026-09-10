@@ -248,10 +248,9 @@ $this->layout('layouts.app');
 <?php elseif (in_array(
     \App\Core\Auth::role(),
     [
-        'doctorate_office',
-        'research_vice_head',
-        'super_admin'
-    ],
+    'doctorate_office',
+    'super_admin'
+]
     true
 )): ?>
 
