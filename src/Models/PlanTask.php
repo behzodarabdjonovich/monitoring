@@ -18,7 +18,7 @@ use App\Core\DB;
  *   - doktorant (doctoral_student): planned->in_progress, in_progress->completed
  *   - ilmiy rahbar (supervisor):     completed->supervisor_approved
  *   - doktorantura bo'lim (doctorate_office): supervisor_approved->finalized
- *   - super_admin / research_vice_head: barcha o'tishlar (nazorat).
+* - super_admin: barcha o'tishlar (nazorat).
  *
  * Muddati o'tgan (overdue) vazifa: due_date o'tgan VA holat completed/
  * supervisor_approved/finalized emas => qizil (RAG red) sifatida ko'rsatiladi.
@@ -74,7 +74,7 @@ final class PlanTask
 
     /**
      * Berilgan rol qaysi maqsad holatga o'tkaza oladi.
-     * super_admin va research_vice_head barcha o'tishlarga ruxsat.
+    * super_admin barcha o'tishlarga ruxsat.
      *
      * @return array<string,string[]> rol => ruxsat etilgan maqsad holatlar
      */
