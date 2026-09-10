@@ -86,13 +86,10 @@ final class PlanTask
             self::COMPLETED,
         ],
 
-        'supervisor' => [
-            self::SUPERVISOR_APPROVED,
-        ],
-
-        'department_head' => [
-            self::SUPERVISOR_APPROVED,
-        ],
+       'doctorate_office' => [
+    self::SUPERVISOR_APPROVED,
+    self::FINALIZED,
+],
 
         'doctorate_office' => [
             self::SUPERVISOR_APPROVED,
