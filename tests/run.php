@@ -1606,21 +1606,16 @@ test('RbacMiddleware ANY: link guard (documents.edit|accreditation.edit) ruxsatl
     $guard = new RbacMiddleware('documents.edit', 'accreditation.edit');
     $req = new Request('POST', '/documents/1/link', [], [], ['REQUEST_METHOD' => 'POST']);
 
-    // Ekspert: documents.view/approve bor, LEKIN documents.edit/accreditation.edit YO'Q => 403.
-    Auth::attempt('ekspert', 'Parol123!');
-    Auth::flushCache();
-    assertFalse(Auth::can('documents.edit'), 'ekspert documents.edit ega emas');
-    assertFalse(Auth::can('accreditation.edit'), 'ekspert accreditation.edit ega emas');
-    $resp = $guard->handle($req);
-    assertTrue($resp !== null && $resp->status() === 403, 'Ekspert link guard\'idan o\'ta olmasligi kerak (403)');
-    Auth::logout();
+   // Ekspert: sifat nazorati funksiyalari birlashtirilgan,
+// documents.edit va accreditation.edit ruxsatlari bor => o'tadi (null).
+Auth::attempt('ekspert', 'Parol123!');
+Auth::flushCache();
 
-    // Sifat nazorati: documents.edit + accreditation.edit bor => o'tadi (null).
-   Auth::attempt('ekspert', 'Parol123!');
-    Auth::flushCache();
-    assertTrue(Auth::can('documents.edit') || Auth::can('accreditation.edit'), 'sifat edit ruxsatiga ega');
-    assertTrue($guard->handle($req) === null, 'Sifat nazorati link guard\'idan o\'tishi kerak');
-    Auth::logout();
+assertTrue(Auth::can('documents.edit'), 'ekspert documents.edit ruxsatiga ega');
+assertTrue(Auth::can('accreditation.edit'), 'ekspert accreditation.edit ruxsatiga ega');
+assertTrue($guard->handle($req) === null, 'Ekspert link guardidan o‘tishi kerak');
+
+Auth::logout();
 });
 
 // ---------------------------------------------------------------
