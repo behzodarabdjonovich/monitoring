@@ -27,6 +27,8 @@ use App\Core\View;
 
 $root = dirname(__DIR__);
 
+require $root . '/vendor/autoload.php';
+
 // Konfiguratsiya va view yo'llari.
 Config::setPath($root . '/config');
 View::setPath($root . '/resources/views');
