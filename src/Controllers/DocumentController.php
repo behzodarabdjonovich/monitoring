@@ -67,7 +67,9 @@ final class DocumentController extends Controller
             return $this->back($request, $validator->firstError() ?? 'Kiritishda xatolik.', '/documents');
         }
 
-        if ($file === null) {
+       $file = $request->file('file');
+
+if ($file === null) {
     return $this->back($request, 'Fayl tanlanmadi.', '/documents');
 }
 
@@ -78,13 +80,13 @@ if (($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
         '/documents'
     );
 }
-        try {
-            $stored = FileStorage::store($file);
-        } catch (\RuntimeException $ex) {
-            return $this->back($request, $ex->getMessage(), '/documents');
-        }
 
-          $studentId = null;
+try {
+    $stored = FileStorage::store($file);
+} catch (\RuntimeException $ex) {
+    return $this->back($request, $ex->getMessage(), '/documents');
+}
+                 $studentId = null;
 
 if (Auth::role() === 'doctoral_student') {
     $student = DoctoralStudent::findByUser((int) Auth::id());
