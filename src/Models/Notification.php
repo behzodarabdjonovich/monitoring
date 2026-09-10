@@ -150,7 +150,7 @@ final class Notification
 
     /**
      * Indikatorda dalil yetishmayapti — akkreditatsiyaga mas'ul rollarga
-     * (super_admin, super_admin, quality_control).
+     * (super_admin).
      */
     private static function generateMissingEvidenceNotifications(): int
     {
@@ -164,7 +164,7 @@ final class Notification
         $title = 'Yetishmayotgan dalillar: ' . $count . ' ta indikator';
         $body = $count . ' ta indikatorda tasdiqlovchi dalil (hujjat) biriktirilmagan.';
         return self::notifyRoles(
-            ['super_admin', 'super_admin', 'quality_control'],
+            ['super_admin'],
             'missing_evidence',
             $title,
             $body,
@@ -192,7 +192,7 @@ final class Notification
             $title = 'Ixtisoslikda bajarilmagan indikatorlar: ' . (int) $r['unmet'] . ' ta';
             $body = '"' . $r['name'] . '" ixtisosligida ' . (int) $r['unmet'] . ' ta talabga mos emas (qizil) indikator mavjud.';
             $created += self::notifyRoles(
-                ['super_admin', 'super_admin', 'quality_control'],
+                ['super_admin'],
                 'unmet_specialty',
                 $title,
                 $body,
