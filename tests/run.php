@@ -1076,7 +1076,7 @@ test('Deficiency: chora-tadbir muddat holati (due-soon sariq vs overdue qizil)',
 
 test('DeficiencyController kamchilik + chora-tadbir yozadi va audit qiladi', function () {
     bootTestDatabase();
-    Auth::attempt('sifat', 'Parol123!'); // quality_control: deficiencies/action_plans ruxsatlari
+    Auth::attempt('ekspert', 'Parol123!'); // expert: deficiencies/action_plans ruxsatlari
     Auth::flushCache();
 
     $ctrl = new \App\Controllers\DeficiencyController();
@@ -1185,7 +1185,7 @@ test('InternalAudit: indikatorlar to\'g\'ri buketlarga ajraladi (green/red-yello
 
 test('InternalAuditController audit o\'tkazadi va kamchiliklar Deficiencies moduliga oqadi', function () {
     bootTestDatabase();
-    Auth::attempt('sifat', 'Parol123!'); // quality_control: internal_audits.audit
+    Auth::attempt('ekspert', 'Parol123!'); // expert: internal_audits.audit
     Auth::flushCache();
 
     // Placeholder ixtisoslik (seed'da akkreditatsiyaga bog'langan).
@@ -1616,7 +1616,7 @@ test('RbacMiddleware ANY: link guard (documents.edit|accreditation.edit) ruxsatl
     Auth::logout();
 
     // Sifat nazorati: documents.edit + accreditation.edit bor => o'tadi (null).
-    Auth::attempt('sifat', 'Parol123!');
+   Auth::attempt('ekspert', 'Parol123!');
     Auth::flushCache();
     assertTrue(Auth::can('documents.edit') || Auth::can('accreditation.edit'), 'sifat edit ruxsatiga ega');
     assertTrue($guard->handle($req) === null, 'Sifat nazorati link guard\'idan o\'tishi kerak');
