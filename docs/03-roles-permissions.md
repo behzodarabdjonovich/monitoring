@@ -2,23 +2,18 @@
 
 **ADPI Doktorantura monitoringi va maxsus davlat akkreditatsiyasiga tayyorgarlik axborot tizimi**
 
-Ushbu hujjat tizimning 9 ta rolini va rol-ruxsat matritsasini (permission matrix) tavsiflaydi. Ruxsatlar rolga statik biriktirilmaydi, balki `role_permission` (M:N) jadvali orqali ma'lumotlar bazasida saqlanadi va administrator tomonidan sozlanadi (RBAC).
+Ushbu hujjat tizimning 4 ta rolini va rol-ruxsat matritsasini (permission matrix) tavsiflaydi. Ruxsatlar rolga statik biriktirilmaydi, balki `role_permission` (M:N) jadvali orqali ma'lumotlar bazasida saqlanadi va administrator tomonidan sozlanadi (RBAC).
 
 ---
 
-## 1. Rollar (9 ta)
+## 1. Rollar (4 ta)
 
 | № | Rol (kod) | Nomi (Uzbek) | Tavsif |
 |---|-----------|--------------|--------|
-| 1 | `super_admin` | Super Administrator | Tizimning to'liq egasi: barcha modullar, sozlamalar, foydalanuvchilar, rollar, akkreditatsiya konfiguratsiyasi. |
-| 2 | `institute_leadership` | Institut rahbariyati | Yuqori darajadagi ko'rinish: dashboard, hisobotlar, umumiy holat; strategik tasdiqlash. |
-| 3 | `research_vice_head` | Ilmiy ishlar bo'yicha mas'ul rahbar | Ilmiy natijalar, individual rejalar, attestatsiya va akkreditatsiya jarayonini boshqarish/tasdiqlash. |
-| 4 | `doctorate_office` | Doktorantura bo'limi | Doktorantlar, rejalar, ixtisosliklar, attestatsiya ma'lumotlarini yuritish. |
-| 5 | `quality_control` | Ta'lim sifatini nazorat qilish bo'limi | Ichki audit, kamchiliklar, chora-tadbirlar, sifat monitoringi. |
-| 6 | `department_head` | Kafedra mudiri | O'z kafedrasi doktorantlari, rejalari va natijalarini ko'rish/boshqarish. |
-| 7 | `supervisor` | Ilmiy rahbar/maslahatchi | O'z doktorantlarining rejalari, natijalari, dalillarini ko'rish/tasdiqlash. |
-| 8 | `doctoral_student` | Doktorant/tayanch doktorant/mustaqil izlanuvchi | O'z rejasi, natijalari, dalillarini kiritish/yuklash va kuzatish. |
-| 9 | `expert` | Ekspert | Akkreditatsiya indikatorlarini baholash, dalillarni ko'rib chiqish (odatda faqat o'qish + baholash). |
+| 1 | `super_admin` | Super Administrator | Tizim boshqaruvi, rahbariyat va ilmiy boshqaruv funksiyalari. |
+| 2 | `doctorate_office` | Doktorantura bo‘limi | Doktorantlar, ilmiy rahbarlar, kafedralar, rejalar, natijalar va attestatsiyalarni boshqarish. |
+| 3 | `expert` | Ekspert | Akkreditatsiya, sifat nazorati, ichki audit, kamchiliklar va dalillarni baholash. |
+| 4 | `doctoral_student` | Doktorant/mustaqil izlanuvchi | O‘z rejasi, ilmiy natijalari va dalillarini yuritish. |
 
 ---
 
@@ -171,5 +166,5 @@ Rol qisqartmalari: **SA** super_admin, **IR** institut rahbariyati, **IM** ilmiy
 
 - Har bir marshrut (route) o'ziga kerakli ruxsat kodini (masalan `accreditation.configure`) e'lon qiladi.
 - `RbacMiddleware` foydalanuvchi rolining `role_permission` orqali ushbu ruxsatga egaligini tekshiradi.
-- Doktorant (`doctoral_student`) va ilmiy rahbar (`supervisor`) uchun qo'shimcha **ma'lumot darajasidagi cheklov (row-level scope)** qo'llaniladi: ular faqat o'zlariga tegishli yozuvlarni ko'radi/tahrirlaydi (masalan doktorant faqat o'z rejasi va natijalari).
+- Doktorant (`doctoral_student`) uchun qo'shimcha **ma'lumot darajasidagi cheklov (row-level scope)** qo'llaniladi: ular faqat o'zlariga tegishli yozuvlarni ko'radi/tahrirlaydi (masalan doktorant faqat o'z rejasi va natijalari).
 - Barcha ruxsatlar ma'lumotlar bazasida saqlangani uchun matritsa administrator tomonidan production'da qayta sozlanishi mumkin. Yuqoridagi jadval — boshlang'ich (seed) taqsimotdir.
