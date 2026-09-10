@@ -77,10 +77,19 @@ function bootTestDatabase(): void
     DB::reset();
 
     $root = dirname(__DIR__);
-    $migration = require $root . '/database/migrations/001_create_schema.php';
-    $migration();
-    $seed = require $root . '/database/seeds/001_seed.php';
-    $seed();
+    $migrations = glob($root . '/database/migrations/*.php');
+sort($migrations, SORT_NATURAL);
+
+foreach ($migrations as $migrationFile) {
+    $migration = require $migrationFile;
+
+    if (is_callable($migration)) {
+        $migration();
+    }
+}
+
+$seed = require $root . '/database/seeds/001_seed.php';
+$seed();
 }
 
 // ---------------------------------------------------------------
