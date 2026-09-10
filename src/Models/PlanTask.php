@@ -74,7 +74,7 @@ final class PlanTask
 
     /**
      * Berilgan rol qaysi maqsad holatga o'tkaza oladi.
-    * super_admin barcha o'tishlarga ruxsat.
+  * super_admin barcha o'tishlarga ruxsat.
      *
      * @return array<string,string[]> rol => ruxsat etilgan maqsad holatlar
      */
