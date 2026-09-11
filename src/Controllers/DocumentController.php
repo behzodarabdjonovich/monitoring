@@ -118,15 +118,27 @@ if ($fileContents === null) {
     return $this->back($request, 'Yuklangan faylni o‘qib bo‘lmadi.', '/documents');
 }
 
-DB::run(
-    "UPDATE documents
-     SET file_data = decode(:file_data, 'base64')
-     WHERE id = :id",
-    [
-        'file_data' => base64_encode($fileContents),
-        'id' => $id,
-    ]
-);
+if (DB::driver() === 'pgsql') {
+    DB::run(
+        "UPDATE documents
+         SET file_data = decode(:file_data, 'base64')
+         WHERE id = :id",
+        [
+            'file_data' => base64_encode($fileContents),
+            'id' => $id,
+        ]
+    );
+} else {
+    DB::run(
+        "UPDATE documents
+         SET file_data = :file_data
+         WHERE id = :id",
+        [
+            'file_data' => $fileContents,
+            'id' => $id,
+        ]
+    );
+}
 
         AuditLogger::log('upload', 'documents', $id, null, ['category' => (string) $input['category']]);
 
