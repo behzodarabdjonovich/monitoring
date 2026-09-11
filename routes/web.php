@@ -46,7 +46,11 @@ $router->get('/', function () {
 
 $router->get('/login', [AuthController::class, 'showLogin']);
 $router->post('/login', [AuthController::class, 'login']);
+$router->get('/forgot-password', [AuthController::class, 'forgotPassword']);
+$router->post('/forgot-password', [AuthController::class, 'sendResetLink']);
 
+$router->get('/reset-password', [AuthController::class, 'resetPassword']);
+$router->post('/reset-password', [AuthController::class, 'updatePassword']);
 $router->post('/logout', [AuthController::class, 'logout']);
 
 // --- Doktorant portali ---
