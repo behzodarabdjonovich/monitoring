@@ -43,6 +43,17 @@ $this->layout('layouts.app');
             <a href="/programs/<?= e($pr['id']) ?>/edit" class="btn btn-primary">
                 Tahrirlash
             </a>
+        <form
+    method="post"
+    action="/programs/<?= e($pr['id']) ?>/delete"
+    style="display:inline"
+    onsubmit="return confirm('Dastur o‘chirishni tasdiqlaysizmi?');"
+>
+    <?= Csrf::field() ?>
+    <button type="submit" class="btn btn-danger">
+        O‘chirish
+    </button>
+</form>
         <?php endif; ?>
     </td>
 </tr>
