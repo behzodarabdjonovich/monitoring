@@ -122,27 +122,6 @@ php bin/console migrate && php bin/console seed
 
 ---
 
-## Demo kirish ma'lumotlari
-
-Barcha demo foydalanuvchilar uchun parol: **`Parol123!`**
-
-| Rol | Login |
-|-----|-------|
-| Super Administrator | `admin` |
-| Institut rahbariyati | `rahbariyat` |
-| Ilmiy ishlar mas'uli | `ilmiy` |
-| Doktorantura bo'limi | `doktorantura` |
-| Sifat nazorati | `sifat` |
-| Kafedra mudiri | `kafedra` |
-| Ilmiy rahbar | `rahbar` |
-| Doktorant | `doktorant` |
-| Ekspert | `ekspert` |
-
-> **Bu demo hisoblar** — real shaxsiy ma'lumotlar emas. Ishlab chiqarishga
-> o'tishdan oldin ularni o'chiring yoki parollarni almashtiring.
-
----
-
 ## ⚠️ Akkreditatsiya mezonlari — NAMUNA (placeholder) ogohlantirishi
 
 Seed'dagi akkreditatsiya sikli, mezonlari va indikatorlari **NAMUNA
