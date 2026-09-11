@@ -251,6 +251,13 @@ $router->post('/programs/{id}/edit', [
     $auth(),
     new SuperAdminMiddleware(),
 ]);
+$router->post('/programs/{id}/delete', [
+    ProgramController::class,
+    'delete'
+], [
+    $auth(),
+    new SuperAdminMiddleware(),
+]);
 $router->get('/results', [
     ScientificResultController::class,
     'index'
