@@ -5,7 +5,7 @@ monitoring qilish va maxsus davlat akkreditatsiyasiga tayyorgarlik darajasini
 baholovchi o'zbek tilidagi axborot tizimi.
 
 Bu repozitoriya **to'liq tizim**ni o'z ichiga oladi: yadro (core) freymvork,
-RBAC (4 rol), analitik dashboard, doktorantlar, individual rejalar (5 bosqichli
+RBAC (9 rol), analitik dashboard, doktorantlar, individual rejalar (5 bosqichli
 oqim), ilmiy natijalar, ilmiy rahbarlar, ixtisosliklar, markazlashtirilgan
 akkreditatsiya moduli (sozlanadigan tayyorlik indeksi), dalillar bazasi,
 kamchiliklar + Action Plan, ichki audit, **hisobotlar (PDF/Excel/print),
