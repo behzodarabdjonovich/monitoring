@@ -55,4 +55,81 @@ final class ProgramController extends Controller
         Session::flash('success', 'Dastur yaratildi.');
         return $this->redirect('/programs');
     }
+public function edit(Request $request): Response
+{
+    $id = (int) $request->param('id');
+
+    $program = DB::selectOne(
+        'SELECT * FROM doctoral_programs WHERE id = :id',
+        ['id' => $id]
+    );
+
+    if ($program === null) {
+        return $this->notFound();
+    }
+
+    return $this->view('programs.edit', [
+        'user' => Auth::user(),
+        'title' => 'Dastur tahrirlash',
+        'active' => 'specialties',
+        'program' => $program,
+        'specialties' => DB::select('SELECT id, name FROM specialties ORDER BY name'),
+    ]);
+public function update(Request $request): Response
+{
+    $id = (int) $request->param('id');
+
+    $program = DB::selectOne(
+        'SELECT * FROM doctoral_programs WHERE id = :id',
+        ['id' => $id]
+    );
+
+    if ($program === null) {
+        return $this->notFound();
+    }
+
+    $input = $request->all();
+
+    $validator = Validator::make($input, [
+        'name' => 'required|string|max:191',
+        'specialty_id' => 'required|integer',
+        'program_type' => 'required|in:PhD,DSc',
+    ]);
+
+    if ($validator->fails()) {
+        Session::flash('error', $validator->firstError() ?? 'Kiritishda xatolik.');
+        return $this->redirect('/programs/' . $id . '/edit');
+    }
+
+    DB::run(
+        'UPDATE doctoral_programs
+         SET specialty_id = :specialty_id,
+             name = :name,
+             program_type = :program_type,
+             duration_years = :duration_years
+         WHERE id = :id',
+        [
+            'specialty_id' => (int) $input['specialty_id'],
+            'name' => (string) $input['name'],
+            'program_type' => (string) $input['program_type'],
+            'duration_years' => ($input['duration_years'] ?? '') === ''
+                ? null
+                : (int) $input['duration_years'],
+            'id' => $id,
+        ]
+    );
+
+    AuditLogger::log(
+        'update',
+        'doctoral_programs',
+        $id,
+        $program,
+        ['name' => $input['name']]
+    );
+
+    Session::flash('success', 'Dastur muvaffaqiyatli tahrirlandi.');
+
+    return $this->redirect('/programs');
+}
+}
 }
