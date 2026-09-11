@@ -42,10 +42,11 @@ $row = function (string $label, $value) {
         action="/students/<?= e($student['id']) ?>/delete"
         style="display:inline"
         onsubmit="return confirm('Doktorantni o‘chirishni tasdiqlaysizmi? Bu amal ortga qaytarilmaydi.');"
-    >
-        <button type="submit" class="btn btn-danger">Doktorantni o‘chirish</button>
-    </form>
-<?php endif; ?>
+   >
+    <?= \App\Core\Csrf::field() ?>
+    <button type="submit" class="btn btn-danger">Doktorantni o‘chirish</button>
+</form>
+   <?php endif; ?>
     </div>
 </div>
 
