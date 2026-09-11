@@ -19,4 +19,8 @@ abstract class Controller
     {
         return Response::redirect($to);
     }
+protected function forbidden(): Response
+{
+    return Response::text('Forbidden', 403);
+}
 }
