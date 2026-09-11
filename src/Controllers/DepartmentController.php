@@ -17,7 +17,26 @@ final class DepartmentController extends Controller
         'departments' => $departments,
     ]);
 } 
-    public function delete(Request $request): Response
+ public function store(Request $request): Response
+{
+    $name = trim((string) $request->input('name'));
+    $code = trim((string) $request->input('code'));
+
+    if ($name === '') {
+        Session::flash('error', 'Kafedra nomini kiriting.');
+        return $this->redirect('/departments');
+    }
+
+    Department::create(
+        $name,
+        $code !== '' ? $code : null
+    );
+
+    Session::flash('success', 'Kafedra muvaffaqiyatli qo‘shildi.');
+
+    return $this->redirect('/departments');
+}  
+ public function delete(Request $request): Response
     {
         $id = (int) $request->param('id');
         $department = Department::find($id);
