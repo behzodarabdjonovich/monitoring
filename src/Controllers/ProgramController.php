@@ -75,6 +75,7 @@ public function edit(Request $request): Response
         'program' => $program,
         'specialties' => DB::select('SELECT id, name FROM specialties ORDER BY name'),
     ]);
+    }
 public function update(Request $request): Response
 {
     $id = (int) $request->param('id');
