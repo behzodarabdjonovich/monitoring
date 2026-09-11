@@ -166,6 +166,13 @@ $router->post('/specialties', [SpecialtyController::class, 'store'], [$auth(), $
 $router->get('/specialties/{id}', [SpecialtyController::class, 'show'], [$auth(), $rbac('specialties.view')]);
 $router->get('/specialties/{id}/edit', [SpecialtyController::class, 'edit'], [$auth(), $rbac('specialties.edit')]);
 $router->post('/specialties/{id}', [SpecialtyController::class, 'update'], [$auth(), $rbac('specialties.edit')]);
+$router->post('/specialties/{id}/delete', [
+    SpecialtyController::class,
+    'delete'
+], [
+    $auth(),
+    new SuperAdminMiddleware(),
+]);
 $router->get('/programs', [ProgramController::class, 'index'], [$auth(), $rbac('specialties.view')]);
 $router->post('/programs', [ProgramController::class, 'store'], [$auth(), $rbac('specialties.create')]);
 
