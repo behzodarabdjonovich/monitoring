@@ -183,7 +183,36 @@ final class StudentController extends Controller
         Session::flash('success', 'Doktorant profili yangilandi.');
         return $this->redirect('/students/' . $id);
     }
+    public function delete(Request $request): Response
+{
+    $id = (int) $request->param('id');
+    $student = DoctoralStudent::find($id);
 
+    if ($student === null) {
+        return $this->notFound();
+    }
+
+    try {
+        DoctoralStudent::deleteWithRelations($id);
+
+        AuditLogger::log(
+            'delete',
+            'doctoral_students',
+            $id,
+            $student,
+            null
+        );
+
+        Session::flash('success', 'Doktorant muvaffaqiyatli o‘chirildi.');
+    } catch (\Throwable $e) {
+        Session::flash(
+            'error',
+            'Doktorantni o‘chirib bo‘lmadi: ' . $e->getMessage()
+        );
+    }
+
+    return $this->redirect('/students');
+}
     // -----------------------------------------------------------------
     // Yordamchilar.
     // -----------------------------------------------------------------
