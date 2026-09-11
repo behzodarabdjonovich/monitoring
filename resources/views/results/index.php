@@ -302,8 +302,7 @@ $this->layout('layouts.app');
             Kutilmoqda
         </span>
 
-    <?php endif; ?>
-        <?php endif; ?>
+           <?php endif; ?>
 
     <?php if (\App\Core\Auth::role() === 'super_admin'): ?>
         <a
@@ -329,7 +328,6 @@ $this->layout('layouts.app');
 
 </td>
 
-</td>
                     </tr>
 
                 <?php endforeach; ?>
