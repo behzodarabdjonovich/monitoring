@@ -41,6 +41,7 @@ $w = $pct === null ? 0 : max(0, min(100, $pct));
         <p class="hero-meta text-muted">Sikl: <strong><?= e($accreditation['cycle_year'] ?? '—') ?></strong> &nbsp;|&nbsp; Holat: <strong><?= e($accreditation['status']) ?></strong></p>
         <?php if ($canEdit): ?><a class="btn btn-primary" href="/accreditations/<?= e($accreditation['id']) ?>/edit">Tahrirlash</a><?php endif; ?>
         <?php if ($canConfigure): ?><a class="btn" href="/settings">Baholash metodikasi (Sozlamalar)</a><?php endif; ?>
+        <?php if (\App\Core\Auth::role() === 'super_admin'): ?><form method="post" action="/accreditations/<?= e($accreditation['id']) ?>/delete" style="display:inline" onsubmit="return confirm('Akkreditatsiyani o‘chirishni tasdiqlaysizmi?');"><?= Csrf::field() ?><button type="submit" class="btn btn-danger">O‘chirish</button></form><?php endif; ?>
     </div>
 </div>
 
