@@ -44,6 +44,8 @@ if (Auth::role() === 'doctoral_student') {
             'students' => DB::select('SELECT id, full_name FROM doctoral_students ORDER BY full_name'),
             'canCreate' => Auth::can('attestations.create'),
             'canApprove' => Auth::can('attestations.approve'),
+            'canEdit' => Auth::can('attestations.edit'),
+            'students' => DB::select('SELECT id, full_name FROM doctoral_students ORDER BY full_name'),
         ]);
     }
 
@@ -121,6 +123,22 @@ if (Auth::role() === 'doctoral_student') {
         AuditLogger::log('approve', 'attestations', $id, ['result' => $attestation['result']], ['result' => 'ijobiy']);
         Session::flash('success', 'Attestatsiya tasdiqlandi (ijobiy).');
         return $this->redirect('/attestations/' . $id);
+    }
+
+    public function delete(Request $request): Response
+    {
+        if (Auth::role() !== 'super_admin') {
+            return $this->forbidden();
+        }
+        $id = (int) $request->param('id');
+        $attestation = Attestation::find($id);
+        if ($attestation === null) {
+            return Response::html(\App\Core\View::render('errors.404'), 404);
+        }
+        DB::run('DELETE FROM attestations WHERE id = :id', ['id' => $id]);
+        AuditLogger::log('delete', 'attestations', $id, $attestation, null);
+        Session::flash('success', 'Attestatsiya muvaffaqiyatli o‘chirildi.');
+        return $this->redirect('/attestations');
     }
 
     /**
