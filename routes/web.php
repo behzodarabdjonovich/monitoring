@@ -124,7 +124,13 @@ $router->post('/ilmiy-bolim/rahbar-sorovlari/{id}/approve', [
 ], [
     new AuthMiddleware(),
 ]);
-
+$router->post('/supervisors/{id}/delete', [
+    SupervisorController::class,
+    'delete'
+], [
+    $auth(),
+    new SuperAdminMiddleware(),
+]);
 $router->post('/ilmiy-bolim/rahbar-sorovlari/{id}/reject', [
     SupervisorRequestController::class,
     'reject'
