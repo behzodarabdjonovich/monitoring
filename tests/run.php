@@ -146,7 +146,7 @@ test('migrate + seed kutilgan yozuv sonlarini beradi', function () {
         DB::scalar("SELECT COUNT(*) FROM $table");
     }
 
-    assertEquals(9, (int) DB::scalar('SELECT COUNT(*) FROM roles'), '9 ta rol seed qilinishi kerak');
+    assertEquals(4, (int) DB::scalar('SELECT COUNT(*) FROM roles'), '4 ta rol seed qilinishi kerak');
     assertEquals(9, (int) DB::scalar('SELECT COUNT(*) FROM users'), '9 ta demo foydalanuvchi');
     assertTrue((int) DB::scalar('SELECT COUNT(*) FROM permissions') > 0, 'Ruxsatlar seed qilinishi kerak');
     assertTrue((int) DB::scalar('SELECT COUNT(*) FROM role_permission') > 0, 'role_permission matritsasi to\'ldirilishi kerak');
