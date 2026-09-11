@@ -313,6 +313,19 @@ $this->layout('layouts.app');
             Tahrirlash
         </a>
     <?php endif; ?>
+<?php if (\App\Core\Auth::role() === 'super_admin'): ?>
+    <form
+        method="post"
+        action="/results/<?= e($r['id']) ?>/delete"
+        style="display:inline"
+        onsubmit="return confirm('Ilmiy natijani o‘chirishni tasdiqlaysizmi?');"
+    >
+        <?= Csrf::field() ?>
+        <button type="submit" class="btn btn-danger">
+            O‘chirish
+        </button>
+    </form>
+<?php endif; ?>
 
 </td>
 
