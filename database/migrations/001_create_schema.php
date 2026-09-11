@@ -462,4 +462,4 @@ return function (): void {
         $t->timestamp('created_at');
         $t->foreign('user_id', 'users');
     });
-}
+};
