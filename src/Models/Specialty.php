@@ -87,7 +87,6 @@ final class Specialty
             'accreditation_id' => (int) $accId,
         ];
     }
-}
     public static function canDelete(int $specialtyId): bool
     {
         $studentCount = (int) DB::scalar(
