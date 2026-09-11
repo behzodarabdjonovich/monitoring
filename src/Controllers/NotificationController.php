@@ -70,5 +70,6 @@ final class NotificationController extends Controller
             : 'Siz uchun yangi bildirishnoma yo\'q.'
     );
 
-    return $this->redirect('/notifications');
+        return $this->redirect('/notifications');
+    }
 }
