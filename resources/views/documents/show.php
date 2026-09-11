@@ -30,6 +30,14 @@ $this->layout('layouts.app');
     <p><strong>Fayl nomi:</strong> <?= e($document['original_name'] ?? '—') ?></p>
     <p><strong>MIME:</strong> <?= e($document['mime_type'] ?? '—') ?> &nbsp;|&nbsp; <strong>Hajmi:</strong> <?= e((int) ($document['file_size'] ?? 0)) ?> bayt</p>
     <a class="btn btn-primary" href="/documents/<?= e($document['id']) ?>/download">Yuklab olish</a>
+    <?php if (\App\Core\Auth::can('documents.edit')): ?>
+    <form method="post" action="/documents/<?= e($document['id']) ?>/update" style="margin-top:1rem;">
+        <?= Csrf::field() ?>
+        <div class="form-group"><label>Sarlavha</label><input type="text" name="title" value="<?= e($document['title']) ?>" required></div>
+        <div class="form-group"><label>Toifa</label><select name="category"><?php foreach ($categories as $key => $label): ?><option value="<?= e($key) ?>" <?= $document['category'] === $key ? 'selected' : '' ?>><?= e($label) ?></option><?php endforeach; ?></select></div>
+        <button type="submit" class="btn">Metama’lumotni saqlash</button>
+    </form>
+    <?php endif; ?>
 </div>
 
 <div class="card">
