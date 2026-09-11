@@ -132,7 +132,6 @@ public function update(Request $request): Response
 
     return $this->redirect('/programs');
 }
-}
 public function delete(Request $request): Response
 {
     $id = (int) $request->param('id');
