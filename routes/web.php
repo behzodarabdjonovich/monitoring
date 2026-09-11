@@ -144,7 +144,13 @@ $router->post('/students', [StudentController::class, 'store'], [$auth(), $rbac(
 $router->get('/students/{id}', [StudentController::class, 'show'], [$auth(), $rbac('doctoral_students.view')]);
 $router->get('/students/{id}/edit', [StudentController::class, 'edit'], [$auth(), $rbac('doctoral_students.edit')]);
 $router->post('/students/{id}', [StudentController::class, 'update'], [$auth(), $rbac('doctoral_students.edit')]);
-
+$router->post('/students/{id}/delete', [
+    StudentController::class,
+    'delete'
+], [
+    $auth(),
+    new SuperAdminMiddleware(),
+]);
 // --- Ilmiy rahbarlar (item 7) ---
 $router->get('/supervisors', [SupervisorController::class, 'index'], [$auth(), $rbac('supervisors.view')]);
 $router->get('/supervisors/create', [SupervisorController::class, 'create'], [$auth(), $rbac('supervisors.create')]);
