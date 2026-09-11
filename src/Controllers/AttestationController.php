@@ -71,13 +71,17 @@ if (Auth::role() === 'doctoral_student') {
     }
 
     return $this->view('attestations.show', [
-        'user' => Auth::user(),
-        'title' => 'Attestatsiya',
-        'active' => 'attestations',
-        'attestation' => $attestation,
-        'results' => Attestation::RESULTS,
-        'canApprove' => Auth::can('attestations.approve'),
-    ]);
+    'user' => Auth::user(),
+    'title' => 'Attestatsiya',
+    'active' => 'attestations',
+    'attestation' => $attestation,
+    'results' => Attestation::RESULTS,
+    'students' => DB::select(
+        'SELECT id, full_name FROM doctoral_students ORDER BY full_name'
+    ),
+    'canEdit' => Auth::can('attestations.edit'),
+    'canApprove' => Auth::can('attestations.approve'),
+]);
 }
 
     public function store(Request $request): Response
