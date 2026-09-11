@@ -37,7 +37,21 @@ $this->layout('layouts.app');
                         <td><a href="/plans/<?= e($p['id']) ?>"><?= e($p['student_name'] ?? '—') ?></a></td>
                         <td><?= e($p['academic_year']) ?></td>
                         <td><?= e($p['supervisor_name'] ?? '—') ?></td>
-                        <td><?= e($statuses[$p['status']] ?? $p['status']) ?></td>
+                    <td>
+    <?= e($statuses[$p['status']] ?? $p['status']) ?>
+
+    <?php if (\App\Core\Auth::role() === 'super_admin'): ?>
+        <form
+            method="post"
+            action="/plans/<?= e($p['id']) ?>/delete"
+            style="display:inline"
+            onsubmit="return confirm('Individual rejani o‘chirishni tasdiqlaysizmi?');"
+        >
+            <?= \App\Core\Csrf::field() ?>
+            <button type="submit" class="btn btn-danger">O‘chirish</button>
+        </form>
+    <?php endif; ?>
+</td>
                     </tr>
                 <?php endforeach; ?>
             </tbody>
