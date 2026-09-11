@@ -306,7 +306,13 @@ $router->post('/results/{id}/update', [
     $auth(),
     $rbac('scientific_results.view')
 ]);
-
+$router->post('/results/{id}/delete', [
+    ScientificResultController::class,
+    'delete'
+], [
+    $auth(),
+    new SuperAdminMiddleware(),
+]);
 // Ilmiy natijani tasdiqlash
 $router->post('/results/{id}/verify', [
     ScientificResultController::class,
