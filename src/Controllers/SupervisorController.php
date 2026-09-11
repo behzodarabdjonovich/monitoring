@@ -137,4 +137,26 @@ final class SupervisorController extends Controller
             'specialties' => DB::select('SELECT id, name FROM specialties ORDER BY name'),
         ]);
     }
+public function delete(Request $request): Response
+{
+    $id = (int) $request->param('id');
+    $supervisor = Supervisor::find($id);
+
+    if ($supervisor === null) {
+        return $this->notFound();
+    }
+
+    if (!Supervisor::delete($id)) {
+        Session::flash(
+            'error',
+            'Ilmiy rahbarni o‘chirib bo‘lmadi. U doktorant, reja, ilmiy natija, kafedra yoki ixtisoslikka bog‘langan.'
+        );
+
+        return $this->redirect('/supervisors/' . $id);
+    }
+
+    Session::flash('success', 'Ilmiy rahbar muvaffaqiyatli o‘chirildi.');
+
+    return $this->redirect('/supervisors');
+}
 }
