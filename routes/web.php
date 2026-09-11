@@ -124,13 +124,7 @@ $router->post('/ilmiy-bolim/rahbar-sorovlari/{id}/approve', [
 ], [
     new AuthMiddleware(),
 ]);
-$router->post('/supervisors/{id}/delete', [
-    SupervisorController::class,
-    'delete'
-], [
-    $auth(),
-    new SuperAdminMiddleware(),
-]);
+
 $router->post('/ilmiy-bolim/rahbar-sorovlari/{id}/reject', [
     SupervisorRequestController::class,
     'reject'
@@ -164,6 +158,13 @@ $router->get('/supervisors/create', [SupervisorController::class, 'create'], [$a
 $router->post('/supervisors', [SupervisorController::class, 'store'], [$auth(), $rbac('supervisors.create')]);
 $router->get('/supervisors/{id}', [SupervisorController::class, 'show'], [$auth(), $rbac('supervisors.view')]);
 $router->get('/supervisors/{id}/edit', [SupervisorController::class, 'edit'], [$auth(), $rbac('supervisors.edit')]);
+$router->post('/supervisors/{id}/delete', [
+    SupervisorController::class,
+    'delete'
+], [
+    $auth(),
+    new SuperAdminMiddleware(),
+]);
 $router->post('/supervisors/{id}', [SupervisorController::class, 'update'], [$auth(), $rbac('supervisors.edit')]);
 
 // --- Ixtisosliklar va dasturlar (item 8) ---
