@@ -132,4 +132,48 @@ public function update(Request $request): Response
     return $this->redirect('/programs');
 }
 }
+public function delete(Request $request): Response
+{
+    $id = (int) $request->param('id');
+
+    $program = DB::selectOne(
+        'SELECT * FROM doctoral_programs WHERE id = :id',
+        ['id' => $id]
+    );
+
+    if ($program === null) {
+        return $this->notFound();
+    }
+
+    $studentCount = (int) DB::scalar(
+        'SELECT COUNT(*) FROM doctoral_students WHERE program_id = :id',
+        ['id' => $id]
+    );
+
+    if ($studentCount > 0) {
+        Session::flash(
+            'error',
+            'Dastur o‘chirilmadi. Unga doktorant biriktirilgan.'
+        );
+
+        return $this->redirect('/programs');
+    }
+
+    DB::run(
+        'DELETE FROM doctoral_programs WHERE id = :id',
+        ['id' => $id]
+    );
+
+    AuditLogger::log(
+        'delete',
+        'doctoral_programs',
+        $id,
+        $program,
+        null
+    );
+
+    Session::flash('success', 'Dastur muvaffaqiyatli o‘chirildi.');
+
+    return $this->redirect('/programs');
+}
 }
