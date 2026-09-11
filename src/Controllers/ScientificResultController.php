@@ -255,12 +255,7 @@ public function update(Request $request): Response
     return $this->forbidden();
 }
 
-    // Qayta yuborishni faqat doktorant bajaradi.
-    if (Auth::role() !== 'doctoral_student') {
-        return $this->forbidden();
-    }
-
-    $student = null;
+       $student = null;
 
 if (Auth::role() === 'doctoral_student') {
     $student = DoctoralStudent::findByUser((int) Auth::id());
