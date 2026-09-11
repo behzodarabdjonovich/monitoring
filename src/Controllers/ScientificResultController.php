@@ -78,9 +78,9 @@ public function edit(Request $request): Response
     }
 
     // Ilmiy natijani qayta tahrirlash faqat doktorant uchun.
-    if (Auth::role() !== 'doctoral_student') {
-        return $this->forbidden();
-    }
+   if (!in_array(Auth::role(), ['doctoral_student', 'super_admin'], true)) {
+    return $this->forbidden();
+}
 
     $id = (int) $request->param('id');
     $result = ScientificResult::find($id);
@@ -89,15 +89,16 @@ public function edit(Request $request): Response
         return $this->notFound();
     }
 
+    if (Auth::role() === 'doctoral_student') {
     $student = DoctoralStudent::findByUser((int) Auth::id());
 
-    // Doktorant faqat o'z natijasini tahrirlay oladi.
     if (
         $student === null
         || (int) ($result['student_id'] ?? 0) !== (int) $student['id']
     ) {
         return $this->forbidden();
     }
+}
 
     // Faqat rad etilgan natijani tuzatish mumkin.
     if (($result['status'] ?? 'pending') !== 'rejected') {
@@ -247,24 +248,27 @@ public function update(Request $request): Response
     $id = (int) $request->param('id');
     $result = ScientificResult::find($id);
 
-    if ($result === null) {
-        return $this->notFound();
-    }
+   if (!in_array(Auth::role(), ['doctoral_student', 'super_admin'], true)) {
+    return $this->forbidden();
+}
 
     // Qayta yuborishni faqat doktorant bajaradi.
     if (Auth::role() !== 'doctoral_student') {
         return $this->forbidden();
     }
 
+    $student = null;
+
+if (Auth::role() === 'doctoral_student') {
     $student = DoctoralStudent::findByUser((int) Auth::id());
 
-    // Doktorant faqat o'z ilmiy natijasini o'zgartira oladi.
     if (
         $student === null
         || (int) ($result['student_id'] ?? 0) !== (int) $student['id']
     ) {
         return $this->forbidden();
     }
+}
 
     // Faqat rad etilgan natija qayta yuboriladi.
     if (($result['status'] ?? 'pending') !== 'rejected') {
@@ -284,10 +288,12 @@ public function update(Request $request): Response
 
     // POST orqali boshqa doktorant yoki rahbar ID sini
     // soxtalashtirishga yo'l qo'ymaymiz.
+    if (Auth::role() === 'doctoral_student') {
     $data['student_id'] = (int) $student['id'];
     $data['supervisor_id'] = !empty($student['supervisor_id'])
         ? (int) $student['supervisor_id']
         : null;
+}
 
     $old = $result;
 
