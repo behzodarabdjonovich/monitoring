@@ -28,6 +28,15 @@ $row = function (string $label, $value) {
             <div class="progress-bar rag-fill-<?= e($effRag) ?>" style="width: <?= e($eff === null ? 0 : max(0, min(100, $eff))) ?>%"></div>
         </div>
         <?php if ($canEdit): ?><a class="btn btn-primary" href="/supervisors/<?= e($supervisor['id']) ?>/edit">Tahrirlash</a><?php endif; ?>
+  <?php if (\App\Core\Auth::role() === 'super_admin'): ?>
+<form method="post"
+      action="/supervisors/<?= e($supervisor['id']) ?>/delete"
+      style="display:inline"
+      onsubmit="return confirm('Ilmiy rahbarni o‘chirishni tasdiqlaysizmi?');">
+    <?= \App\Core\Csrf::field() ?>
+    <button type="submit" class="btn btn-danger">Ilmiy rahbarni o‘chirish</button>
+</form>
+<?php endif; ?>
     </div>
 </div>
 
