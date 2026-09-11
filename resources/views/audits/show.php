@@ -57,6 +57,10 @@ $indicatorList = function (array $items) {
     </div>
 </div>
 
+<?php if (\App\Core\Auth::role() === 'super_admin'): ?>
+<div class="card"><form method="post" action="/audits/<?= e($audit['id']) ?>/delete" onsubmit="return confirm('Ichki auditni o‘chirishni tasdiqlaysizmi?');"><?= \App\Core\Csrf::field() ?><button type="submit" class="btn btn-danger">O‘chirish</button></form></div>
+<?php endif; ?>
+
 <div class="card">
     <h3>Audit xulosasi</h3>
     <p><?= e($audit['summary'] ?? '') ?></p>
