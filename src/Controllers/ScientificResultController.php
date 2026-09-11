@@ -435,7 +435,7 @@ DB::commit();
 
         Session::flash(
             'error',
-           'Ilmiy natijani qayta yuborishda xatolik yuz berdi: ' . $e->getMessage()
+         'Ilmiy natijani qayta yuborishda xatolik yuz berdi.'
         );
 
         return $this->redirect('/results');
