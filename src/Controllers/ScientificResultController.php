@@ -531,8 +531,24 @@ DB::commit();
 private function syncSpecialization(array $result, array $data): void
 {
     $resultId = (int) $result['id'];
-    $studentId = (int) $data['student_id'];
+
+    $studentId = !empty($data['student_id'])
+        ? (int) $data['student_id']
+        : null;
+
     $type = (string) $data['result_type'];
+
+    if (
+        $studentId === null
+        && (
+            in_array($type, ScientificResult::PUBLICATION_TYPES, true)
+            || in_array($type, ScientificResult::CONFERENCE_TYPES, true)
+        )
+    ) {
+        throw new \RuntimeException(
+            'Maqola yoki konferensiya uchun doktorant tanlanishi shart.'
+        );
+    }
 
     $oldPublicationId = !empty($result['publication_id'])
         ? (int) $result['publication_id']
