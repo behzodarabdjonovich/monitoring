@@ -229,6 +229,13 @@ $router->get('/plans/{id}/edit', [PlanController::class, 'edit'], [$auth(), $rba
 $router->post('/plans/{id}', [PlanController::class, 'update'], [$auth(), $rbac('individual_plans.edit')]);
 $router->post('/plans/{id}/approve', [PlanController::class, 'approve'], [$auth(), $rbac('individual_plans.approve')]);
 $router->post('/plans/{id}/tasks', [PlanTaskController::class, 'store'], [$auth(), $rbac('individual_plans.edit')]);
+$router->post('/plans/{id}/delete', [
+    PlanController::class,
+    'delete'
+], [
+    $auth(),
+    new SuperAdminMiddleware(),
+]);
 // Marshrut individual_plans.view bilan ochiq (holat o'tishi so'rovi uchun),
 // biroq vazifa MAYDONLARINI yozish kontrollerda individual_plans.edit bilan
 // gate qilinadi; holat o'tishi esa holat mashinasi + rol gating orqali.
