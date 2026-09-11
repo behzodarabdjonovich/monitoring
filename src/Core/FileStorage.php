@@ -90,7 +90,16 @@ final class FileStorage
     {
         return self::resolve($relativePath);
     }
+public static function delete(string $relativePath): bool
+{
+    $full = self::resolve($relativePath);
 
+    if ($full === null || !is_file($full)) {
+        return false;
+    }
+
+    return unlink($full);
+}
     /**
      * Yo'lni storage ildizi ichida ekanligini tasdiqlaydi (path traversal
      * himoyasi).
