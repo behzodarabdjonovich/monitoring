@@ -25,7 +25,7 @@ $row = function (string $label, $value) {
 
 <div class="card hero-card hero-<?= e($rag) ?>">
     <div class="hero-body">
-        <h2 class="hero-title">Akkreditatsiyaga tayyorlik indeksi: <?= $p === null ? 'Ma\'lumot yo\'q' : e(round($p)) . '%' ?>
+               <h2 class="hero-title">Akkreditatsiyaga tayyorlik indeksi: <?= $p === null ? 'Ma\'lumot yo\'q' : e(round($p)) . '%' ?>
             <?php if (!empty($readiness['label'])): ?><span class="badge badge-<?= e($rag) ?>"><?= e($readiness['label']) ?></span><?php endif; ?>
         </h2>
         <div class="progress hero-progress" role="progressbar" aria-valuenow="<?= e($p === null ? 0 : round($p)) ?>" aria-valuemin="0" aria-valuemax="100">
@@ -35,6 +35,17 @@ $row = function (string $label, $value) {
             <a class="btn btn-primary" href="/accreditations/<?= e($readiness['accreditation_id']) ?>">Akkreditatsiya indikatorlari</a>
         <?php endif; ?>
         <?php if ($canEdit): ?><a class="btn btn-primary" href="/specialties/<?= e($specialty['id']) ?>/edit">Tahrirlash</a><?php endif; ?>
+   <?php if (\App\Core\Auth::role() === 'super_admin'): ?>
+    <form
+        method="post"
+        action="/specialties/<?= e($specialty['id']) ?>/delete"
+        style="display:inline"
+        onsubmit="return confirm('Ixtisoslikni o‘chirishni tasdiqlaysizmi?');"
+    >
+        <?= \App\Core\Csrf::field() ?>
+        <button type="submit" class="btn btn-danger">Ixtisoslikni o‘chirish</button>
+    </form>
+<?php endif; ?>
     </div>
 </div>
 
