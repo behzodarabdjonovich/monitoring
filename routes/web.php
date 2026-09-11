@@ -195,6 +195,21 @@ $router->post('/departments', [
     $auth(),
     new SuperAdminMiddleware(),
 ]);
+$router->get('/departments/{id}/edit', [
+    DepartmentController::class,
+    'edit'
+], [
+    $auth(),
+    new SuperAdminMiddleware(),
+]);
+
+$router->post('/departments/{id}/edit', [
+    DepartmentController::class,
+    'update'
+], [
+    $auth(),
+    new SuperAdminMiddleware(),
+]);
 $router->post('/departments/{id}/delete', [
     DepartmentController::class,
     'delete'
