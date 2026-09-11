@@ -174,6 +174,14 @@ $router->post('/specialties/{id}/delete', [
     $auth(),
     new SuperAdminMiddleware(),
 ]);
+$router->get('/departments', [
+    DepartmentController::class,
+    'index'
+], [
+    $auth(),
+    new SuperAdminMiddleware(),
+]);
+
 $router->post('/departments/{id}/delete', [
     DepartmentController::class,
     'delete'
