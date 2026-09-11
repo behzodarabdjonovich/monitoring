@@ -145,6 +145,27 @@ final class DeficiencyController extends Controller
         return $this->redirect('/deficiencies/' . $id);
     }
 
+    public function delete(Request $request): Response
+    {
+        if (Auth::role() !== 'super_admin') {
+            return $this->forbidden();
+        }
+        $id = (int) $request->param('id');
+        $def = Deficiency::find($id);
+        if ($def === null) {
+            return $this->notFound();
+        }
+        $planCount = (int) DB::scalar('SELECT COUNT(*) FROM action_plans WHERE deficiency_id = :id', ['id' => $id]);
+        if ($planCount > 0) {
+            Session::flash('error', 'Kamchilik o‘chirilmadi. Unga Action Plan chora-tadbirlari bog‘langan.');
+            return $this->redirect('/deficiencies/' . $id);
+        }
+        DB::run('DELETE FROM deficiencies WHERE id = :id', ['id' => $id]);
+        AuditLogger::log('delete', 'deficiencies', $id, $def, null);
+        Session::flash('success', 'Kamchilik muvaffaqiyatli o‘chirildi.');
+        return $this->redirect('/deficiencies');
+    }
+
     // ---------------------------------------------------------------
     // Chora-tadbirlar (Action Plan).
     // ---------------------------------------------------------------
@@ -247,6 +268,22 @@ final class DeficiencyController extends Controller
         return $this->redirect('/deficiencies/' . (int) $plan['deficiency_id']);
     }
 
+    public function deletePlan(Request $request): Response
+    {
+        if (Auth::role() !== 'super_admin') {
+            return $this->forbidden();
+        }
+        $id = (int) $request->param('id');
+        $plan = DB::selectOne('SELECT * FROM action_plans WHERE id = :id', ['id' => $id]);
+        if ($plan === null) {
+            return $this->notFound();
+        }
+        DB::run('DELETE FROM action_plans WHERE id = :id', ['id' => $id]);
+        AuditLogger::log('delete', 'action_plans', $id, $plan, null);
+        Session::flash('success', 'Chora-tadbir muvaffaqiyatli o‘chirildi.');
+        return $this->redirect('/action-plans');
+    }
+
     // ---------------------------------------------------------------
     // Yordamchilar.
     // ---------------------------------------------------------------
@@ -276,10 +313,5 @@ final class DeficiencyController extends Controller
     private function notFound(): Response
     {
         return Response::html(View::render('errors.404'), 404);
-    }
-
-    private function forbidden(): Response
-    {
-        return Response::html(View::render('errors.403'), 403);
     }
 }
