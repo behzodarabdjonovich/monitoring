@@ -57,7 +57,20 @@ public static function all(): array
             && $supervisorCount === 0
             && $studentCount === 0;
     }
-
+public static function update(int $id, string $name, ?string $code = null): void
+{
+    DB::run(
+        'UPDATE departments
+         SET name = :name,
+             code = :code
+         WHERE id = :id',
+        [
+            'id' => $id,
+            'name' => $name,
+            'code' => $code,
+        ]
+    );
+}
     public static function delete(int $departmentId): bool
     {
         if (!self::canDelete($departmentId)) {
