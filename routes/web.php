@@ -34,6 +34,7 @@ use App\Core\Router;
 use App\Controllers\DoctoralAuthController;
 use App\Controllers\DoctoralDashboardController;
 use App\Controllers\SupervisorRequestController;
+use App\Controllers\DepartmentController;
 
 /** @var Router $router */
 
@@ -168,6 +169,13 @@ $router->get('/specialties/{id}/edit', [SpecialtyController::class, 'edit'], [$a
 $router->post('/specialties/{id}', [SpecialtyController::class, 'update'], [$auth(), $rbac('specialties.edit')]);
 $router->post('/specialties/{id}/delete', [
     SpecialtyController::class,
+    'delete'
+], [
+    $auth(),
+    new SuperAdminMiddleware(),
+]);
+$router->post('/departments/{id}/delete', [
+    DepartmentController::class,
     'delete'
 ], [
     $auth(),
