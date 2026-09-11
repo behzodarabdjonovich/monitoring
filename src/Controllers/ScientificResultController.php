@@ -739,7 +739,7 @@ private function syncSpecialization(array $result, array $data): void
     if (!in_array(Auth::role(), [
     'doctorate_office',
     'super_admin',
-] true)) {
+], true)) {
         return $this->forbidden();
     }
 
