@@ -250,7 +250,7 @@ $this->layout('layouts.app');
     [
     'doctorate_office',
     'super_admin'
-]
+],
     true
 )): ?>
 
