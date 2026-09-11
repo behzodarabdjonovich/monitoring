@@ -36,6 +36,47 @@ final class DepartmentController extends Controller
 
     return $this->redirect('/departments');
 }  
+ public function edit(Request $request): Response
+{
+    $id = (int) $request->param('id');
+    $department = Department::find($id);
+
+    if ($department === null) {
+        return $this->notFound();
+    }
+
+    return $this->view('departments.edit', [
+        'department' => $department,
+    ]);
+}
+
+public function update(Request $request): Response
+{
+    $id = (int) $request->param('id');
+    $department = Department::find($id);
+
+    if ($department === null) {
+        return $this->notFound();
+    }
+
+    $name = trim((string) $request->input('name'));
+    $code = trim((string) $request->input('code'));
+
+    if ($name === '') {
+        Session::flash('error', 'Kafedra nomini kiriting.');
+        return $this->redirect('/departments/' . $id . '/edit');
+    }
+
+    Department::update(
+        $id,
+        $name,
+        $code !== '' ? $code : null
+    );
+
+    Session::flash('success', 'Kafedra muvaffaqiyatli tahrirlandi.');
+
+    return $this->redirect('/departments');
+}
  public function delete(Request $request): Response
     {
         $id = (int) $request->param('id');
