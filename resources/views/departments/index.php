@@ -78,6 +78,12 @@ $this->layout('layouts.app');
                         <td><?= e((int) $department['supervisor_count']) ?></td>
                         <td><?= e((int) $department['student_count']) ?></td>
                         <td>
+                           <a
+    href="/departments/<?= e($department['id']) ?>/edit"
+    class="btn btn-primary"
+>
+    Tahrirlash
+</a>
                             <form
                                 method="post"
                                 action="/departments/<?= e($department['id']) ?>/delete"
