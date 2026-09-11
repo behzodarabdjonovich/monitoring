@@ -43,6 +43,7 @@ foreach ($plans as $p) {
                     <th>Boshlanish</th>
                     <th>Yakuniy muddat</th>
                     <th>Holat</th>
+                    <?php if (\App\Core\Auth::role() === 'super_admin'): ?><th>Amal</th><?php endif; ?>
                 </tr>
             </thead>
             <tbody>
@@ -61,6 +62,7 @@ foreach ($plans as $p) {
                             <span class="badge badge-<?= e($rag) ?>"><?= e($dueLabels[$ap['due_state']] ?? $ap['due_state']) ?></span>
                         </td>
                         <td><?= e($ap['status']) ?></td>
+                        <?php if (\App\Core\Auth::role() === 'super_admin'): ?><td><form method="post" action="/action-plans/<?= e($ap['id']) ?>/delete" onsubmit="return confirm('Chora-tadbirni o‘chirishni tasdiqlaysizmi?');"><?= \App\Core\Csrf::field() ?><button type="submit" class="btn btn-danger">O‘chirish</button></form></td><?php endif; ?>
                     </tr>
                 <?php endforeach; ?>
             </tbody>
