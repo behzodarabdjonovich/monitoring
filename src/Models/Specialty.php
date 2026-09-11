@@ -88,37 +88,39 @@ final class Specialty
         ];
     }
 }
-public static function canDelete(int $specialtyId): bool
-{
-    $studentCount = (int) DB::scalar(
-        'SELECT COUNT(*) FROM doctoral_students WHERE specialty_id = :sid',
-        ['sid' => $specialtyId]
-    );
+    public static function canDelete(int $specialtyId): bool
+    {
+        $studentCount = (int) DB::scalar(
+            'SELECT COUNT(*) FROM doctoral_students WHERE specialty_id = :sid',
+            ['sid' => $specialtyId]
+        );
 
-    $supervisorCount = (int) DB::scalar(
-        'SELECT COUNT(*) FROM supervisors WHERE specialty_id = :sid',
-        ['sid' => $specialtyId]
-    );
+        $supervisorCount = (int) DB::scalar(
+            'SELECT COUNT(*) FROM supervisors WHERE specialty_id = :sid',
+            ['sid' => $specialtyId]
+        );
 
-    $programCount = (int) DB::scalar(
-        'SELECT COUNT(*) FROM doctoral_programs WHERE specialty_id = :sid',
-        ['sid' => $specialtyId]
-    );
+        $programCount = (int) DB::scalar(
+            'SELECT COUNT(*) FROM doctoral_programs WHERE specialty_id = :sid',
+            ['sid' => $specialtyId]
+        );
 
-    return $studentCount === 0
-        && $supervisorCount === 0
-        && $programCount === 0;
-public static function delete(int $specialtyId): bool
-{
-    if (!self::canDelete($specialtyId)) {
-        return false;
+        return $studentCount === 0
+            && $supervisorCount === 0
+            && $programCount === 0;
     }
 
-    DB::run(
-        'DELETE FROM specialties WHERE id = :id',
-        ['id' => $specialtyId]
-    );
+    public static function delete(int $specialtyId): bool
+    {
+        if (!self::canDelete($specialtyId)) {
+            return false;
+        }
 
-    return true;
-}
+        DB::run(
+            'DELETE FROM specialties WHERE id = :id',
+            ['id' => $specialtyId]
+        );
+
+        return true;
+    }
 }
