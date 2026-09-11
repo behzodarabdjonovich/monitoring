@@ -335,6 +335,7 @@ $router->get('/documents', [DocumentController::class, 'index'], [$auth(), $rbac
 $router->post('/documents', [DocumentController::class, 'store'], [$auth(), $rbac('documents.upload')]);
 $router->get('/documents/{id}', [DocumentController::class, 'show'], [$auth(), $rbac('documents.view')]);
 $router->get('/documents/{id}/download', [DocumentController::class, 'download'], [$auth(), $rbac('documents.view')]);
+$router->post('/documents/{id}/update', [DocumentController::class, 'update'], [$auth(), $rbac('documents.edit')]);
 $router->post('/documents/{id}/delete', [DocumentController::class, 'delete'], [$auth(), $rbac('documents.edit')]);
 // Bog'lash/uzish marshrut guard'i kontroller ichidagi qat'iyroq tekshiruvga
 // (documents.edit YOKI accreditation.edit) moslashtirildi.
@@ -347,6 +348,7 @@ $router->post('/attestations', [AttestationController::class, 'store'], [$auth()
 $router->get('/attestations/{id}', [AttestationController::class, 'show'], [$auth(), $rbac('attestations.view')]);
 $router->post('/attestations/{id}/approve', [AttestationController::class, 'approve'], [$auth(), $rbac('attestations.approve')]);
 $router->post('/attestations/{id}', [AttestationController::class, 'update'], [$auth(), $rbac('attestations.edit')]);
+$router->post('/attestations/{id}/delete', [AttestationController::class, 'delete'], [$auth(), new SuperAdminMiddleware()]);
 
 // --- MAXSUS DAVLAT AKKREDITATSIYASI (item 9-10) — ENG ASOSIY modul ---
 // Akkreditatsiya -> Mezon -> Indikator -> Talab -> Dalil -> Baho -> Kamchilik -> Chora-tadbir.
@@ -356,6 +358,7 @@ $router->post('/accreditations', [AccreditationController::class, 'store'], [$au
 $router->get('/accreditations/{id}', [AccreditationController::class, 'show'], [$auth(), $rbac('accreditation.view')]);
 $router->get('/accreditations/{id}/edit', [AccreditationController::class, 'edit'], [$auth(), $rbac('accreditation.edit')]);
 $router->post('/accreditations/{id}', [AccreditationController::class, 'update'], [$auth(), $rbac('accreditation.edit')]);
+$router->post('/accreditations/{id}/delete', [AccreditationController::class, 'delete'], [$auth(), new SuperAdminMiddleware()]);
 $router->post('/accreditations/{id}/criteria', [AccreditationController::class, 'storeCriterion'], [$auth(), $rbac('accreditation.edit')]);
 $router->post('/accreditations/{id}/clear-placeholder', [AccreditationController::class, 'clearPlaceholder'], [$auth(), $rbac('accreditation.configure')]);
 // Mezon (Criteria) -> indikatorlar ro'yxati (nested navigation).
@@ -374,15 +377,18 @@ $router->post('/deficiencies', [DeficiencyController::class, 'store'], [$auth(),
 $router->get('/deficiencies/{id}', [DeficiencyController::class, 'show'], [$auth(), $rbac('deficiencies.view')]);
 $router->post('/deficiencies/{id}', [DeficiencyController::class, 'update'], [$auth(), $rbac('deficiencies.edit')]);
 $router->post('/deficiencies/{id}/close', [DeficiencyController::class, 'close'], [$auth(), $rbac('deficiencies.edit')]);
+$router->post('/deficiencies/{id}/delete', [DeficiencyController::class, 'delete'], [$auth(), new SuperAdminMiddleware()]);
 $router->post('/deficiencies/{id}/plans', [DeficiencyController::class, 'storePlan'], [$auth(), $rbac('action_plans.create')]);
 // Action Plan bo'limi (muddat holatlari bilan barcha chora-tadbirlar).
 $router->get('/action-plans', [DeficiencyController::class, 'plans'], [$auth(), $rbac('action_plans.view')]);
 $router->post('/action-plans/{id}', [DeficiencyController::class, 'updatePlan'], [$auth(), $rbac('action_plans.edit')]);
+$router->post('/action-plans/{id}/delete', [DeficiencyController::class, 'deletePlan'], [$auth(), new SuperAdminMiddleware()]);
 
 // --- Ichki akkreditatsiya auditi (item 13) — per-ixtisoslik report ---
 $router->get('/audits', [InternalAuditController::class, 'index'], [$auth(), $rbac('internal_audits.view')]);
 $router->post('/audits/run', [InternalAuditController::class, 'run'], [$auth(), $rbac('internal_audits.audit')]);
 $router->get('/audits/{id}', [InternalAuditController::class, 'show'], [$auth(), $rbac('internal_audits.view')]);
+$router->post('/audits/{id}/delete', [InternalAuditController::class, 'delete'], [$auth(), new SuperAdminMiddleware()]);
 
 // --- Sozlamalar (Sozlamalar) — baholash metodikasi (Super Admin) ---
 $router->get('/settings', [SettingsController::class, 'index'], [$auth(), $rbac('settings.view')]);
