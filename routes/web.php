@@ -49,7 +49,7 @@ $router->post('/login', [AuthController::class, 'login']);
 $router->get('/forgot-password', [AuthController::class, 'showForgot']);
 $router->post('/forgot-password', [AuthController::class, 'sendReset']);
 $router->get('/reset-password', [AuthController::class, 'resetPassword']);
-$router->post('/reset-password', [AuthController::class, 'updatePassword']);
+$router->post('/reset-password', [AuthController::class, 'reset']);
 $router->post('/logout', [AuthController::class, 'logout']);
 
 // --- Doktorant portali ---
