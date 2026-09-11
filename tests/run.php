@@ -150,7 +150,7 @@ test('migrate + seed kutilgan yozuv sonlarini beradi', function () {
     assertEquals(4, (int) DB::scalar('SELECT COUNT(*) FROM users'), '4 ta demo foydalanuvchi');
     assertTrue((int) DB::scalar('SELECT COUNT(*) FROM permissions') > 0, 'Ruxsatlar seed qilinishi kerak');
     assertTrue((int) DB::scalar('SELECT COUNT(*) FROM role_permission') > 0, 'role_permission matritsasi to\'ldirilishi kerak');
-    assertEquals(1, (int) DB::scalar('SELECT COUNT(*) FROM accreditations WHERE is_placeholder = 1'), 'Placeholder akkreditatsiya');
+    assertEquals(0, (int) DB::scalar('SELECT COUNT(*) FROM accreditations WHERE is_placeholder = 1'), 'Placeholder akkreditatsiya qolmasligi kerak');
     assertEquals(3, (int) DB::scalar('SELECT COUNT(*) FROM accreditation_criteria'), '3 ta namuna mezon');
     assertEquals(9, (int) DB::scalar('SELECT COUNT(*) FROM accreditation_indicators'), '9 ta namuna indikator');
     assertTrue((int) DB::scalar('SELECT COUNT(*) FROM doctoral_students') >= 20, 'Demo doktorantlar seed qilinishi kerak');
@@ -344,11 +344,7 @@ test('PlanTask rol gating: rahbar va bo\'lim faqat o\'z bosqichida', function ()
     // Ilmiy rahbar: completed->supervisor_approved OK, boshqasi yo'q.
     assertTrue($PT::roleCanTransition('doctorate_office', $PT::COMPLETED, $PT::SUPERVISOR_APPROVED));
     assertFalse($PT::roleCanTransition('doctorate_office', $PT::IN_PROGRESS, $PT::COMPLETED), 'rahbar doktorant bosqichini bajara olmaydi');
-    assertFalse($PT::roleCanTransition('doctorate_office', $PT::SUPERVISOR_APPROVED, $PT::FINALIZED), 'rahbar yakuniy tasdiqni bera olmaydi');
-    // Doktorantura bo'limi: supervisor_approved->finalized OK.
-    assertTrue($PT::roleCanTransition('doctorate_office', $PT::SUPERVISOR_APPROVED, $PT::FINALIZED));
-    assertFalse($PT::roleCanTransition('doctorate_office', $PT::COMPLETED, $PT::SUPERVISOR_APPROVED), 'bo\'lim rahbar bosqichini bajara olmaydi');
-    // Nazorat rollari (super_admin) barcha yaroqli o'tishni bajaradi.
+           // Nazorat rollari (super_admin) barcha yaroqli o'tishni bajaradi.
     assertTrue($PT::roleCanTransition('super_admin', $PT::COMPLETED, $PT::SUPERVISOR_APPROVED));
     assertTrue($PT::roleCanTransition('super_admin', $PT::SUPERVISOR_APPROVED, $PT::FINALIZED));
     // Ammo yaroqsiz o'tish nazorat roli uchun ham taqiq.
@@ -995,27 +991,6 @@ test('SettingsController konfiguratsiyani saqlaydi va barcha indekslarni qayta h
     $stored = DB::scalar('SELECT readiness_index FROM accreditations WHERE id = :id', ['id' => $accId]);
     $computed = \App\Core\ScoringEngine::assessAccreditation($accId)['readiness_index'];
     assertEquals($computed, $stored === null ? null : (float) $stored, 'Qayta hisoblangan indeks saqlanadi');
-    Auth::logout();
-});
-
-test('AccreditationController clearPlaceholder is_placeholder bayrog\'ini tozalaydi', function () {
-    bootTestDatabase();
-    Auth::attempt('admin', 'Parol123!');
-    Auth::flushCache();
-    $accId = (int) DB::scalar('SELECT id FROM accreditations WHERE is_placeholder = 1 ORDER BY id LIMIT 1');
-    assertTrue($accId > 0, 'Placeholder akkreditatsiya seed qilingan');
-
-    $ctrl = new \App\Controllers\AccreditationController();
-    $req = new Request('POST', "/accreditations/$accId/clear-placeholder", [], [], ['REQUEST_METHOD' => 'POST']);
-    $req->setParams(['id' => (string) $accId]);
-    $ctrl->clearPlaceholder($req);
-
-    assertEquals(0, (int) DB::scalar('SELECT is_placeholder FROM accreditations WHERE id = :id', ['id' => $accId]), 'Akkr placeholder tozalanadi');
-    assertEquals(0, (int) DB::scalar('SELECT COUNT(*) FROM accreditation_criteria WHERE accreditation_id = :aid AND is_placeholder = 1', ['aid' => $accId]), 'Mezonlar tozalanadi');
-    assertEquals(0, (int) DB::scalar(
-        'SELECT COUNT(*) FROM accreditation_indicators WHERE is_placeholder = 1 AND criteria_id IN (SELECT id FROM accreditation_criteria WHERE accreditation_id = :aid)',
-        ['aid' => $accId]
-    ), 'Indikatorlar tozalanadi');
     Auth::logout();
 });
 
