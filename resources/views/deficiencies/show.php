@@ -144,6 +144,11 @@ $dueLabels = ['done' => 'Bajarilgan', 'overdue' => 'Muddati o\'tgan', 'due_soon'
         </div>
         <button type="submit" class="btn btn-primary">Qo'shish</button>
     </form>
+    <?php if (\App\Core\Auth::role() === 'super_admin'): ?>
+    <form method="post" action="/deficiencies/<?= e($d['id']) ?>/delete" style="margin-top:0.5rem;" onsubmit="return confirm('Kamchilikni o‘chirishni tasdiqlaysizmi?');">
+        <?= Csrf::field() ?><button type="submit" class="btn btn-danger">O‘chirish</button>
+    </form>
+    <?php endif; ?>
 </div>
 <?php endif; ?>
 
