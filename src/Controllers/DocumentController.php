@@ -229,12 +229,13 @@ if (DB::driver() === 'pgsql') {
     }
 }
         
-        $fileRow = DB::selectOne(
-    "SELECT encode(file_data, 'base64') AS file_data_b64
-     FROM documents
-     WHERE id = :id",
-    ['id' => $id]
-);
+     if (DB::driver() === 'pgsql') {
+    $fileRow = DB::selectOne(
+        "SELECT encode(file_data, 'base64') AS file_data_b64
+         FROM documents
+         WHERE id = :id",
+        ['id' => $id]
+    );
 
     $contents = null;
 
@@ -246,7 +247,8 @@ if (DB::driver() === 'pgsql') {
         }
     }
 } else {
-          "SELECT file_data
+    $fileRow = DB::selectOne(
+        "SELECT file_data
          FROM documents
          WHERE id = :id",
         ['id' => $id]
@@ -254,7 +256,6 @@ if (DB::driver() === 'pgsql') {
 
     $contents = $fileRow['file_data'] ?? null;
 }
-
 if ($contents === null) {
     $contents = FileStorage::read((string) $doc['file_path']);
 }
