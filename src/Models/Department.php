@@ -27,6 +27,15 @@ public static function all(): array
          ORDER BY d.name'
     );
 }
+    public static function create(string $name, ?string $code = null): int
+{
+    return DB::insert('departments', [
+        'name' => $name,
+        'code' => $code,
+        'head_supervisor_id' => null,
+        'created_at' => date('Y-m-d H:i:s'),
+    ]);
+}
     public static function canDelete(int $departmentId): bool
     {
         $specialtyCount = (int) DB::scalar(
