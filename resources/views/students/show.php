@@ -36,6 +36,16 @@ $row = function (string $label, $value) {
         <?php if ($canEdit): ?>
             <a class="btn btn-primary" href="/students/<?= e($student['id']) ?>/edit">Profilni tahrirlash</a>
         <?php endif; ?>
+<?php if (\App\Core\Auth::role() === 'super_admin'): ?>
+    <form
+        method="post"
+        action="/students/<?= e($student['id']) ?>/delete"
+        style="display:inline"
+        onsubmit="return confirm('Doktorantni o‘chirishni tasdiqlaysizmi? Bu amal ortga qaytarilmaydi.');"
+    >
+        <button type="submit" class="btn btn-danger">Doktorantni o‘chirish</button>
+    </form>
+<?php endif; ?>
     </div>
 </div>
 
