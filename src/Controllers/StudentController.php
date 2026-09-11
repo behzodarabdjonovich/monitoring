@@ -343,8 +343,8 @@ final class StudentController extends Controller
         return Response::html(\App\Core\View::render('errors.404'), 404);
     }
 
-    private function forbidden(): Response
-    {
-        return Response::html(\App\Core\View::render('errors.403'), 403);
-    }
+ private function notFound(): Response
+{
+    return Response::html(\App\Core\View::render('errors.404'), 404);
+}
 }
