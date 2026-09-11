@@ -229,7 +229,7 @@ if (DB::driver() === 'pgsql') {
     }
 }
         
-     if (DB::driver() === 'pgsql') {
+ if (DB::driver() === 'pgsql') {
     $fileRow = DB::selectOne(
         "SELECT encode(file_data, 'base64') AS file_data_b64
          FROM documents
