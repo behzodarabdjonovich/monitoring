@@ -955,6 +955,52 @@ public function reject(Request $request): Response
 
       return $this->redirect('/results');
 }
+public function delete(Request $request): Response
+{
+    $id = (int) $request->param('id');
 
+    $result = ScientificResult::find($id);
+
+    if ($result === null) {
+        return $this->notFound();
+    }
+
+    $documentCount = (int) DB::scalar(
+        'SELECT COUNT(*) FROM documents WHERE scientific_result_id = :id',
+        ['id' => $id]
+    );
+
+    if (
+        $documentCount > 0
+        || !empty($result['document_id'])
+        || !empty($result['publication_id'])
+        || !empty($result['conference_id'])
+        || !empty($result['plan_task_id'])
+    ) {
+        Session::flash(
+            'error',
+            'Ilmiy natija o‘chirilmadi. U boshqa ma’lumotlar yoki dalillar bilan bog‘langan.'
+        );
+
+        return $this->redirect('/results');
+    }
+
+    DB::run(
+        'DELETE FROM scientific_results WHERE id = :id',
+        ['id' => $id]
+    );
+
+    AuditLogger::log(
+        'delete',
+        'scientific_results',
+        $id,
+        $result,
+        null
+    );
+
+    Session::flash('success', 'Ilmiy natija muvaffaqiyatli o‘chirildi.');
+
+    return $this->redirect('/results');
+}
 // ScientificResultController class tugashi
 }
