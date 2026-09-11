@@ -230,20 +230,32 @@ if (DB::driver() === 'pgsql') {
 }
         
         $fileRow = DB::selectOne(
-    "SELECT encode(file_data, 'base64') AS file_data_b64
-     FROM documents
-     WHERE id = :id",
-    ['id' => $id]
-);
+  if (DB::driver() === 'pgsql') {
+    $fileRow = DB::selectOne(
+        "SELECT encode(file_data, 'base64') AS file_data_b64
+         FROM documents
+         WHERE id = :id",
+        ['id' => $id]
+    );
 
-$contents = null;
+    $contents = null;
 
-if (!empty($fileRow['file_data_b64'])) {
-    $decoded = base64_decode((string) $fileRow['file_data_b64'], true);
+    if (!empty($fileRow['file_data_b64'])) {
+        $decoded = base64_decode((string) $fileRow['file_data_b64'], true);
 
-    if ($decoded !== false) {
-        $contents = $decoded;
+        if ($decoded !== false) {
+            $contents = $decoded;
+        }
     }
+} else {
+    $fileRow = DB::selectOne(
+        "SELECT file_data
+         FROM documents
+         WHERE id = :id",
+        ['id' => $id]
+    );
+
+    $contents = $fileRow['file_data'] ?? null;
 }
 
 if ($contents === null) {
