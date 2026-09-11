@@ -344,4 +344,37 @@ public function doctoral(Request $request): Response
         return (int) ($plan['student_id'] ?? 0)
             === (int) $student['id'];
     }
+public function delete(Request $request): Response
+{
+    $id = (int) $request->param('id');
+
+    $plan = IndividualPlan::find($id);
+
+    if ($plan === null) {
+        return $this->notFound();
+    }
+
+    if (!IndividualPlan::canDelete($id)) {
+        Session::flash(
+            'error',
+            'Individual reja o‘chirilmadi. Unda vazifalar mavjud.'
+        );
+
+        return $this->redirect('/plans');
+    }
+
+    IndividualPlan::delete($id);
+
+    AuditLogger::log(
+        'delete',
+        'individual_plans',
+        $id,
+        $plan,
+        null
+    );
+
+    Session::flash('success', 'Individual reja muvaffaqiyatli o‘chirildi.');
+
+    return $this->redirect('/plans');
+}
 }
