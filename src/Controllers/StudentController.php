@@ -331,19 +331,14 @@ final class StudentController extends Controller
         return Auth::can('doctoral_students.edit') || Auth::can('doctoral_students.create');
     }
 
-    private function back(Request $request, string $error): Response
-    {
-        Session::flash('error', $error);
-        $ref = $request->header('Referer') ?? '/students';
-        return $this->redirect($ref);
-    }
+   private function back(Request $request, string $error): Response
+{
+    Session::flash('error', $error);
+    $ref = $request->header('Referer') ?? '/students';
+    return $this->redirect($ref);
+}
 
-    private function notFound(): Response
-    {
-        return Response::html(\App\Core\View::render('errors.404'), 404);
-    }
-
- private function notFound(): Response
+private function notFound(): Response
 {
     return Response::html(\App\Core\View::render('errors.404'), 404);
 }
