@@ -303,6 +303,18 @@ $this->layout('layouts.app');
         </span>
 
     <?php endif; ?>
+        <?php endif; ?>
+
+    <?php if (\App\Core\Auth::role() === 'super_admin'): ?>
+        <a
+            href="/results/<?= e($r['id']) ?>/edit"
+            class="btn btn-primary"
+        >
+            Tahrirlash
+        </a>
+    <?php endif; ?>
+
+</td>
 
 </td>
                     </tr>
