@@ -251,3 +251,4 @@ public static function deleteWithRelations(int $studentId): bool
         throw $e;
     }
 }
+}
