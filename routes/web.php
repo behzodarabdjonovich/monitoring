@@ -46,7 +46,7 @@ $router->get('/', function () {
 
 $router->get('/login', [AuthController::class, 'showLogin']);
 $router->post('/login', [AuthController::class, 'login']);
-$router->get('/forgot-password', [AuthController::class, 'forgotPassword']);
+$router->get('/forgot-password', [AuthController::class, 'showForgot']);
 $router->post('/forgot-password', [AuthController::class, 'sendResetLink']);
 
 $router->get('/reset-password', [AuthController::class, 'resetPassword']);
