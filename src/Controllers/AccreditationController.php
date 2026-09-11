@@ -110,6 +110,28 @@ final class AccreditationController extends Controller
         return $this->redirect('/accreditations/' . $id);
     }
 
+    public function delete(Request $request): Response
+    {
+        if (Auth::role() !== 'super_admin') {
+            return $this->forbidden();
+        }
+        $id = (int) $request->param('id');
+        $acc = Accreditation::find($id);
+        if ($acc === null) {
+            return $this->notFound();
+        }
+        $criteriaCount = (int) DB::scalar('SELECT COUNT(*) FROM accreditation_criteria WHERE accreditation_id = :id', ['id' => $id]);
+        $auditCount = (int) DB::scalar('SELECT COUNT(*) FROM internal_audits WHERE accreditation_id = :id', ['id' => $id]);
+        if ($criteriaCount > 0 || $auditCount > 0) {
+            Session::flash('error', 'Akkreditatsiya o‘chirilmadi. Unga mezonlar yoki ichki auditlar bog‘langan.');
+            return $this->redirect('/accreditations/' . $id);
+        }
+        DB::run('DELETE FROM accreditations WHERE id = :id', ['id' => $id]);
+        AuditLogger::log('delete', 'accreditations', $id, $acc, null);
+        Session::flash('success', 'Akkreditatsiya muvaffaqiyatli o‘chirildi.');
+        return $this->redirect('/accreditations');
+    }
+
     // ---------------------------------------------------------------
     // Mezon (Criteria) CRUD.
     // ---------------------------------------------------------------
@@ -414,10 +436,5 @@ final class AccreditationController extends Controller
     private function notFound(): Response
     {
         return Response::html(View::render('errors.404'), 404);
-    }
-
-    private function forbidden(): Response
-    {
-        return Response::html(View::render('errors.403'), 403);
     }
 }
