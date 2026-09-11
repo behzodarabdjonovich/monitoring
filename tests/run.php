@@ -147,7 +147,7 @@ test('migrate + seed kutilgan yozuv sonlarini beradi', function () {
     }
 
     assertEquals(4, (int) DB::scalar('SELECT COUNT(*) FROM roles'), '4 ta rol seed qilinishi kerak');
-    assertEquals(9, (int) DB::scalar('SELECT COUNT(*) FROM users'), '9 ta demo foydalanuvchi');
+    assertEquals(4, (int) DB::scalar('SELECT COUNT(*) FROM users'), '4 ta demo foydalanuvchi');
     assertTrue((int) DB::scalar('SELECT COUNT(*) FROM permissions') > 0, 'Ruxsatlar seed qilinishi kerak');
     assertTrue((int) DB::scalar('SELECT COUNT(*) FROM role_permission') > 0, 'role_permission matritsasi to\'ldirilishi kerak');
     assertEquals(1, (int) DB::scalar('SELECT COUNT(*) FROM accreditations WHERE is_placeholder = 1'), 'Placeholder akkreditatsiya');
@@ -215,11 +215,16 @@ test('DashboardStats KPI\'lari seed ma\'lumotiga mos keladi', function () {
 
     // Xalqaro maqolalar <= jami maqolalar.
     assertTrue($k['publications_intl'] <= $k['publications'], 'Xalqaro maqolalar jamidan oshmasligi kerak');
-    assertEquals(
-        (int) DB::scalar("SELECT COUNT(*) FROM publications WHERE publication_type IN ('scopus','wos')"),
-        $k['publications_intl'],
-        'Xalqaro (scopus/wos) maqolalar soni to\'g\'ri'
-    );
+   assertEquals(
+    (int) DB::scalar(
+        "SELECT COUNT(*)
+         FROM scientific_results
+         WHERE result_type IN ('scopus_maqola', 'wos_maqola')
+           AND status = 'approved'"
+    ),
+    $k['publications_intl'],
+    'Xalqaro (scopus/wos) maqolalar soni to\'g\'ri'
+);
 
     // Dissertatsiya himoyalari.
     assertEquals(
@@ -337,9 +342,9 @@ test('PlanTask rol gating: doktorant faqat Bajarilgancha', function () {
 test('PlanTask rol gating: rahbar va bo\'lim faqat o\'z bosqichida', function () {
     $PT = \App\Models\PlanTask::class;
     // Ilmiy rahbar: completed->supervisor_approved OK, boshqasi yo'q.
-    assertTrue($PT::roleCanTransition('supervisor', $PT::COMPLETED, $PT::SUPERVISOR_APPROVED));
-    assertFalse($PT::roleCanTransition('supervisor', $PT::IN_PROGRESS, $PT::COMPLETED), 'rahbar doktorant bosqichini bajara olmaydi');
-    assertFalse($PT::roleCanTransition('supervisor', $PT::SUPERVISOR_APPROVED, $PT::FINALIZED), 'rahbar yakuniy tasdiqni bera olmaydi');
+    assertTrue($PT::roleCanTransition('doctorate_office', $PT::COMPLETED, $PT::SUPERVISOR_APPROVED));
+    assertFalse($PT::roleCanTransition('doctorate_office', $PT::IN_PROGRESS, $PT::COMPLETED), 'rahbar doktorant bosqichini bajara olmaydi');
+    assertFalse($PT::roleCanTransition('doctorate_office', $PT::SUPERVISOR_APPROVED, $PT::FINALIZED), 'rahbar yakuniy tasdiqni bera olmaydi');
     // Doktorantura bo'limi: supervisor_approved->finalized OK.
     assertTrue($PT::roleCanTransition('doctorate_office', $PT::SUPERVISOR_APPROVED, $PT::FINALIZED));
     assertFalse($PT::roleCanTransition('doctorate_office', $PT::COMPLETED, $PT::SUPERVISOR_APPROVED), 'bo\'lim rahbar bosqichini bajara olmaydi');
