@@ -146,29 +146,57 @@ if (DB::driver() === 'pgsql') {
         return $this->redirect('/documents/' . $id);
     }
 
+    public function update(Request $request): Response
+    {
+        if (!Auth::can('documents.edit')) {
+            return $this->forbidden();
+        }
+        $id = (int) $request->param('id');
+        $doc = Document::find($id);
+        if ($doc === null) {
+            return $this->notFound();
+        }
+        $input = $request->all();
+        $validator = Validator::make($input, [
+            'title' => 'required|string|max:255',
+            'category' => 'required|in:' . implode(',', array_keys(Document::CATEGORIES)),
+        ]);
+        if ($validator->fails()) {
+            return $this->back($request, $validator->firstError() ?? 'Kiritishda xatolik.', '/documents/' . $id);
+        }
+        DB::run('UPDATE documents SET title = :title, category = :category WHERE id = :id', [
+            'title' => (string) $input['title'],
+            'category' => (string) $input['category'],
+            'id' => $id,
+        ]);
+        AuditLogger::log('update', 'documents', $id, $doc, ['title' => $input['title'], 'category' => $input['category']]);
+        Session::flash('success', 'Hujjat ma’lumotlari yangilandi.');
+        return $this->redirect('/documents/' . $id);
+    }
+
     public function delete(Request $request): Response
-{
-    if (!Auth::can('documents.edit')) {
-        return $this->forbidden();
+    {
+        if (!Auth::can('documents.edit')) {
+            return $this->forbidden();
+        }
+        $id = (int) $request->param('id');
+        $doc = Document::find($id);
+        if ($doc === null) {
+            return $this->notFound();
+        }
+        $evidenceCount = (int) DB::scalar('SELECT COUNT(*) FROM indicator_evidence WHERE document_id = :id', ['id' => $id]);
+        $planCount = (int) DB::scalar('SELECT COUNT(*) FROM action_plans WHERE document_id = :id', ['id' => $id]);
+        $resultCount = (int) DB::scalar('SELECT COUNT(*) FROM scientific_results WHERE document_id = :id', ['id' => $id]);
+        if ($evidenceCount > 0 || $planCount > 0 || $resultCount > 0 || !empty($doc['scientific_result_id'])) {
+            Session::flash('error', 'Hujjat o‘chirilmadi. U indikator, ilmiy natija yoki Action Plan bilan bog‘langan.');
+            return $this->redirect('/documents/' . $id);
+        }
+        DB::run('DELETE FROM documents WHERE id = :id', ['id' => $id]);
+        AuditLogger::log('delete', 'documents', $id, $doc, null);
+        Session::flash('success', 'Hujjat muvaffaqiyatli o‘chirildi.');
+        return $this->redirect('/documents');
     }
 
-    $id = (int) $request->param('id');
-    $doc = Document::find($id);
-
-    if ($doc === null) {
-        return $this->notFound();
-    }
-
-    DB::run(
-    'DELETE FROM documents WHERE id = :id',
-    ['id' => $id]
-);
-
-    Session::flash('success', 'Hujjat o‘chirildi.');
-
-    return $this->redirect('/documents');
-}
-    
     public function show(Request $request): Response
     {
         $id = (int) $request->param('id');
@@ -338,10 +366,5 @@ if ($contents === null) {
     private function notFound(): Response
     {
         return Response::html(View::render('errors.404'), 404);
-    }
-
-    private function forbidden(): Response
-    {
-        return Response::html(View::render('errors.403'), 403);
     }
 }
