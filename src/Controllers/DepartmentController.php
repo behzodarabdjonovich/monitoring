@@ -9,6 +9,14 @@ use App\Models\Department;
 
 final class DepartmentController extends Controller
 {
+ public function index(Request $request): Response
+{
+    $departments = Department::all();
+
+    return $this->view('departments.index', [
+        'departments' => $departments,
+    ]);
+} 
     public function delete(Request $request): Response
     {
         $id = (int) $request->param('id');
