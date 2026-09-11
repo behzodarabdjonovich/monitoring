@@ -143,3 +143,112 @@ final class DoctoralStudent
         ];
     }
 }
+public static function deleteWithRelations(int $studentId): bool
+{
+    $student = self::find($studentId);
+
+    if (!$student) {
+        return false;
+    }
+
+    DB::beginTransaction();
+
+    try {
+        // Hujjatlarni o'chirmaymiz:
+        // akkreditatsiya yoki action plan dalili bo'lishi mumkin.
+        DB::run(
+            'UPDATE documents
+             SET student_id = NULL
+             WHERE student_id = :sid',
+            ['sid' => $studentId]
+        );
+
+        // Scientific result o'chirilishidan oldin documents FK sini uzamiz.
+        DB::run(
+            'UPDATE documents
+             SET scientific_result_id = NULL
+             WHERE scientific_result_id IN (
+                 SELECT id
+                 FROM scientific_results
+                 WHERE student_id = :sid
+             )',
+            ['sid' => $studentId]
+        );
+
+        // plan_tasks/publications/conferences ga FK borligi uchun
+        // scientific_results birinchi o'chiriladi.
+        DB::run(
+            'DELETE FROM scientific_results
+             WHERE student_id = :sid',
+            ['sid' => $studentId]
+        );
+
+        DB::run(
+            'DELETE FROM supervisor_requests
+             WHERE student_id = :sid',
+            ['sid' => $studentId]
+        );
+
+        DB::run(
+            'DELETE FROM attestations
+             WHERE student_id = :sid',
+            ['sid' => $studentId]
+        );
+
+        DB::run(
+            'DELETE FROM plan_tasks
+             WHERE plan_id IN (
+                 SELECT id
+                 FROM individual_plans
+                 WHERE student_id = :sid
+             )',
+            ['sid' => $studentId]
+        );
+
+        DB::run(
+            'DELETE FROM individual_plans
+             WHERE student_id = :sid',
+            ['sid' => $studentId]
+        );
+
+        DB::run(
+            'DELETE FROM publications
+             WHERE student_id = :sid',
+            ['sid' => $studentId]
+        );
+
+        DB::run(
+            'DELETE FROM conferences
+             WHERE student_id = :sid',
+            ['sid' => $studentId]
+        );
+
+        DB::run(
+            'DELETE FROM doctoral_students
+             WHERE id = :sid',
+            ['sid' => $studentId]
+        );
+
+        // Audit tarixidagi users FK larini saqlash uchun account o'chirilmaydi.
+        if (!empty($student['user_id'])) {
+            DB::run(
+                'UPDATE users
+                 SET is_active = :active,
+                     is_blocked = :blocked
+                 WHERE id = :uid',
+                [
+                    'active' => false,
+                    'blocked' => true,
+                    'uid' => (int) $student['user_id'],
+                ]
+            );
+        }
+
+        DB::commit();
+
+        return true;
+    } catch (\Throwable $e) {
+        DB::rollBack();
+        throw $e;
+    }
+}
