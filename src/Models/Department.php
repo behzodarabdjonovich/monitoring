@@ -1,0 +1,52 @@
+<?php
+
+namespace App\Models;
+
+use App\Core\DB;
+
+final class Department
+{
+    public static function find(int $id): ?array
+    {
+        return DB::selectOne(
+            'SELECT * FROM departments WHERE id = :id',
+            ['id' => $id]
+        );
+    }
+
+    public static function canDelete(int $departmentId): bool
+    {
+        $specialtyCount = (int) DB::scalar(
+            'SELECT COUNT(*) FROM specialties WHERE responsible_department_id = :id',
+            ['id' => $departmentId]
+        );
+
+        $supervisorCount = (int) DB::scalar(
+            'SELECT COUNT(*) FROM supervisors WHERE department_id = :id',
+            ['id' => $departmentId]
+        );
+
+        $studentCount = (int) DB::scalar(
+            'SELECT COUNT(*) FROM doctoral_students WHERE department_id = :id',
+            ['id' => $departmentId]
+        );
+
+        return $specialtyCount === 0
+            && $supervisorCount === 0
+            && $studentCount === 0;
+    }
+
+    public static function delete(int $departmentId): bool
+    {
+        if (!self::canDelete($departmentId)) {
+            return false;
+        }
+
+        DB::run(
+            'DELETE FROM departments WHERE id = :id',
+            ['id' => $departmentId]
+        );
+
+        return true;
+    }
+}
