@@ -101,7 +101,10 @@ public function edit(Request $request): Response
 }
 
     // Faqat rad etilgan natijani tuzatish mumkin.
-    if (($result['status'] ?? 'pending') !== 'rejected') {
+   if (
+    Auth::role() === 'doctoral_student'
+    && ($result['status'] ?? 'pending') !== 'rejected'
+) {
         Session::flash(
             'error',
             'Faqat rad etilgan ilmiy natijani tahrirlash mumkin.'
@@ -271,7 +274,10 @@ if (Auth::role() === 'doctoral_student') {
 }
 
     // Faqat rad etilgan natija qayta yuboriladi.
-    if (($result['status'] ?? 'pending') !== 'rejected') {
+   if (
+    Auth::role() === 'doctoral_student'
+    && ($result['status'] ?? 'pending') !== 'rejected'
+) {
         Session::flash(
             'error',
             'Faqat rad etilgan ilmiy natijani qayta yuborish mumkin.'
@@ -337,7 +343,7 @@ if (Auth::role() === 'doctoral_student') {
                 'file_size' => $stored['size'],
                 'doc_type' => 'ilmiy_natija',
                 'uploaded_by' => Auth::id(),
-                'student_id' => (int) $student['id'],
+               'student_id' => $data['student_id'],
                 'scientific_result_id' => $id,
                 'created_at' => date('Y-m-d H:i:s'),
             ]);
@@ -366,9 +372,9 @@ if (Auth::role() === 'doctoral_student') {
                  achieved_at = :achieved_at,
                  url = :url,
                  document_id = :document_id,
-                 status = 'pending',
-                 verified = FALSE,
-                 rejection_reason = NULL,
+                status = :status,
+verified = :verified,
+rejection_reason = :rejection_reason,
                  updated_at = :updated_at
              WHERE id = :id",
             [
@@ -381,6 +387,17 @@ if (Auth::role() === 'doctoral_student') {
                 'url' => $data['url'],
                 'document_id' => $documentId,
                 'updated_at' => date('Y-m-d H:i:s'),
+            'status' => Auth::role() === 'doctoral_student'
+    ? 'pending'
+    : ($result['status'] ?? 'pending'),
+
+'verified' => Auth::role() === 'doctoral_student'
+    ? false
+    : (bool) ($result['verified'] ?? false),
+
+'rejection_reason' => Auth::role() === 'doctoral_student'
+    ? null
+    : ($result['rejection_reason'] ?? null),
                 'id' => $id,
             ]
         );
@@ -402,9 +419,17 @@ AuditLogger::log(
         'achieved_at' => $data['achieved_at'],
         'url' => $data['url'],
         'document_id' => $documentId,
-        'status' => 'pending',
-        'verified' => false,
-        'rejection_reason' => null,
+       'status' => Auth::role() === 'doctoral_student'
+    ? 'pending'
+    : ($result['status'] ?? 'pending'),
+
+'verified' => Auth::role() === 'doctoral_student'
+    ? false
+    : (bool) ($result['verified'] ?? false),
+
+'rejection_reason' => Auth::role() === 'doctoral_student'
+    ? null
+    : ($result['rejection_reason'] ?? null),
     ]
 );
 
