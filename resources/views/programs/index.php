@@ -22,10 +22,30 @@ $this->layout('layouts.app');
     <h3>Dasturlar (<?= count($programs) ?>)</h3>
     <div class="table-wrap">
         <table class="table">
-            <thead><tr><th>Nomi</th><th>Turi</th><th>Ixtisoslik</th><th>Muddat</th></tr></thead>
+          <thead>
+<tr>
+    <th>Nomi</th>
+    <th>Turi</th>
+    <th>Ixtisoslik</th>
+    <th>Muddat</th>
+    <th>Amal</th>
+</tr>
+</thead>
             <tbody>
                 <?php foreach ($programs as $pr): ?>
-                    <tr><td><?= e($pr['name']) ?></td><td><?= e($pr['program_type']) ?></td><td><?= e($pr['specialty_name'] ?? '—') ?></td><td><?= e($pr['duration_years']) ?> yil</td></tr>
+                  <tr>
+    <td><?= e($pr['name']) ?></td>
+    <td><?= e($pr['program_type']) ?></td>
+    <td><?= e($pr['specialty_name'] ?? '—') ?></td>
+    <td><?= e($pr['duration_years']) ?> yil</td>
+    <td>
+        <?php if (\App\Core\Auth::role() === 'super_admin'): ?>
+            <a href="/programs/<?= e($pr['id']) ?>/edit" class="btn btn-primary">
+                Tahrirlash
+            </a>
+        <?php endif; ?>
+    </td>
+</tr>
                 <?php endforeach; ?>
             </tbody>
         </table>
