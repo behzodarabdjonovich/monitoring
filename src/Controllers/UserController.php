@@ -165,7 +165,7 @@ final class UserController extends Controller
         return Response::html(View::render('errors.404'), 404);
     }
 
-    private function forbidden(): Response
+    protected function forbidden(): Response
     {
         return Response::html(View::render('errors.403'), 403);
     }
