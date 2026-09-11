@@ -146,10 +146,39 @@ final class SpecialtyController extends Controller
         Session::flash('success', 'Ixtisoslik yangilandi.');
         return $this->redirect('/specialties/' . $id);
     }
+      public function delete(Request $request): Response
+{
+    $id = (int) $request->param('id');
+    $specialty = Specialty::find($id);
 
-    /**
-     * @return array<string,mixed>|Response
-     */
+    if ($specialty === null) {
+        return Response::html(
+            \App\Core\View::render('errors.404'),
+            404
+        );
+    }
+
+    if (!Specialty::delete($id)) {
+        Session::flash(
+            'error',
+            'Ixtisoslikni o‘chirib bo‘lmadi. U doktorant, ilmiy rahbar yoki dasturga bog‘langan.'
+        );
+
+        return $this->redirect('/specialties/' . $id);
+    }
+
+    AuditLogger::log(
+        'delete',
+        'specialties',
+        $id,
+        $specialty,
+        null
+    );
+
+    Session::flash('success', 'Ixtisoslik muvaffaqiyatli o‘chirildi.');
+
+    return $this->redirect('/specialties');
+}
     private function validated(Request $request): array|Response
     {
         $input = $request->all();
