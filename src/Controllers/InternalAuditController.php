@@ -91,13 +91,29 @@ final class InternalAuditController extends Controller
         return $this->redirect('/audits/' . $result['audit_id']);
     }
 
+    public function delete(Request $request): Response
+    {
+        if (Auth::role() !== 'super_admin') {
+            return $this->forbidden();
+        }
+        $id = (int) $request->param('id');
+        $audit = DB::selectOne('SELECT * FROM internal_audits WHERE id = :id', ['id' => $id]);
+        if ($audit === null) {
+            return $this->notFound();
+        }
+        $defCount = (int) DB::scalar('SELECT COUNT(*) FROM deficiencies WHERE internal_audit_id = :id', ['id' => $id]);
+        if ($defCount > 0) {
+            Session::flash('error', 'Ichki audit o‘chirilmadi. Undan shakllangan kamchiliklar mavjud.');
+            return $this->redirect('/audits/' . $id);
+        }
+        DB::run('DELETE FROM internal_audits WHERE id = :id', ['id' => $id]);
+        AuditLogger::log('delete', 'internal_audits', $id, $audit, null);
+        Session::flash('success', 'Ichki audit muvaffaqiyatli o‘chirildi.');
+        return $this->redirect('/audits');
+    }
+
     private function notFound(): Response
     {
         return Response::html(View::render('errors.404'), 404);
-    }
-
-    private function forbidden(): Response
-    {
-        return Response::html(View::render('errors.403'), 403);
     }
 }
