@@ -100,7 +100,7 @@ $fmtSize = static function ($bytes): string {
                         <td>
     <a href="/documents/<?= e($d['id']) ?>/download">Yuklab olish</a>
 
-    <?php if (\App\Core\Auth::can('documents.edit')): ?>
+    <?php if (\App\Core\Auth::role() === 'super_admin'): ?>
     <form method="post"
           action="/documents/<?= e($d['id']) ?>/delete"
           style="display:inline;margin-left:10px;"
