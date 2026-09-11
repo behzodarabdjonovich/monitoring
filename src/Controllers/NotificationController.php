@@ -51,12 +51,24 @@ final class NotificationController extends Controller
      * Joriy ma'lumotlardan bildirishnomalarni qayta hisoblaydi (on-request
      * generator). Console (bin/console notify) bilan bir xil mantiq.
      */
-    public function generate(Request $request): Response
-    {
-        $count = Notification::generate();
-        Session::flash('success', $count > 0
-            ? ($count . ' ta yangi bildirishnoma shakllantirildi.')
-            : 'Yangi bildirishnoma yo\'q.');
-        return $this->redirect('/notifications');
-    }
+  public function generate(Request $request): Response
+{
+    $userId = (int) Auth::id();
+
+    $before = count(Notification::forUser($userId));
+
+    Notification::generate();
+
+    $after = count(Notification::forUser($userId));
+
+    $createdForUser = max(0, $after - $before);
+
+    Session::flash(
+        'success',
+        $createdForUser > 0
+            ? ($createdForUser . ' ta yangi bildirishnoma shakllantirildi.')
+            : 'Siz uchun yangi bildirishnoma yo\'q.'
+    );
+
+    return $this->redirect('/notifications');
 }
