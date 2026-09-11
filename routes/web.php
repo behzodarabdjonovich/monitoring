@@ -236,6 +236,21 @@ $router->post('/tasks/{id}', [PlanTaskController::class, 'update'], [$auth(), $r
 
 // --- Ilmiy natijalar (item 6) ---
 
+$router->get('/programs/{id}/edit', [
+    ProgramController::class,
+    'edit'
+], [
+    $auth(),
+    new SuperAdminMiddleware(),
+]);
+
+$router->post('/programs/{id}/edit', [
+    ProgramController::class,
+    'update'
+], [
+    $auth(),
+    new SuperAdminMiddleware(),
+]);
 $router->get('/results', [
     ScientificResultController::class,
     'index'
