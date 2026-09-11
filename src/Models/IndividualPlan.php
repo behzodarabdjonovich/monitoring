@@ -65,4 +65,21 @@ final class IndividualPlan
             ['sid' => $studentId]
         );
     }
+public static function canDelete(int $id): bool
+{
+    $taskCount = (int) DB::scalar(
+        'SELECT COUNT(*) FROM plan_tasks WHERE plan_id = :id',
+        ['id' => $id]
+    );
+
+    return $taskCount === 0;
+}
+
+public static function delete(int $id): void
+{
+    DB::run(
+        'DELETE FROM individual_plans WHERE id = :id',
+        ['id' => $id]
+    );
+}
 }
