@@ -88,4 +88,51 @@ final class Supervisor
 
         return round($avgActivity * 0.6 + $resultsScore * 0.4, 1);
     }
+public static function canDelete(int $supervisorId): bool
+{
+    $studentCount = (int) DB::scalar(
+        'SELECT COUNT(*) FROM doctoral_students WHERE supervisor_id = :id',
+        ['id' => $supervisorId]
+    );
+
+    $planCount = (int) DB::scalar(
+        'SELECT COUNT(*) FROM individual_plans WHERE supervisor_id = :id',
+        ['id' => $supervisorId]
+    );
+
+    $resultCount = (int) DB::scalar(
+        'SELECT COUNT(*) FROM scientific_results WHERE supervisor_id = :id',
+        ['id' => $supervisorId]
+    );
+
+    $departmentHeadCount = (int) DB::scalar(
+        'SELECT COUNT(*) FROM departments WHERE head_supervisor_id = :id',
+        ['id' => $supervisorId]
+    );
+
+    $programLeadCount = (int) DB::scalar(
+        'SELECT COUNT(*) FROM specialties WHERE program_lead_supervisor_id = :id',
+        ['id' => $supervisorId]
+    );
+
+    return $studentCount === 0
+        && $planCount === 0
+        && $resultCount === 0
+        && $departmentHeadCount === 0
+        && $programLeadCount === 0;
+}
+
+public static function delete(int $supervisorId): bool
+{
+    if (!self::canDelete($supervisorId)) {
+        return false;
+    }
+
+    DB::run(
+        'DELETE FROM supervisors WHERE id = :id',
+        ['id' => $supervisorId]
+    );
+
+    return true;
+}
 }
