@@ -181,7 +181,13 @@ $router->get('/departments', [
     $auth(),
     new SuperAdminMiddleware(),
 ]);
-
+$router->post('/departments', [
+    DepartmentController::class,
+    'store'
+], [
+    $auth(),
+    new SuperAdminMiddleware(),
+]);
 $router->post('/departments/{id}/delete', [
     DepartmentController::class,
     'delete'
