@@ -142,7 +142,6 @@ final class DoctoralStudent
             'documents' => DB::select('SELECT * FROM documents WHERE student_id = :sid ORDER BY id DESC', ['sid' => $studentId]),
         ];
     }
-}
 public static function deleteWithRelations(int $studentId): bool
 {
     $student = self::find($studentId);
