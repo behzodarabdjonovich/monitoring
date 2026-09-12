@@ -26,7 +26,12 @@ $sections = [
     ['reports', 'Hisobotlar', '/reports'],
     ['notifications', 'Bildirishnomalar', '/notifications'],
     ];
-
+if (\App\Core\Auth::role() === 'expert') {
+    $sections = array_values(array_filter(
+        $sections,
+        fn($item) => $item[0] !== 'supervisor-requests'
+    ));
+}
 // Ruxsatga bog‘liq menyular.
 if (\App\Core\Auth::can('users.view')) {
     $sections[] = ['users', 'Foydalanuvchilar', '/users'];
