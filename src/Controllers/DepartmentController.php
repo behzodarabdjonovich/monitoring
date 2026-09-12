@@ -27,15 +27,14 @@ final class DepartmentController extends Controller
         return $this->redirect('/departments');
     }
 
-    Department::create(
-        $name,
-        $code !== '' ? $code : null
-    );
-
+  Department::create(
+    $name,
+    $code !== '' ? $code : null
+);
     Session::flash('success', 'Kafedra muvaffaqiyatli qo‘shildi.');
 
     return $this->redirect('/departments');
-}  
+}
  public function edit(Request $request): Response
 {
     $id = (int) $request->param('id');
