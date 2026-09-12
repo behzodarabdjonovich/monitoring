@@ -189,8 +189,7 @@ $router->get('/departments', [
     'index'
 ], [
     $auth(),
-    new SuperAdminMiddleware(),
-]);
+ ]);
 $router->post('/departments', [
     DepartmentController::class,
     'store'
