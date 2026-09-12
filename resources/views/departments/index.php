@@ -25,36 +25,7 @@ $this->layout('layouts.app');
     <div class="alert alert-error"><?= e($flashError) ?></div>
 <?php endif; ?>
 <div class="card">
-    <h3>Yangi kafedra</h3>
-
-    <form method="post" action="/departments">
-        <?= \App\Core\Csrf::field() ?>
-
-        <div class="form-group">
-            <label for="name">Kafedra nomi</label>
-            <input
-                type="text"
-                id="name"
-                name="name"
-                required
-            >
-        </div>
-
-        <div class="form-group">
-            <label for="code">Kod</label>
-            <input
-                type="text"
-                id="code"
-                name="code"
-            >
-        </div>
-
-        <button type="submit" class="btn btn-primary">
-            + Kafedra qo‘shish
-        </button>
-    </form>
-</div>
-<div class="card">
+   
     <h3>Ro'yxat (<?= count($departments) ?>)</h3>
 
     <div class="table-wrap">
