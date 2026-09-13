@@ -9,6 +9,7 @@ use App\Core\Request;
 use App\Core\Response;
 use App\Core\Session;
 use App\Core\Validator;
+use App\Services\MailService;
 
 /**
  * Autentifikatsiya: login, logout, parolni tiklash (forgot/reset).
@@ -166,8 +167,13 @@ final class AuthController extends Controller
             $request->ip()
         );
 
-        // Ishlab chiqarishda bu token email orqali yuboriladi.
-        // Demo muhitida email xizmati yo'q.
+        $baseUrl = getenv('APP_URL') ?: 'https://monitoring-3-9bft.onrender.com';
+
+$resetUrl = rtrim($baseUrl, '/')
+    . '/reset-password?token='
+    . urlencode($token);
+
+MailService::sendPasswordReset($email, $resetUrl);
     }
 
     Session::flash(
