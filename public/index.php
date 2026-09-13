@@ -55,6 +55,7 @@ $request = Request::capture();
 try {
     $response = $router->dispatch($request);
 } catch (\Throwable $ex) {
+  error_log($ex->__toString());
     if (Config::get('app.debug')) {
         $response = Response::html(
             '<pre>' . e($ex->getMessage() . "\n\n" . $ex->getTraceAsString()) . '</pre>',
