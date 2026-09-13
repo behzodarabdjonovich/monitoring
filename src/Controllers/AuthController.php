@@ -10,6 +10,7 @@ use App\Core\Response;
 use App\Core\Session;
 use App\Core\Validator;
 use App\Services\MailService;
+use App\Core\Mailer;
 
 /**
  * Autentifikatsiya: login, logout, parolni tiklash (forgot/reset).
@@ -168,18 +169,18 @@ public function sendReset(Request $request): Response
                 $request->ip()
             );
 
-            $baseUrl = getenv('APP_URL') ?: 'https://monitoring-3-9bft.onrender.com';
-            $resetUrl = rtrim((string) $baseUrl, '/')
-                . '/reset-password?token=' . urlencode($token);
+           $baseUrl = getenv('APP_URL') ?: 'https://monitoring-3-9bft.onrender.com';
 
-            MailService::sendPasswordReset($email, $resetUrl);
-        }
+$resetUrl = rtrim((string) $baseUrl, '/')
+    . '/reset-password?token=' . urlencode($token);
 
-        Session::flash(
-            'success',
-            'Agar ushbu email tizimda mavjud bo\'lsa, parolni tiklash havolasi yuborildi.'
-        );
+MailService::sendPasswordReset($email, $resetUrl);
 
+Session::flash(
+    'success',
+    'Agar ushbu email tizimda mavjud bo‘lsa, parolni tiklash havolasi yuborildi.'
+);
+           
         return $this->redirect('/forgot-password');
     }
 
