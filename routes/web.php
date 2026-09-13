@@ -51,7 +51,26 @@ $router->post('/forgot-password', [AuthController::class, 'sendReset']);
 $router->get('/reset-password', [AuthController::class, 'showReset']);
 $router->post('/reset-password', [AuthController::class, 'reset']);
 $router->post('/logout', [AuthController::class, 'logout']);
+// --- Parolni tiklash ---
+$router->get('/forgot-password', [
+    AuthController::class,
+    'showForgot'
+]);
 
+$router->post('/forgot-password', [
+    AuthController::class,
+    'sendReset'
+]);
+
+$router->get('/reset-password', [
+    AuthController::class,
+    'showReset'
+]);
+
+$router->post('/reset-password', [
+    AuthController::class,
+    'reset'
+]);
 // --- Doktorant portali ---
 
 $router->get('/doktorant/login', [
