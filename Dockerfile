@@ -24,7 +24,7 @@ RUN mkdir -p storage storage/backups storage/uploads \
 
 ENV APP_ENV=production
 ENV DB_DRIVER=sqlite
-ENV DB_DATABASE=/tmp/database.sqlite
+ENV DB_DATABASE=/app/storage/database.sqlite
 
 EXPOSE 10000
 
