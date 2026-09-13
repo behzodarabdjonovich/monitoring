@@ -10,7 +10,6 @@ use App\Core\Response;
 use App\Core\Session;
 use App\Core\Validator;
 use App\Services\MailService;
-use App\Core\Mailer;
 
 /**
  * Autentifikatsiya: login, logout, parolni tiklash (forgot/reset).
