@@ -182,7 +182,14 @@ if ($user !== null) {
     error_log('PASSWORD_RESET_DEBUG: calling MailService');
 
     $result = MailService::sendPasswordReset($email, $resetUrl);
+if (!$result) {
+    Session::flash('error', 'EMAIL_DEBUG_FAILED');
+    return $this->redirect('/forgot-password');
+}
 
+Session::flash('success', 'EMAIL_DEBUG_SENT');
+return $this->redirect('/forgot-password');
+   
     error_log(
         'PASSWORD_RESET_DEBUG: MailService result='
         . ($result ? 'true' : 'false')
