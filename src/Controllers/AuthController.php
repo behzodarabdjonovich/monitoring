@@ -151,7 +151,13 @@ error_log(
     'PASSWORD_RESET_DEBUG: email=' . $email
     . '; user=' . ($user !== null ? 'found' : 'not_found')
 );
+if ($user === null) {
+    Session::flash('error', 'EMAIL_DEBUG_USER_NOT_FOUND');
+    return $this->redirect('/forgot-password');
+}
 
+Session::flash('success', 'EMAIL_DEBUG_USER_FOUND');
+return $this->redirect('/forgot-password');
 if ($user !== null) {
     $token = bin2hex(random_bytes(32));
 
