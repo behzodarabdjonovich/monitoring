@@ -3,13 +3,10 @@
 use App\Core\DB;
 
 return function (): void {
-    DB::statement(
-        "UPDATE users
-         SET email = :email
-         WHERE username = :username",
-        [
-            'email' => 'behzodarabdjonovich@gmail.com',
-            'username' => 'admin',
-        ]
+    DB::update(
+        'users',
+        ['email' => 'behzodarabdjonovich@gmail.com'],
+        'username = :username',
+        ['username' => 'admin']
     );
 };
