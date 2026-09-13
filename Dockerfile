@@ -4,9 +4,10 @@ WORKDIR /app
 
 # Ilova SQLite bilan ishlaydi; pdo_sqlite bo'lmasa login/dashboard 500 beradi.
 # pdo_pgsql ham productionda PostgreSQL'ga o'tish uchun saqlanadi.
+# Composer arxivlarni ochishi uchun libzip-dev, zip va unzip paketlari qo'shildi.
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends libpq-dev libsqlite3-dev \
-    && docker-php-ext-install pdo_sqlite pdo_pgsql \
+    && apt-get install -y --no-install-recommends libpq-dev libsqlite3-dev libzip-dev zip unzip \
+    && docker-php-ext-install pdo_sqlite pdo_pgsql zip \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
