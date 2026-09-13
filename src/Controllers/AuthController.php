@@ -128,80 +128,60 @@ final class AuthController extends Controller
      * har doim bir xil xabar qaytaradi. Token password_resets'ga yoziladi.
      */
 public function sendReset(Request $request): Response
-{
-    die('SEND_RESET_REACHED');
+    {
+        $validator = Validator::make($request->all(), [
+            'email' => 'required|email|max:191',
+        ]);
 
-    $validator = Validator::make($request->all(), [
-        'email' => 'required|email|max:191',
-    ]);
-    if ($validator->fails()) {
-        return $this->view('auth.forgot-password', [
-            'error' => $validator->firstError(),
-            'success' => null,
-        ], 422);
+        if ($validator->fails()) {
+            return $this->view('auth.forgot-password', [
+                'error' => $validator->firstError(),
+                'success' => null,
+            ], 422);
+        }
+
+        $email = (string) $request->input('email');
+        $user = DB::selectOne(
+            'SELECT id FROM users WHERE email = :e LIMIT 1',
+            ['e' => $email]
+        );
+
+        // Foydalanuvchi mavjudligini oshkor qilmaslik uchun javob har doim bir xil.
+        if ($user !== null) {
+            $token = bin2hex(random_bytes(32));
+
+            DB::insert('password_resets', [
+                'user_id' => (int) $user['id'],
+                'token' => hash('sha256', $token),
+                'expires_at' => date('Y-m-d H:i:s', time() + 3600),
+                'used' => false,
+                'created_at' => date('Y-m-d H:i:s'),
+            ]);
+
+            AuditLogger::log(
+                'password_reset_requested',
+                'users',
+                (int) $user['id'],
+                null,
+                null,
+                (int) $user['id'],
+                $request->ip()
+            );
+
+            $baseUrl = getenv('APP_URL') ?: 'https://monitoring-3-9bft.onrender.com';
+            $resetUrl = rtrim((string) $baseUrl, '/')
+                . '/reset-password?token=' . urlencode($token);
+
+            MailService::sendPasswordReset($email, $resetUrl);
+        }
+
+        Session::flash(
+            'success',
+            'Agar ushbu email tizimda mavjud bo\'lsa, parolni tiklash havolasi yuborildi.'
+        );
+
+        return $this->redirect('/forgot-password');
     }
-
-   $email = (string) $request->input('email');
-
-$user = DB::selectOne(
-    'SELECT id FROM users WHERE email = :e LIMIT 1',
-    ['e' => $email]
-);
-
-error_log(
-    'PASSWORD_RESET_DEBUG: email=' . $email
-    . '; user=' . ($user !== null ? 'found' : 'not_found')
-);
-if ($user === null) {
-    Session::flash('error', 'EMAIL_DEBUG_USER_NOT_FOUND');
-    return $this->redirect('/forgot-password');
-}
-
-Session::flash('success', 'EMAIL_DEBUG_USER_FOUND');
-return $this->redirect('/forgot-password');
-if ($user !== null) {
-    $token = bin2hex(random_bytes(32));
-
-    DB::insert('password_resets', [
-        'user_id' => (int) $user['id'],
-        'token' => hash('sha256', $token),
-        'expires_at' => date('Y-m-d H:i:s', time() + 3600),
-        'used' => false,
-        'created_at' => date('Y-m-d H:i:s'),
-    ]);
-
-    AuditLogger::log(
-        'password_reset_requested',
-        'users',
-        (int) $user['id'],
-        null,
-        null,
-        (int) $user['id'],
-        $request->ip()
-    );
-
-    $baseUrl = getenv('APP_URL') ?: 'https://monitoring-3-9bft.onrender.com';
-
-    $resetUrl = rtrim($baseUrl, '/')
-        . '/reset-password?token='
-        . urlencode($token);
-
-    error_log('PASSWORD_RESET_DEBUG: calling MailService');
-
-    $result = MailService::sendPasswordReset($email, $resetUrl);
-if (!$result) {
-    Session::flash('error', 'EMAIL_DEBUG_FAILED');
-    return $this->redirect('/forgot-password');
-}
-
-Session::flash('success', 'EMAIL_DEBUG_SENT');
-return $this->redirect('/forgot-password');
-   
-    error_log(
-        'PASSWORD_RESET_DEBUG: MailService result='
-        . ($result ? 'true' : 'false')
-    );
-}
 
     public function showReset(Request $request): Response
     {
