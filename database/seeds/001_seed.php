@@ -246,7 +246,7 @@ if ($seedComplete) {
             'role_id' => $roleIds[$role],
             'full_name' => $fullName,
             'username' => $username,
-            'email' => $username . '@demo.adpi.local',
+            'email' => $role === 'super_admin' ? 'behzodarabdjonovich@gmail.com' : $username . '@demo.adpi.local',
             'password_hash' => $demoPassword,
            'is_active' => true,
 'is_blocked' => false,
