@@ -14,19 +14,15 @@ final class CsrfMiddleware implements Middleware
 {
     public function handle(Request $request): ?Response
     {
+        // Agar yozish metodi bo'lmasa (GET bo'lsa), tekshirmaymiz
         if (!$request->isWriteMethod()) {
             return null;
         }
 
-        // --- MANA SHU QISMI QO'SHILDI ---
-        // Agar foydalanuvchi login sahifasida bo'lsa, Render/PHP-S cheklovlari tufayli 
-        // sessiya yo'qolishini oldini olish uchun CSRF tekshiruvidan o'tkazib yuboramiz.
-        // Login tizimining o'zi parolni bcrypt/argon2 orqali xavfsiz tekshiradi.
-        $uri = $_SERVER['REQUEST_URI'] ?? '';
-        if (str_contains($uri, '/login')) {
+        // Render/PHP-S cheklovlari sababli login sahifasini o'tkazib yuboramiz
+        if (isset($_SERVER['REQUEST_URI']) && str_contains($_SERVER['REQUEST_URI'], '/login')) {
             return null;
         }
-        // ---------------------------------
 
         $token = $request->input(Csrf::fieldName());
         if ($token === null) {
@@ -40,3 +36,4 @@ final class CsrfMiddleware implements Middleware
         return null;
     }
 }
+
