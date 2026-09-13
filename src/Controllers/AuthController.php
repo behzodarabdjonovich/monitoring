@@ -174,22 +174,23 @@ $resetUrl = rtrim((string) $baseUrl, '/')
     . '/reset-password?token=' . urlencode($token);
 
 MailService::sendPasswordReset($email, $resetUrl);
+}
 
 Session::flash(
     'success',
     'Agar ushbu email tizimda mavjud bo‘lsa, parolni tiklash havolasi yuborildi.'
 );
-           
-        return $this->redirect('/forgot-password');
-    }
+
+return $this->redirect('/forgot-password');
+}
 
     public function showReset(Request $request): Response
-    {
-        return $this->view('auth.reset-password', [
-            'token' => (string) $request->query('token', ''),
-            'error' => Session::flash('error'),
-        ]);
-    }
+{
+    return $this->view('auth.reset-password', [
+        'token' => (string) $request->query('token', ''),
+        'error' => Session::flash('error'),
+    ]);
+}
 
    public function reset(Request $request): Response
 {
