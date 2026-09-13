@@ -2,18 +2,21 @@ FROM php:8.4-cli
 
 WORKDIR /app
 
+# Ilova SQLite bilan ishlaydi; pdo_sqlite bo'lmasa login/dashboard 500 beradi.
+# pdo_pgsql ham productionda PostgreSQL'ga o'tish uchun saqlanadi.
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends libpq-dev \
-    && docker-php-ext-install pdo_pgsql \
+    && apt-get install -y --no-install-recommends libpq-dev libsqlite3-dev \
+    && docker-php-ext-install pdo_sqlite pdo_pgsql \
     && rm -rf /var/lib/apt/lists/*
-    
+
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 COPY . .
 
-RUN printf "upload_max_filesize=10M\npost_max_size=12M\n" > /usr/local/etc/php/conf.d/uploads.ini
+# composer.json dagi paketlarni (jumladan resend/resend-php) o'rnatamiz.
+RUN composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist
 
-RUN composer dump-autoload --no-dev --optimize
+RUN printf "upload_max_filesize=10M\npost_max_size=12M\n" > /usr/local/etc/php/conf.d/uploads.ini
 
 RUN mkdir -p storage storage/backups storage/uploads \
     && chmod -R 775 storage
