@@ -140,48 +140,53 @@ final class AuthController extends Controller
         ], 422);
     }
 
-    $email = (string) $request->input('email');
-    $user = DB::selectOne(
-        'SELECT id FROM users WHERE email = :e LIMIT 1',
-        ['e' => $email]
+   $email = (string) $request->input('email');
+
+$user = DB::selectOne(
+    'SELECT id FROM users WHERE email = :e LIMIT 1',
+    ['e' => $email]
+);
+
+error_log(
+    'PASSWORD_RESET_DEBUG: email=' . $email
+    . '; user=' . ($user !== null ? 'found' : 'not_found')
+);
+
+if ($user !== null) {
+    $token = bin2hex(random_bytes(32));
+
+    DB::insert('password_resets', [
+        'user_id' => (int) $user['id'],
+        'token' => hash('sha256', $token),
+        'expires_at' => date('Y-m-d H:i:s', time() + 3600),
+        'used' => false,
+        'created_at' => date('Y-m-d H:i:s'),
+    ]);
+
+    AuditLogger::log(
+        'password_reset_requested',
+        'users',
+        (int) $user['id'],
+        null,
+        null,
+        (int) $user['id'],
+        $request->ip()
     );
 
-    if ($user !== null) {
-        $token = bin2hex(random_bytes(32));
+    $baseUrl = getenv('APP_URL') ?: 'https://monitoring-3-9bft.onrender.com';
 
-        DB::insert('password_resets', [
-            'user_id' => (int) $user['id'],
-            'token' => hash('sha256', $token),
-            'expires_at' => date('Y-m-d H:i:s', time() + 3600),
-            'used' => false,
-            'created_at' => date('Y-m-d H:i:s'),
-        ]);
+    $resetUrl = rtrim($baseUrl, '/')
+        . '/reset-password?token='
+        . urlencode($token);
 
-        AuditLogger::log(
-            'password_reset_requested',
-            'users',
-            (int) $user['id'],
-            null,
-            null,
-            (int) $user['id'],
-            $request->ip()
-        );
+    error_log('PASSWORD_RESET_DEBUG: calling MailService');
 
-        $baseUrl = getenv('APP_URL') ?: 'https://monitoring-3-9bft.onrender.com';
+    $result = MailService::sendPasswordReset($email, $resetUrl);
 
-$resetUrl = rtrim($baseUrl, '/')
-    . '/reset-password?token='
-    . urlencode($token);
-
-MailService::sendPasswordReset($email, $resetUrl);
-    }
-
-    Session::flash(
-        'success',
-        'Agar bunday email mavjud bo‘lsa, tiklash bo‘yicha ko‘rsatma yuborildi.'
+    error_log(
+        'PASSWORD_RESET_DEBUG: MailService result='
+        . ($result ? 'true' : 'false')
     );
-
-    return $this->redirect('/forgot-password');
 }
 
     public function showReset(Request $request): Response
