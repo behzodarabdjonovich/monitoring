@@ -127,12 +127,13 @@ final class AuthController extends Controller
      * Parolni tiklash so'rovi. Foydalanuvchini oshkor qilmaslik uchun
      * har doim bir xil xabar qaytaradi. Token password_resets'ga yoziladi.
      */
-    public function sendReset(Request $request): Response
+public function sendReset(Request $request): Response
 {
+    die('SEND_RESET_REACHED');
+
     $validator = Validator::make($request->all(), [
         'email' => 'required|email|max:191',
     ]);
-
     if ($validator->fails()) {
         return $this->view('auth.forgot-password', [
             'error' => $validator->firstError(),
