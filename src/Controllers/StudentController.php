@@ -119,6 +119,42 @@ final class StudentController extends Controller
 
     public function store(Request $request): Response
 {
+    $email = trim((string) $request->input('email', ''));
+
+$existingUser = DB::selectOne(
+    'SELECT id FROM users WHERE email = :email LIMIT 1',
+    ['email' => $email]
+);
+
+if ($existingUser !== null) {
+    return $this->back(
+        $request,
+        'Bu email bilan foydalanuvchi allaqachon mavjud.'
+    );
+}
+
+$role = DB::selectOne(
+    'SELECT id FROM roles WHERE name = :name LIMIT 1',
+    ['name' => 'doctoral_student']
+);
+
+if ($role === null) {
+    return $this->back(
+        $request,
+        'Doktorant roli topilmadi.'
+    );
+}
+
+do {
+    $username = 'dok' . random_int(100000, 999999);
+
+    $usernameExists = DB::selectOne(
+        'SELECT id FROM users WHERE username = :username LIMIT 1',
+        ['username' => $username]
+    );
+} while ($usernameExists !== null);
+
+$temporaryPassword = bin2hex(random_bytes(5));
     $data = $this->validated($request);
 
     if ($data instanceof Response) {
@@ -308,6 +344,7 @@ final class StudentController extends Controller
         $input = $request->all();
         $validator = Validator::make($input, [
             'full_name' => 'required|string|max:191',
+            'email' => 'required|email|max:191',
             'student_type' => 'required|in:' . implode(',', array_keys(DoctoralStudent::TYPES)),
             'enrollment_year' => 'integer',
             'course_stage' => 'integer',
@@ -340,6 +377,7 @@ final class StudentController extends Controller
             'dissertation_percent' => $intOrNull($input['dissertation_percent'] ?? null),
             'scientific_results_summary' => $strOrNull($input['scientific_results_summary'] ?? null),
             'defense_readiness' => $strOrNull($input['defense_readiness'] ?? null),
+            'email' => trim((string) $request->input('email', '')),
         ];
     }
 
