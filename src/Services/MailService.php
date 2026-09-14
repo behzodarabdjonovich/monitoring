@@ -58,4 +58,39 @@ final class MailService
 </html>
 HTML;
     }
+public static function sendCredentials(
+    string $email,
+    string $fullName,
+    string $login,
+    string $temporaryPassword
+): bool {
+    $apiKey = getenv('RESEND_API_KEY');
+
+    if (!$apiKey) {
+        error_log('RESEND_API_KEY is not configured.');
+        return false;
+    }
+
+    try {
+        $resend = Resend::client($apiKey);
+
+        $resend->emails->send([
+            'from' => 'ADPI Monitoring <noreply@send.adpi-monitoring.uz>',
+            'to' => [$email],
+            'subject' => 'ADPI Monitoring — login ma’lumotlari',
+            'html' => '<h2>ADPI Monitoring</h2>'
+                . '<p>Hurmatli ' . htmlspecialchars($fullName) . ',</p>'
+                . '<p>Siz uchun doktorant kabineti yaratildi.</p>'
+                . '<p><strong>Login:</strong> ' . htmlspecialchars($login) . '</p>'
+                . '<p><strong>Vaqtinchalik parol:</strong> '
+                . htmlspecialchars($temporaryPassword) . '</p>'
+                . '<p>Tizimga kirgandan so‘ng parolingizni o‘zgartirishingiz tavsiya etiladi.</p>',
+        ]);
+
+        return true;
+    } catch (\Throwable $e) {
+        error_log('Resend credentials error: ' . $e->getMessage());
+        return false;
+    }
+}
 }
