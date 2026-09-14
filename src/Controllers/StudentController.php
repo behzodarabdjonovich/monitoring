@@ -239,15 +239,11 @@ try {
 
     $this->handleDocumentUpload($request, $id);
     
-$mailSent = MailService::send(
+$mailSent = MailService::sendCredentials(
     $email,
-    'ADPI Monitoring — login ma’lumotlari',
-    '<h2>ADPI Monitoring</h2>
-    <p>Assalomu alaykum, ' . htmlspecialchars($data['full_name']) . '!</p>
-    <p>Siz uchun ADPI Monitoring tizimida hisob yaratildi.</p>
-    <p><strong>Login:</strong> ' . htmlspecialchars($email) . '</p>
-    <p><strong>Vaqtinchalik parol:</strong> ' . htmlspecialchars($temporaryPassword) . '</p>
-    <p>Tizimga kirgandan so‘ng parolingizni o‘zgartirishingiz tavsiya etiladi.</p>'
+    (string) $data['full_name'],
+    $email,
+    $temporaryPassword
 );
     if ($mailSent) {
     Session::flash(
