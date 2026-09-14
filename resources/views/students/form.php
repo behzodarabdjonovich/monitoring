@@ -35,7 +35,18 @@ $v = fn (string $k) => e($student[$k] ?? '');
             <label for="full_name">F.I.Sh. *</label>
             <input type="text" id="full_name" name="full_name" value="<?= $v('full_name') ?>" required>
         </div>
-
+<div class="form-group">
+    <label for="email">Email *</label>
+    <input
+        type="email"
+        id="email"
+        name="email"
+        value="<?= e($v('email')) ?>"
+        required
+        autocomplete="email"
+        placeholder="doktorant@gmail.com"
+    >
+</div>
         <div class="form-group">
             <label for="national_id">JSHSHIR / ichki identifikator</label>
             <input type="text" id="national_id" name="national_id" value="<?= $v('national_id') ?>">
