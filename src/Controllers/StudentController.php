@@ -198,68 +198,48 @@ $temporaryPassword = bin2hex(random_bytes(5));
     // Vaqtinchalik parol.
     $temporaryPassword = bin2hex(random_bytes(5));
 
-    $now = date('Y-m-d H:i:s');
+  $now = date('Y-m-d H:i:s');
 
-    DB::beginTransaction();
+DB::beginTransaction();
 
-    try {
-        $userId = DB::insert('users', [
-            'role_id' => (int) $role['id'],
-            'full_name' => $data['full_name'],
-            'username' => $username,
-            'email' => $email,
-            'password_hash' => Auth::hash($temporaryPassword),
-            'is_active' => true,
-            'is_blocked' => false,
-            'must_reset' => true,
-            'twofa_secret' => null,
-            'created_at' => $now,
-            'updated_at' => $now,
-        ]);
+try {
+    $userId = DB::insert('users', [
+        'role_id' => (int) $role['id'],
+        'full_name' => $data['full_name'],
+        'username' => $username,
+        'email' => $email,
+        'password_hash' => Auth::hash($temporaryPassword),
+        'is_active' => true,
+        'is_blocked' => false,
+        'must_reset' => true,
+        'twofa_secret' => null,
+        'created_at' => $now,
+        'updated_at' => $now,
+    ]);
 
-        $data['user_id'] = $userId;
+    $data['user_id'] = $userId;
+    $data['created_at'] = $now;
+    $data['updated_at'] = $now;
 
-        // Fotosurat
-        $photo = $request->file('photo');
+    $id = DB::insert('doctoral_students', $data);
 
-        if (
-            $photo !== null &&
-            ($photo['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_OK
-        ) {
-            $stored = FileStorage::store($photo);
-            $data['photo_path'] = $stored['path'];
-        }
+    DB::commit();
+} catch (\Throwable $e) {
+    DB::rollBack();
 
-        $data['created_at'] = $now;
-        $data['updated_at'] = $now;
-
-        $id = DB::insert('doctoral_students', $data);
-
-        AuditLogger::log(
-            'create',
-            'doctoral_students',
-            $id,
-            null,
-            $data
-        );
-
-        DB::commit();
-    } catch (\Throwable $e) {
-        DB::rollBack();
-
-        return $this->back(
-            $request,
-            'Doktorant yaratishda xatolik: ' . $e->getMessage()
-        );
-    }
+    return $this->back(
+        $request,
+        'Doktorant yaratishda xatolik: ' . $e->getMessage()
+    );
+}
 
     $this->handleDocumentUpload($request, $id);
 
     Session::flash(
-        'success',
-        'Doktorant yaratildi. Login: ' . $email .
-        ' | Vaqtinchalik parol: ' . $temporaryPassword
-    );
+    'success',
+    'Doktorant yaratildi. Login: ' . $email .
+    ' | Vaqtinchalik parol: ' . $temporaryPassword
+);
 
     return $this->redirect('/students/' . $id);
 }
