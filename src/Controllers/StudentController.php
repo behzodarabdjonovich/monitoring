@@ -118,34 +118,115 @@ final class StudentController extends Controller
     }
 
     public function store(Request $request): Response
-    {
-        $data = $this->validated($request);
-        if ($data instanceof Response) {
-            return $data;
-        }
+{
+    $data = $this->validated($request);
 
-        // Fotosurat (ixtiyoriy).
+    if ($data instanceof Response) {
+        return $data;
+    }
+
+    $email = trim((string) $request->input('email', ''));
+
+    if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        return $this->back($request, 'Doktorantning to‘g‘ri email manzilini kiriting.');
+    }
+
+    $existingUser = DB::selectOne(
+        'SELECT id FROM users WHERE email = :email LIMIT 1',
+        ['email' => $email]
+    );
+
+    if ($existingUser !== null) {
+        return $this->back($request, 'Bu email bilan foydalanuvchi allaqachon mavjud.');
+    }
+
+    $role = DB::selectOne(
+        'SELECT id FROM roles WHERE name = :name LIMIT 1',
+        ['name' => 'doctoral_student']
+    );
+
+    if ($role === null) {
+        return $this->back($request, 'Doktorant roli topilmadi.');
+    }
+
+    // Masalan: dok483726
+    do {
+        $username = 'dok' . random_int(100000, 999999);
+
+        $usernameExists = DB::selectOne(
+            'SELECT id FROM users WHERE username = :username LIMIT 1',
+            ['username' => $username]
+        );
+    } while ($usernameExists !== null);
+
+    // Vaqtinchalik parol.
+    $temporaryPassword = bin2hex(random_bytes(5));
+
+    $now = date('Y-m-d H:i:s');
+
+    DB::beginTransaction();
+
+    try {
+        $userId = DB::insert('users', [
+            'role_id' => (int) $role['id'],
+            'full_name' => $data['full_name'],
+            'username' => $username,
+            'email' => $email,
+            'password_hash' => Auth::hash($temporaryPassword),
+            'is_active' => true,
+            'is_blocked' => false,
+            'must_reset' => true,
+            'twofa_secret' => null,
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
+
+        $data['user_id'] = $userId;
+
+        // Fotosurat
         $photo = $request->file('photo');
-        if ($photo !== null && ($photo['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_OK) {
-            try {
-                $stored = FileStorage::store($photo);
-                $data['photo_path'] = $stored['path'];
-            } catch (\RuntimeException $ex) {
-                return $this->back($request, 'Fotosurat: ' . $ex->getMessage());
-            }
+
+        if (
+            $photo !== null &&
+            ($photo['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_OK
+        ) {
+            $stored = FileStorage::store($photo);
+            $data['photo_path'] = $stored['path'];
         }
 
-        $now = date('Y-m-d H:i:s');
         $data['created_at'] = $now;
         $data['updated_at'] = $now;
+
         $id = DB::insert('doctoral_students', $data);
 
-        AuditLogger::log('create', 'doctoral_students', $id, null, $data);
-        $this->handleDocumentUpload($request, $id);
+        AuditLogger::log(
+            'create',
+            'doctoral_students',
+            $id,
+            null,
+            $data
+        );
 
-        Session::flash('success', 'Doktorant profili yaratildi.');
-        return $this->redirect('/students/' . $id);
+        DB::commit();
+    } catch (\Throwable $e) {
+        DB::rollBack();
+
+        return $this->back(
+            $request,
+            'Doktorant yaratishda xatolik: ' . $e->getMessage()
+        );
     }
+
+    $this->handleDocumentUpload($request, $id);
+
+    Session::flash(
+        'success',
+        'Doktorant yaratildi. Login: ' . $email .
+        ' | Vaqtinchalik parol: ' . $temporaryPassword
+    );
+
+    return $this->redirect('/students/' . $id);
+}
 
     public function update(Request $request): Response
     {
