@@ -11,6 +11,7 @@ use App\Core\Response;
 use App\Core\Session;
 use App\Core\Validator;
 use App\Models\DoctoralStudent;
+use App\Services\MailService;
 
 /**
  * Doktorantlar moduli (item 4): to'liq elektron profil CRUD, fotosurat va
@@ -234,7 +235,17 @@ try {
 }
 
     $this->handleDocumentUpload($request, $id);
-
+    
+$mailSent = MailService::send(
+    $email,
+    'ADPI Monitoring — login ma’lumotlari',
+    '<h2>ADPI Monitoring</h2>
+    <p>Assalomu alaykum, ' . htmlspecialchars($data['full_name']) . '!</p>
+    <p>Siz uchun ADPI Monitoring tizimida hisob yaratildi.</p>
+    <p><strong>Login:</strong> ' . htmlspecialchars($email) . '</p>
+    <p><strong>Vaqtinchalik parol:</strong> ' . htmlspecialchars($temporaryPassword) . '</p>
+    <p>Tizimga kirgandan so‘ng parolingizni o‘zgartirishingiz tavsiya etiladi.</p>'
+);
     Session::flash(
     'success',
     'Doktorant yaratildi. Login: ' . $email .
