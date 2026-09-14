@@ -224,6 +224,7 @@ try {
     $data['created_at'] = $now;
     $data['updated_at'] = $now;
 
+    unset($data['email']);
     $id = DB::insert('doctoral_students', $data);
 
     DB::commit();
