@@ -121,6 +121,8 @@ final class StudentController extends Controller
     public function store(Request $request): Response
 {
     $email = trim((string) $request->input('email', ''));
+    
+    unset($data['email']);
 
 $existingUser = DB::selectOne(
     'SELECT id FROM users WHERE email = :email LIMIT 1',
