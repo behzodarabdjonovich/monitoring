@@ -246,11 +246,18 @@ $mailSent = MailService::send(
     <p><strong>Vaqtinchalik parol:</strong> ' . htmlspecialchars($temporaryPassword) . '</p>
     <p>Tizimga kirgandan so‘ng parolingizni o‘zgartirishingiz tavsiya etiladi.</p>'
 );
+    if ($mailSent) {
     Session::flash(
-    'success',
-    'Doktorant yaratildi. Login: ' . $email .
-    ' | Vaqtinchalik parol: ' . $temporaryPassword
-);
+        'success',
+        'Doktorant yaratildi. Login va vaqtinchalik parol doktorant emailiga yuborildi.'
+    );
+} else {
+    Session::flash(
+        'success',
+        'Doktorant yaratildi, lekin email yuborilmadi. Login: ' . $email .
+        ' | Vaqtinchalik parol: ' . $temporaryPassword
+    );
+}
 
     return $this->redirect('/students/' . $id);
 }
