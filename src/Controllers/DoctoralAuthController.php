@@ -100,11 +100,7 @@ final class DoctoralAuthController extends Controller
                 $request->ip()
             );
           }
-public function showChangePassword(Request $request): Response
-{
-    return $this->view('auth.change-password');
-}
-          
+     
             Auth::logout();
 
             return $this->view('auth.login', [
