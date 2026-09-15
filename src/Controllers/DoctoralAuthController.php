@@ -122,6 +122,9 @@ final class DoctoralAuthController extends Controller
             $request->ip()
         );
 
+        if (Auth::mustResetPassword()) {
+    return $this->redirect('/doktorant/change-password');
+}
                return $this->redirect('/doktorant/dashboard');
     }
 
