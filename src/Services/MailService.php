@@ -75,7 +75,7 @@ public static function sendCredentials(
         $resend = Resend::client($apiKey);
 
         $resend->emails->send([
-            'from' => 'ADPI Monitoring <noreply@send.adpi-monitoring.uz>',
+            'from' => 'ADPI Monitoring <onboarding@resend.dev>',
             'to' => [$email],
             'subject' => 'ADPI Monitoring — login ma’lumotlari',
             'html' => '<h2>ADPI Monitoring</h2>'
