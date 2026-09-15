@@ -118,12 +118,16 @@ final class StudentController extends Controller
         return $this->form($student);
     }
 
-    public function store(Request $request): Response
+   public function store(Request $request): Response
 {
-    $email = trim((string) $request->input('email', ''));
-    
-    unset($data['email']);
+    $data = $this->validated($request);
 
+    if ($data instanceof Response) {
+        return $data;
+    }
+
+    $email = trim((string) $request->input('email', ''));
+  
 $existingUser = DB::selectOne(
     'SELECT id FROM users WHERE email = :email LIMIT 1',
     ['email' => $email]
