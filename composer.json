@@ -6,7 +6,8 @@
     "require": {
         "php": ">=8.4",
         "ext-pdo": "*",
-        "resend/resend-php": "^1.0"
+       "resend/resend-php": "^1.0",
+"phpmailer/phpmailer": "^6.9"
     },
     "autoload": {
         "psr-4": {
