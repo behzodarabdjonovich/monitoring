@@ -96,6 +96,12 @@ $router->get('/dashboard', [
     new AuthMiddleware(),
     new RbacMiddleware('dashboard.view'),
 ]);
+$router->get('/doktorant/change-password', [
+    DoctoralAuthController::class,
+    'showChangePassword'
+], [
+    new AuthMiddleware(),
+]);
 
 // --- Doktorant dashboard ---
 $router->get('/doktorant/dashboard', [
