@@ -102,6 +102,19 @@ $router->get('/doktorant/change-password', [
 ], [
     new AuthMiddleware(),
 ]);
+$router->get('/doktorant/change-password', [
+    DoctoralAuthController::class,
+    'showChangePassword'
+], [
+    new AuthMiddleware(),
+]);
+
+$router->post('/doktorant/change-password', [
+    DoctoralAuthController::class,
+    'changePassword'
+], [
+    new AuthMiddleware(),
+]);
 
 // --- Doktorant dashboard ---
 $router->get('/doktorant/dashboard', [
