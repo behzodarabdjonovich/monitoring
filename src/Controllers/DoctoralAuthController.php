@@ -3,6 +3,7 @@
 namespace App\Controllers;
 
 use App\Core\Auth;
+use App\Core\DB;
 use App\Core\AuditLogger;
 use App\Core\Request;
 use App\Core\Response;
@@ -147,6 +148,26 @@ public function changePassword(Request $request): Response
         Session::flash('error', 'Parollar bir xil emas.');
         return $this->redirect('/doktorant/change-password');
     }
+
+    $userId = Auth::id();
+    $password = (string) $request->input('password');
+
+    DB::run(
+        'UPDATE users
+         SET password_hash = :hash,
+             must_reset = FALSE,
+             updated_at = :updated_at
+         WHERE id = :id',
+        [
+            'hash' => Auth::hash($password),
+            'updated_at' => date('Y-m-d H:i:s'),
+            'id' => $userId,
+        ]
+    );
+
+    Session::flash('success', 'Parolingiz muvaffaqiyatli yangilandi.');
+
+    return $this->redirect('/doktorant/dashboard');
 }
     /**
      * Doktorant kabinetidan chiqish.
