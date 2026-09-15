@@ -132,6 +132,12 @@ public function showChangePassword(Request $request): Response
 }
                return $this->redirect('/doktorant/dashboard');
     }
+
+    public function showChangePassword(Request $request): Response
+{
+    return $this->view('auth.change-password');
+}
+    
 public function changePassword(Request $request): Response
 {
     $validator = Validator::make($request->all(), [
