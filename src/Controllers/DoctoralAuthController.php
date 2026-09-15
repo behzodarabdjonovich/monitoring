@@ -99,8 +99,7 @@ final class DoctoralAuthController extends Controller
                 $userId,
                 $request->ip()
             );
-          }
-     
+              
             Auth::logout();
 
             return $this->view('auth.login', [
