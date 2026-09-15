@@ -117,7 +117,36 @@ final class Auth
         return $id === null ? null : (int) $id;
     }
 
-   public static function role(): ?string
+    /**
+ * Joriy foydalanuvchi yozuvi (rol nomi bilan birga).
+ */
+public static function user(): ?array
+{
+    if (self::$cachedUser !== null) {
+        return self::$cachedUser;
+    }
+
+    $id = self::id();
+
+    if ($id === null) {
+        return null;
+    }
+
+    $user = DB::selectOne(
+        'SELECT u.*, r.name AS role_name, r.title_uz AS role_title
+         FROM users u LEFT JOIN roles r ON r.id = u.role_id
+         WHERE u.id = :id LIMIT 1',
+        ['id' => $id]
+    );
+
+    self::$cachedUser = $user;
+    return $user;
+}
+
+/**
+ * Joriy foydalanuvchi rol nomini qaytaradi.
+ */
+public static function role(): ?string
 {
     $user = self::user();
     return $user['role_name'] ?? null;
@@ -133,31 +162,7 @@ public static function mustResetPassword(): bool
     return $user !== null
         && (int) ($user['must_reset'] ?? 0) === 1;
 }
-
-/**
- * Joriy foydalanuvchi ruxsat kodlari ro'yxati...
- */
-public static function permissions(): array
-        $user = DB::selectOne(
-            'SELECT u.*, r.name AS role_name, r.title_uz AS role_title
-             FROM users u LEFT JOIN roles r ON r.id = u.role_id
-             WHERE u.id = :id LIMIT 1',
-            ['id' => $id]
-        );
-        self::$cachedUser = $user;
-        return $user;
-    }
-
-    /**
-     * Joriy foydalanuvchi rol nomini qaytaradi (masalan super_admin).
-     */
-    public static function role(): ?string
-    {
-        $user = self::user();
-        return $user['role_name'] ?? null;
-    }
-
-    /**
+     /**
      * Joriy foydalanuvchi ruxsat kodlari ro'yxati (role_permission orqali).
      *
      * @return string[]
