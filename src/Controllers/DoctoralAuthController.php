@@ -121,7 +121,7 @@ final class DoctoralAuthController extends Controller
             Auth::id(),
             $request->ip()
         );
-
+var_dump(Auth::user()['must_reset'] ?? 'NOT_FOUND'); exit;
         if (Auth::mustResetPassword()) {
     return $this->redirect('/doktorant/change-password');
 }
