@@ -131,7 +131,23 @@ public function showChangePassword(Request $request): Response
 }
                return $this->redirect('/doktorant/dashboard');
     }
+public function changePassword(Request $request): Response
+{
+    $validator = Validator::make($request->all(), [
+        'password' => 'required|string|min:8|max:191',
+        'password_confirmation' => 'required|string|min:8|max:191',
+    ]);
 
+    if ($validator->fails()) {
+        Session::flash('error', $validator->firstError());
+        return $this->redirect('/doktorant/change-password');
+    }
+
+    if ($request->input('password') !== $request->input('password_confirmation')) {
+        Session::flash('error', 'Parollar bir xil emas.');
+        return $this->redirect('/doktorant/change-password');
+    }
+}
     /**
      * Doktorant kabinetidan chiqish.
      */
